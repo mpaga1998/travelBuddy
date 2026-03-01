@@ -10,7 +10,27 @@ export type Profile = {
   country_code: string | null;
   avatar_url: string | null;
   dob: string | null; // ISO date string
+  age: number | null; // Computed from dob
 };
+
+/**
+ * Calculates age from a date of birth string (ISO format)
+ */
+export function calculateAge(dob: string | null): number | null {
+  if (!dob) return null;
+  
+  const birthDate = new Date(dob);
+  const today = new Date();
+  
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age >= 0 ? age : null;
+}
 
 export async function getMyProfile(): Promise<Profile> {
   const { data: userData, error: userErr } = await supabase.auth.getUser();

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { COUNTRIES } from "./countries";
-import { getMyProfile, sendPasswordReset, updateMyProfile, uploadMyAvatar, type Profile } from "./profileApi";
+import { getMyProfile, sendPasswordReset, updateMyProfile, uploadMyAvatar, type Profile, calculateAge } from "./profileApi";
 
 type Props = {
   open: boolean;
@@ -21,6 +21,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   const [countryCode, setCountryCode] = useState<string>("");
+  const [dob, setDob] = useState<string>(""); // ISO date string (YYYY-MM-DD)
 
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -50,6 +51,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
         setLastName(p.last_name ?? "");
         setUsername(p.username ?? "");
         setCountryCode(p.country_code ?? "");
+        setDob(p.dob ?? "");
       } catch (e: any) {
         setErr(e?.message ?? "Failed to load profile");
       } finally {
@@ -72,6 +74,28 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
       return;
     }
 
+    // Validate age if DoB is provided
+    if (dob) {
+      const age = calculateAge(dob);
+      if (age === null) {
+        setErr("Invalid date of birth.");
+        return;
+      }
+      if (age < 18) {
+        setErr("You must be at least 18 years old.");
+        return;
+      }
+      // Show warning for over 100
+      if (age > 100) {
+        const confirmed = window.confirm(
+          `Wow, ${age} years old? You're basically a legend! 🎉 Continue anyway?`
+        );
+        if (!confirmed) {
+          return;
+        }
+      }
+    }
+
     setSaving(true);
     try {
       await updateMyProfile({
@@ -79,6 +103,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
         last_name: lastName.trim(),
         username: u,
         country_code: countryCode || null,
+        dob: dob || null,
       });
 
       setMsg("Profile saved.");
@@ -276,6 +301,21 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                   <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85, color: "#111" }}>
                     Selected: {COUNTRIES.find((x) => x.code === countryCode)?.flag}{" "}
                     {COUNTRIES.find((x) => x.code === countryCode)?.name}
+                  </div>
+                )}
+              </Field>
+
+              <Field label="Date of birth">
+                <input
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  style={inputStyle}
+                  max={new Date().toISOString().split('T')[0]}
+                />
+                {dob && (
+                  <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85, color: "#111" }}>
+                    Age: {calculateAge(dob)} years old
                   </div>
                 )}
               </Field>
