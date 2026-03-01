@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl, { Map as MapboxMap, Marker } from "mapbox-gl";
 
 import type { Pin, PinCategory } from "../pins/pinTypes";
-import { createPin, listPins, toggleReaction, uploadPinImage } from "../pins/pinApi";
+import { createPin, listPins, toggleReaction, uploadPinImage, deletePin } from "../pins/pinApi";
 
 import { ProfileModal } from "../profile/profileModal";
 import { getMyProfile } from "../profile/profileApi";
+import { supabase } from "../../lib/supabaseClient";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
 
@@ -83,6 +84,13 @@ export function MapView() {
   const [viewerTips, setViewerTips] = useState<string[]>([]);
   const [checkedTips, setCheckedTips] = useState<Set<number>>(new Set());
 
+  // delete confirmation
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmPinId, setDeleteConfirmPinId] = useState<string | null>(null);
+
+  // current user
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
   const selectedPin = useMemo(
     () => pins.find((p) => p.id === selectedPinId) ?? null,
     [pins, selectedPinId]
@@ -133,12 +141,20 @@ export function MapView() {
     reloadPins();
   }, []);
 
-  // Load avatar once on mount
+  // Load avatar and current user once on mount
   useEffect(() => {
     (async () => {
       try {
         const p = await getMyProfile();
         setAvatarUrl(p.avatar_url ?? "");
+      } catch {
+        // ignore
+      }
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData.user?.id) {
+          setCurrentUserId(userData.user.id);
+        }
       } catch {
         // ignore
       }
@@ -284,8 +300,8 @@ export function MapView() {
     container.addEventListener("mousedown", (ev) => ev.stopPropagation());
     container.addEventListener("touchstart", (ev) => ev.stopPropagation());
 
-    container.style.minWidth = "400px";
-    container.style.maxWidth = "420px";
+    container.style.minWidth = "420px";
+    container.style.maxWidth = "460px";
     container.style.color = "#111";
     container.style.fontFamily = "system-ui, Arial";
     container.style.position = "relative";
@@ -342,7 +358,7 @@ export function MapView() {
         </span>
       </div>
 
-      <div style="display:flex; gap:8px;">
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button data-like style="padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111;">
           ❤️ <span style="margin-left:6px;">${pin.likesCount}</span>
         </button>
@@ -352,6 +368,11 @@ export function MapView() {
         <button data-fly style="padding:8px 10px; border-radius:10px; border:none; background:#111; color:white; cursor:pointer; font-weight:800;">
           Fly to
         </button>
+        ${
+          pin.createdById === currentUserId
+            ? `<button data-delete style="padding:8px 10px; border-radius:10px; border:none; background:#dc2626; color:white; cursor:pointer; font-weight:800;">Delete</button>`
+            : ""
+        }
       </div>
     `;
 
@@ -359,6 +380,7 @@ export function MapView() {
       closeButton: true,
       closeOnClick: false,
       offset: 18,
+      maxWidth: "460px",
     })
       .setLngLat([pin.lng, pin.lat])
       .setDOMContent(container)
@@ -376,6 +398,7 @@ export function MapView() {
     const likeBtn = container.querySelector<HTMLButtonElement>("[data-like]");
     const dislikeBtn = container.querySelector<HTMLButtonElement>("[data-dislike]");
     const flyBtn = container.querySelector<HTMLButtonElement>("[data-fly]");
+    const deleteBtn = container.querySelector<HTMLButtonElement>("[data-delete]");
 
     likeBtn?.addEventListener("click", async (ev) => {
       ev.stopPropagation();
@@ -392,6 +415,12 @@ export function MapView() {
     flyBtn?.addEventListener("click", (ev) => {
       ev.stopPropagation();
       flyTo(pin);
+    });
+
+    deleteBtn?.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      setDeleteConfirmPinId(pin.id);
+      setDeleteConfirmOpen(true);
     });
 
     // Add click handlers for main image and hover effect
@@ -424,8 +453,6 @@ export function MapView() {
         const popupElement = popup.getElement();
         if (popupElement) {
           const rect = popupElement.getBoundingClientRect();
-          const postItSize = 110;
-          const halfSize = postItSize / 2;
           tipsPostit.style.left = `${rect.right - 30}px`;
           tipsPostit.style.top = `${rect.top + 50}px`;
           tipsPostit.style.pointerEvents = 'auto';
@@ -508,6 +535,18 @@ export function MapView() {
     const map = mapRef.current;
     if (!map) return;
     map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(map.getZoom(), 14) });
+  }
+
+  async function onConfirmDelete(pinId: string) {
+    try {
+      await deletePin(pinId);
+      setSelectedPinId(null);
+      setDeleteConfirmOpen(false);
+      setDeleteConfirmPinId(null);
+      await reloadPins();
+    } catch (e: any) {
+      console.error("Delete failed:", e);
+    }
   }
 
   function showImageLightbox(imageUrls: string | string[]) {
@@ -863,6 +902,7 @@ export function MapView() {
                         borderRadius: 12,
                         border: "1px solid rgba(0,0,0,0.18)",
                         background: "#f5f5f5",
+                        color: "#111",
                         cursor: "pointer",
                         fontWeight: 600,
                         width: "100%",
@@ -1116,6 +1156,82 @@ export function MapView() {
                   </span>
                 </label>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmOpen && deleteConfirmPinId && (
+          <div
+            onClick={() => {
+              setDeleteConfirmOpen(false);
+              setDeleteConfirmPinId(null);
+            }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.35)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 16,
+              zIndex: 9999,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "min(400px, 100%)",
+                background: "white",
+                borderRadius: 16,
+                padding: 24,
+                boxShadow: "0 18px 48px rgba(0,0,0,0.22)",
+                color: "#111",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 32, marginBottom: 12 }}>🗑️</div>
+              <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 8, lineHeight: 1.4 }}>
+                Are you sure you want to delete your pin? 😢
+              </div>
+              <div style={{ fontSize: 14, opacity: 0.85, marginBottom: 24 }}>
+                It looked like a great place!
+              </div>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                <button
+                  onClick={() => {
+                    setDeleteConfirmOpen(false);
+                    setDeleteConfirmPinId(null);
+                  }}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(0,0,0,0.18)",
+                    background: "white",
+                    color: "#111",
+                    cursor: "pointer",
+                    fontWeight: 800,
+                  }}
+                >
+                  No
+                </button>
+                <button
+                  onClick={() => {
+                    onConfirmDelete(deleteConfirmPinId);
+                  }}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: "#dc2626",
+                    color: "white",
+                    cursor: "pointer",
+                    fontWeight: 800,
+                  }}
+                >
+                  Yes, delete
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -9,6 +9,7 @@ type DbPinRow = {
   lat: number;
   lng: number;
   created_at: string;
+  created_by: string; // Add this field
   tips?: string[],
   image_urls?: string[],
   profiles: {
@@ -45,7 +46,7 @@ export async function listPins(): Promise<Pin[]> {
     .from("pins")
     .select(
       `
-      id, title, description, category, lat, lng, created_at,
+      id, title, description, category, lat, lng, created_at, created_by,
       tips, image_urls,
       profiles:created_by (id, username, role, hostel_name),
       reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
@@ -68,6 +69,7 @@ export async function listPins(): Promise<Pin[]> {
       lat: row.lat,
       lng: row.lng,
       createdAt: row.created_at,
+      createdById: row.created_by,
       tips: row.tips ?? [],
       imageUrls: row.image_urls ?? [],
       createdByType: row.profiles?.role ?? "traveler",
@@ -178,6 +180,22 @@ export async function toggleReaction(pinId: string, kind: "like" | "dislike"): P
     },
     { onConflict: "pin_id,user_id" }
   );
+
+  if (error) throw error;
+}
+
+export async function deletePin(pinId: string): Promise<void> {
+  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  if (userErr) throw userErr;
+
+  const user = userData.user;
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("pins")
+    .delete()
+    .eq("id", pinId)
+    .eq("created_by", user.id);
 
   if (error) throw error;
 }
