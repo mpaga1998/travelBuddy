@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "../../lib/supabaseClient";
 
 interface InitialPageProps {
   onGoToMap: () => void;
@@ -6,6 +7,10 @@ interface InitialPageProps {
 
 export function InitialPage({ onGoToMap }: InitialPageProps) {
   const [showComingSoon, setShowComingSoon] = useState(false);
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+  }
 
   return (
     <div
@@ -68,6 +73,38 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
         Discover amazing places and create unforgettable memories
       </p>
 
+      {/* Sign Out Button (Top Right) */}
+      <button
+        onClick={handleSignOut}
+        style={{
+          position: "absolute",
+          top: "20px",
+          right: "20px",
+          width: "44px",
+          height: "44px",
+          borderRadius: "50%",
+          border: "none",
+          background: "rgba(255, 255, 255, 0.25)",
+          color: "white",
+          cursor: "pointer",
+          fontSize: "20px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "background 0.2s",
+          backdropFilter: "blur(10px)",
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = "rgba(255, 255, 255, 0.35)";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = "rgba(255, 255, 255, 0.25)";
+        }}
+        title="Sign out"
+      >
+        👋
+      </button>
+
       {/* Buttons Container */}
       <div
         style={{
@@ -125,15 +162,15 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
             fontWeight: "600",
             border: "none",
             borderRadius: "16px",
-            background: "#ffd700",
-            color: "#333",
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            color: "white",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: "12px",
             transition: "transform 0.2s, box-shadow 0.2s",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            boxShadow: "0 6px 16px rgba(102, 126, 234, 0.4)",
           }}
           onMouseDown={(e) => {
             (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.98)";

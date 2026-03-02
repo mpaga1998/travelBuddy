@@ -85,7 +85,7 @@ export default function App() {
   }
 
   if (currentPage === "map") {
-    return <MapView />;
+    return <MapView onBack={() => setShowInitialPage(true)} />;
   }
 
   return <div>Unknown page state</div>;

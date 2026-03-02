@@ -189,18 +189,19 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
           width: isMobile ? "100%" : "min(720px, 100%)",
           background: "white",
           borderRadius: isMobile ? "16px 16px 0 0" : 16,
-          padding: 16,
+          padding: 0,
           boxShadow: "0 18px 48px rgba(0,0,0,0.22)",
           color: "#111",
           maxHeight: isMobile ? "90vh" : "auto",
-          overflow: isMobile ? "auto" : "visible",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ padding: 16, borderBottom: "1px solid rgba(0,0,0,0.08)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexShrink: 0 }}>
           <div style={{ fontWeight: 800, fontSize: 16 }}>Profile</div>
           <button
             onClick={onClose}
-            style={{ border: "none", background: "transparent", fontSize: 18, cursor: "pointer", padding: isMobile ? "8px" : "4px", width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "unset" }}
+            style={{ border: "none", background: "transparent", fontSize: 24, cursor: "pointer", padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "unset", minWidth: "unset", color: "#111", lineHeight: "1" }}
             aria-label="Close"
           >
             ✕
@@ -208,146 +209,143 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
         </div>
 
         {loading ? (
-          <div style={{ marginTop: 16 }}>Loading…</div>
+          <div style={{ padding: 16 }}>Loading…</div>
         ) : (
           <>
-            {/* Avatar */}
-            <div style={{ marginTop: 14, display: "grid", justifyItems: "center", gap: 10 }}>
-              <div
-                style={{
-                  width: isMobile ? 90 : 110,
-                  height: isMobile ? 90 : 110,
-                  borderRadius: "999px",
-                  overflow: "hidden",
-                  background: "rgba(0,0,0,0.06)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: isMobile ? 28 : 34,
-                  fontWeight: 900,
-                  border: "1px solid rgba(0,0,0,0.10)",
-                }}
-              >
-                {avatar ? (
-                  <img
-                    src={avatar}
-                    alt="Avatar"
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            <div style={{ flex: 1, overflow: "auto", padding: 16, display: "flex", flexDirection: "column" }}>
+              {/* Avatar */}
+              <div style={{ display: "grid", justifyItems: "center", gap: 10, marginBottom: 16 }}>
+                <div
+                  style={{
+                    width: isMobile ? 90 : 110,
+                    height: isMobile ? 90 : 110,
+                    borderRadius: "999px",
+                    overflow: "hidden",
+                    background: "rgba(0,0,0,0.06)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: isMobile ? 28 : 34,
+                    fontWeight: 900,
+                    border: "1px solid rgba(0,0,0,0.10)",
+                  }}
+                >
+                  {avatar ? (
+                    <img
+                      src={avatar}
+                      alt="Avatar"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    initials
+                  )}
+                </div>
+
+                <label
+                  style={{
+                    padding: isMobile ? "12px 16px" : "8px 12px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(0,0,0,0.18)",
+                    background: "white",
+                    cursor: busyAvatar ? "not-allowed" : "pointer",
+                    fontWeight: 700,
+                    opacity: busyAvatar ? 0.6 : 1,
+                    fontSize: 14,
+                    minHeight: 44,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {busyAvatar ? "Uploading…" : "Add photo"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    disabled={busyAvatar}
+                    onChange={(e) => onPickAvatar(e.target.files?.[0] ?? null)}
                   />
-                ) : (
-                  initials
-                )}
+                </label>
               </div>
 
-              <label
-                style={{
-                  padding: isMobile ? "12px 16px" : "8px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                  background: "white",
-                  cursor: busyAvatar ? "not-allowed" : "pointer",
-                  fontWeight: 700,
-                  opacity: busyAvatar ? 0.6 : 1,
-                  fontSize: 14,
-                  minHeight: 44,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {busyAvatar ? "Uploading…" : "Change picture"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  disabled={busyAvatar}
-                  onChange={(e) => onPickAvatar(e.target.files?.[0] ?? null)}
-                />
-              </label>
+              {/* Fields */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+                <Field label="Name">
+                  <input value={firstName} onChange={(e) => setFirstName(e.target.value)} style={inputStyle} />
+                </Field>
+
+                <Field label="Surname">
+                  <input value={lastName} onChange={(e) => setLastName(e.target.value)} style={inputStyle} />
+                </Field>
+
+                <Field label="Date of birth">
+                  <input
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    style={inputStyle}
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                  {dob && (
+                    <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85, color: "#111" }}>
+                      Age: {calculateAge(dob)} years old
+                    </div>
+                  )}
+                </Field>
+
+                <Field label="Nationality">
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="">Select country…</option>
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.flag} {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  {countryCode && (
+                    <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85, color: "#111" }}>
+                      Selected: {COUNTRIES.find((x) => x.code === countryCode)?.flag}{" "}
+                      {COUNTRIES.find((x) => x.code === countryCode)?.name}
+                    </div>
+                  )}
+                </Field>
+
+                <Field label="Username">
+                  <input value={username} onChange={(e) => setUsername(e.target.value)} style={inputStyle} />
+                </Field>
+
+                <Field label="Email">
+                  <input value={email} readOnly style={{ ...inputStyle, background: "rgba(0,0,0,0.04)" }} />
+                </Field>
+
+                <Field label="Password">
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <input value={"••••••••"} readOnly style={{ ...inputStyle, flex: 1, background: "rgba(0,0,0,0.04)" }} />
+                    <button onClick={onResetPassword} style={smallBtn}>
+                      Reset
+                    </button>
+                  </div>
+                </Field>
+              </div>
+
+              {/* Errors / messages */}
+              {err && <div style={{ marginTop: 12, color: "crimson", fontSize: 13 }}>{err}</div>}
+              {msg && <div style={{ marginTop: 12, color: "green", fontSize: 13 }}>{msg}</div>}
             </div>
 
-            {/* Fields */}
-            <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
-              <Field label="First name">
-                <input value={firstName} onChange={(e) => setFirstName(e.target.value)} style={inputStyle} />
-              </Field>
+            {/* Actions - Save button and Sign out */}
+            <div style={{ padding: 16, borderTop: "1px solid rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
+              <button onClick={onSave} disabled={saving} style={primaryBtn(saving)}>
+                {saving ? "Saving…" : "Save"}
+              </button>
 
-              <Field label="Last name">
-                <input value={lastName} onChange={(e) => setLastName(e.target.value)} style={inputStyle} />
-              </Field>
-
-              <Field label="Username">
-                <input value={username} onChange={(e) => setUsername(e.target.value)} style={inputStyle} />
-              </Field>
-
-              <Field label="Email">
-                <input value={email} readOnly style={{ ...inputStyle, background: "rgba(0,0,0,0.04)" }} />
-              </Field>
-
-              <Field label="Password">
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <input value={"••••••••"} readOnly style={{ ...inputStyle, flex: 1, background: "rgba(0,0,0,0.04)" }} />
-                  <button onClick={onResetPassword} style={smallBtn}>
-                    Reset
-                  </button>
-                </div>
-              </Field>
-
-              <Field label="Country">
-                <select
-                  value={countryCode}
-                  onChange={(e) => setCountryCode(e.target.value)}
-                  style={inputStyle}
-                >
-                  <option value="">Select country…</option>
-                  {COUNTRIES.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.flag} {c.name}
-                    </option>
-                  ))}
-                </select>
-                {countryCode && (
-                  <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85, color: "#111" }}>
-                    Selected: {COUNTRIES.find((x) => x.code === countryCode)?.flag}{" "}
-                    {COUNTRIES.find((x) => x.code === countryCode)?.name}
-                  </div>
-                )}
-              </Field>
-
-              <Field label="Date of birth">
-                <input
-                  type="date"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  style={inputStyle}
-                  max={new Date().toISOString().split('T')[0]}
-                />
-                {dob && (
-                  <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85, color: "#111" }}>
-                    Age: {calculateAge(dob)} years old
-                  </div>
-                )}
-              </Field>
-            </div>
-
-            {/* Errors / messages */}
-            {err && <div style={{ marginTop: 12, color: "crimson", fontSize: 13 }}>{err}</div>}
-            {msg && <div style={{ marginTop: 12, color: "green", fontSize: 13 }}>{msg}</div>}
-
-            {/* Actions */}
-            <div style={{ marginTop: 14, display: "flex", justifyContent: isMobile ? "center" : "space-between", gap: 10, flexWrap: "wrap", flexDirection: isMobile ? "column" : "row" }}>
               <button onClick={onSignOut} style={dangerBtn}>
                 Sign out
               </button>
-
-              <div style={{ display: "flex", gap: 10, flexDirection: isMobile ? "column" : "row" }}>
-                <button onClick={onClose} style={secondaryBtn}>
-                  Close
-                </button>
-                <button onClick={onSave} disabled={saving} style={primaryBtn(saving)}>
-                  {saving ? "Saving…" : "Save"}
-                </button>
-              </div>
             </div>
           </>
         )}
@@ -407,6 +405,7 @@ function primaryBtn(disabled: boolean): React.CSSProperties {
     cursor: disabled ? "not-allowed" : "pointer",
     fontWeight: 900,
     minHeight: 44,
+    width: "100%",
   };
 }
 
@@ -419,4 +418,5 @@ const dangerBtn: React.CSSProperties = {
   cursor: "pointer",
   fontWeight: 900,
   minHeight: 44,
+  width: "100%",
 };

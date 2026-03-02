@@ -71,7 +71,20 @@ function useIsMobile() {
   return isMobile;
 }
 
-export function MapView() {
+function escapeHtml(s: string) {
+  return s
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+type MapViewProps = {
+  onBack?: () => void;
+};
+
+export function MapView({ onBack }: MapViewProps = {}) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapboxMap | null>(null);
 
@@ -97,8 +110,6 @@ export function MapView() {
 
   // filters
   const [activeCategory, setActiveCategory] = useState<PinCategory | "all">("all");
-  const [pinnerFilter, setPinnerFilter] = useState<"all" | "traveler" | "hostel">("all");
-  const [search, setSearch] = useState("");
 
   // profile modal + avatar
   const [profileOpen, setProfileOpen] = useState(false);
@@ -107,7 +118,6 @@ export function MapView() {
   // tips viewer
   const [tipsViewerOpen, setTipsViewerOpen] = useState(false);
   const [viewerTips, setViewerTips] = useState<string[]>([]);
-  const [checkedTips, setCheckedTips] = useState<Set<number>>(new Set());
 
   // delete confirmation
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -122,22 +132,11 @@ export function MapView() {
   );
 
   const filteredPins = useMemo(() => {
-    const q = search.trim().toLowerCase();
-
     return pins.filter((p) => {
       const okCat = activeCategory === "all" ? true : p.category === activeCategory;
-      const okPinner = pinnerFilter === "all" ? true : p.createdByType === pinnerFilter;
-
-      const okSearch =
-        q.length === 0
-          ? true
-          : (p.title + " " + p.description + " " + (p.createdByLabel ?? ""))
-              .toLowerCase()
-              .includes(q);
-
-      return okCat && okPinner && okSearch;
+      return okCat;
     });
-  }, [pins, activeCategory, pinnerFilter, search]);
+  }, [pins, activeCategory]);
 
   function forceReopenPopup(pinId: string) {
     setSelectedPinId(null);
@@ -209,7 +208,10 @@ export function MapView() {
 
     // click on map -> close popup first, second click opens add-pin modal
     map.on("click", (e) => {
-      if (selectedPinIdRef.current) {
+      // If there's an open popup, close it instead of opening create-pin modal
+      if (popupRef.current) {
+        popupRef.current.remove();
+        popupRef.current = null;
         setSelectedPinId(null);
         return;
       }
@@ -355,7 +357,7 @@ export function MapView() {
       ${
         pin.imageUrls && pin.imageUrls.length > 0
           ? `<div style="margin-bottom:10px; position:relative; width:100%; box-sizing:border-box; overflow:hidden; border-radius:8px;">
-               <img src="${escapeHtml(pin.imageUrls[0])}" style="width:100%;max-width:100%;height:${isMobileViewport ? '160px' : '140px'};object-fit:cover;display:block;" data-lightbox-url="${escapeHtml(pin.imageUrls[0])}" class="pin-image-preview" />
+               <img src="${escapeHtml(pin.imageUrls[0])}" style="width:100%;max-width:100%;height:${isMobileViewport ? '120px' : '140px'};object-fit:cover;display:block;" data-lightbox-url="${escapeHtml(pin.imageUrls[0])}" class="pin-image-preview" />
                ${
                  pin.imageUrls.length > 1
                    ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.7);color:white;padding:4px 8px;border-radius:6px;font-weight:bold;font-size:12px;">+${pin.imageUrls.length - 1}</div>`
@@ -408,94 +410,104 @@ export function MapView() {
       </div>
     `;
 
-    const popup = new mapboxgl.Popup({
-      closeButton: true,
-      closeOnClick: false,
-      offset: 18,
-      maxWidth: isMobileViewport ? "92vw" : "420px",
-    })
-      .setLngLat([pin.lng, pin.lat])
-      .setDOMContent(container)
-      .addTo(map);
-
-    // Style the close button
-    const closeBtn = popup.getElement()?.querySelector('.mapboxgl-popup-close-button') as HTMLButtonElement;
-    if (closeBtn) {
-      closeBtn.style.color = '#111';
-      closeBtn.style.fontSize = '24px';
-      closeBtn.style.fontWeight = 'bold';
-      closeBtn.style.padding = '4px 8px';
-    }
-
-    const likeBtn = container.querySelector<HTMLButtonElement>("[data-like]");
-    const dislikeBtn = container.querySelector<HTMLButtonElement>("[data-dislike]");
-    const tipsBtn = container.querySelector<HTMLButtonElement>("[data-tips]");
-    const flyBtn = container.querySelector<HTMLButtonElement>("[data-fly]");
-    const deleteBtn = container.querySelector<HTMLButtonElement>("[data-delete]");
-
-    likeBtn?.addEventListener("click", async (ev) => {
-      ev.stopPropagation();
-      await onReact(pin.id, "like");
-      forceReopenPopup(pin.id);
+    // Simply pan map to center on the pin
+    map.easeTo({
+      center: [pin.lng, pin.lat],
+      duration: 400,
     });
 
-    dislikeBtn?.addEventListener("click", async (ev) => {
-      ev.stopPropagation();
-      await onReact(pin.id, "dislike");
-      forceReopenPopup(pin.id);
-    });
+    // Create popup after pan completes
+    setTimeout(() => {
+      const popup = new mapboxgl.Popup({
+        closeButton: true,
+        closeOnClick: false,
+        maxWidth: isMobileViewport ? "85vw" : "420px",
+        className: "pin-popup",
+      })
+        .setLngLat([pin.lng, pin.lat])
+        .setDOMContent(container)
+        .addTo(map);
 
-    tipsBtn?.addEventListener("click", async (ev) => {
-      ev.stopPropagation();
-      setViewerTips(pin.tips ?? []);
-      setCheckedTips(new Set());
-      setTipsViewerOpen(true);
-    });
+      // Style the close button
+      const closeBtn = popup.getElement()?.querySelector('.mapboxgl-popup-close-button') as HTMLButtonElement;
+      if (closeBtn) {
+        closeBtn.style.color = '#111';
+        closeBtn.style.fontSize = '24px';
+        closeBtn.style.fontWeight = 'bold';
+        closeBtn.style.padding = '4px 8px';
+      }
 
-    flyBtn?.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      flyTo(pin);
-    });
+      const likeBtn = container.querySelector<HTMLButtonElement>("[data-like]");
+      const dislikeBtn = container.querySelector<HTMLButtonElement>("[data-dislike]");
+      const tipsBtn = container.querySelector<HTMLButtonElement>("[data-tips]");
+      const flyBtn = container.querySelector<HTMLButtonElement>("[data-fly]");
+      const deleteBtn = container.querySelector<HTMLButtonElement>("[data-delete]");
 
-    deleteBtn?.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      setDeleteConfirmPinId(pin.id);
-      setDeleteConfirmOpen(true);
-    });
-
-    // Add click handlers for main image and hover effect
-    const imagePreview = container.querySelector<HTMLImageElement>(".pin-image-preview");
-    const imageHover = container.querySelector<HTMLDivElement>(".pin-image-hover");
-    
-    if (imagePreview) {
-      imagePreview.addEventListener("click", (ev) => {
+      likeBtn?.addEventListener("click", async (ev) => {
         ev.stopPropagation();
-        showImageLightbox(pin.imageUrls ?? []);
+        await onReact(pin.id, "like");
+        forceReopenPopup(pin.id);
       });
+
+      dislikeBtn?.addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        await onReact(pin.id, "dislike");
+        forceReopenPopup(pin.id);
+      });
+
+      tipsBtn?.addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        setViewerTips(pin.tips ?? []);
+        setTipsViewerOpen(true);
+      });
+
+      flyBtn?.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        flyTo(pin);
+      });
+
+      deleteBtn?.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        setDeleteConfirmPinId(pin.id);
+        setDeleteConfirmOpen(true);
+      });
+
+      // Add click handlers for main image and hover effect
+      const imagePreview = container.querySelector<HTMLImageElement>(".pin-image-preview");
+      const imageHover = container.querySelector<HTMLDivElement>(".pin-image-hover");
       
-      // Add hover effect
-      if (imageHover) {
-        imagePreview.addEventListener("mouseenter", () => {
-          imageHover.style.opacity = "1";
+      if (imagePreview) {
+        imagePreview.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          showImageLightbox(pin.imageUrls ?? []);
         });
         
-        imagePreview.addEventListener("mouseleave", () => {
-          imageHover.style.opacity = "0";
-        });
+        // Add hover effect
+        if (imageHover) {
+          imagePreview.addEventListener("mouseenter", () => {
+            imageHover.style.opacity = "1";
+          });
+          
+          imagePreview.addEventListener("mouseleave", () => {
+            imageHover.style.opacity = "0";
+          });
+        }
       }
-    }
 
-    popup.on("close", () => {
-      setSelectedPinId(null);
-      // Also close tips viewer when popup closes
-      setTipsViewerOpen(false);
-    });
+      popup.on("close", () => {
+        setSelectedPinId(null);
+        // Also close tips viewer when popup closes
+        setTipsViewerOpen(false);
+      });
 
-    popupRef.current = popup;
+      popupRef.current = popup;
+    }, 400); // Wait for pan animation to complete
 
     return () => {
-      popup.remove();
-      popupRef.current = null;
+      if (popupRef.current) {
+        popupRef.current.remove();
+        popupRef.current = null;
+      }
     };
   }, [selectedPin]);
 
@@ -656,7 +668,18 @@ export function MapView() {
   }
 
   return (
-    <div style={{ display: "grid", gridTemplateRows: "auto 1fr", height: "100vh" }}>
+    <>
+      <style>{`
+        .pin-popup.mapboxgl-popup {
+          padding: 16px !important;
+        }
+        .pin-popup.mapboxgl-popup .mapboxgl-popup-content {
+          max-height: calc(100vh - 40px);
+          overflow-y: auto;
+          box-sizing: border-box;
+        }
+      `}</style>
+      <div style={{ display: "grid", gridTemplateRows: "auto 1fr", height: "100vh" }}>
       {/* Top bar - Responsive */}
       <div
         style={{
@@ -677,8 +700,25 @@ export function MapView() {
             justifyContent: isMobile ? "space-between" : "flex-start",
           }}
         >
-          {/* Logo - Mobile only left placeholder */}
-          {isMobile && <div style={{ width: 44, height: 44 }} />}
+          {/* Back button for mobile or desktop */}
+          <button
+            onClick={onBack}
+            style={{
+              border: "none",
+              background: "transparent",
+              cursor: onBack ? "pointer" : "default",
+              padding: "8px 10px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontWeight: 600,
+              fontSize: 14,
+              color: "#111",
+            }}
+            aria-label="Back"
+          >
+            ↩️ Back
+          </button>
           
           {/* Centered Logo */}
           <div
@@ -697,57 +737,24 @@ export function MapView() {
           {!isMobile && <div style={{ flex: 1 }} />}
 
           {!isMobile && (
-            <>
-              {/* Desktop: Full search and filters */}
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search pins…"
-                style={{
-                  width: 320,
-                  maxWidth: "40vw",
-                  padding: "8px 10px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                  fontSize: 14,
-                }}
-              />
-
-              <select
-                value={activeCategory}
-                onChange={(e) => setActiveCategory(e.target.value as any)}
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                  minWidth: 170,
-                  fontSize: 14,
-                }}
-              >
-                <option value="all">All</option>
-                {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {categoryEmoji(c.value)} {c.label}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={pinnerFilter}
-                onChange={(e) => setPinnerFilter(e.target.value as any)}
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                  minWidth: 170,
-                  fontSize: 14,
-                }}
-              >
-                <option value="all">Everyone</option>
-                <option value="traveler">Travelers 🎒</option>
-                <option value="hostel">Hostels 🛌</option>
-              </select>
-            </>
+            <select
+              value={activeCategory}
+              onChange={(e) => setActiveCategory(e.target.value as any)}
+              style={{
+                padding: "8px 10px",
+                borderRadius: 10,
+                border: "1px solid rgba(0,0,0,0.18)",
+                minWidth: 170,
+                fontSize: 14,
+              }}
+            >
+              <option value="all">All</option>
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {categoryEmoji(c.value)} {c.label}
+                </option>
+              ))}
+            </select>
           )}
 
           <div style={{ flex: 1 }} />
@@ -765,17 +772,20 @@ export function MapView() {
                 cursor: "pointer",
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "flex-start",
+                alignItems: "center",
                 justifyContent: "center",
-                gap: 3,
-                padding: "8px 6px",
+                gap: 4,
+                padding: "6px",
               }}
               aria-label="Filters"
               title="Filters"
             >
-              <div style={{ width: 20, height: 2, background: "#111", borderRadius: 1 }} />
-              <div style={{ width: 16, height: 2, background: "#111", borderRadius: 1 }} />
-              <div style={{ width: 12, height: 2, background: "#111", borderRadius: 1 }} />
+              <div style={{ position: "relative", width: 20, height: 2, background: "#111", borderRadius: 1 }} />
+              <div style={{ position: "relative", width: 20, height: 2, background: "#111", borderRadius: 1, marginLeft: 4, marginRight: -4 }} />
+              <div style={{ position: "relative", width: 20, height: 2, background: "#111", borderRadius: 1 }} />
+              <div style={{ position: "absolute", left: 2, top: 4, width: 8, height: 8, background: "#111", borderRadius: "50%" }} />
+              <div style={{ position: "absolute", right: 2, top: 14, width: 8, height: 8, background: "#111", borderRadius: "50%" }} />
+              <div style={{ position: "absolute", left: 2, bottom: 4, width: 8, height: 8, background: "#111", borderRadius: "50%" }} />
             </button>
           )}
 
@@ -815,7 +825,7 @@ export function MapView() {
           <div
             onClick={() => setMobileMenuOpen(false)}
             style={{
-              position: "absolute",
+              position: "fixed",
               top: 0,
               left: 0,
               right: 0,
@@ -828,7 +838,6 @@ export function MapView() {
               onClick={(e) => e.stopPropagation()}
               style={{
                 background: "white",
-                padding: "12px",
                 borderBottomLeftRadius: 12,
                 borderBottomRightRadius: 12,
                 display: "flex",
@@ -836,21 +845,27 @@ export function MapView() {
                 gap: 10,
               }}
             >
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search pins…"
-                style={{
-                  padding: "12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                  fontSize: 14,
-                  width: "100%",
-                  boxSizing: "border-box",
-                  minHeight: 44,
-                }}
-              />
-
+              <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 12px 0 12px" }}>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    fontSize: 24,
+                    cursor: "pointer",
+                    padding: "4px 8px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: 44,
+                    minWidth: 44,
+                  }}
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+              <div style={{ padding: "0 12px 12px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
               <select
                 value={activeCategory}
                 onChange={(e) => {
@@ -874,26 +889,7 @@ export function MapView() {
                   </option>
                 ))}
               </select>
-
-              <select
-                value={pinnerFilter}
-                onChange={(e) => {
-                  setPinnerFilter(e.target.value as any);
-                  setMobileMenuOpen(false);
-                }}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                  fontSize: 14,
-                  width: "100%",
-                  boxSizing: "border-box",
-                }}
-              >
-                <option value="all">Everyone</option>
-                <option value="traveler">Travelers 🎒</option>
-                <option value="hostel">Hostels 🛌</option>
-              </select>
+              </div>
             </div>
           </div>
         )}
@@ -926,7 +922,7 @@ export function MapView() {
           <div
             onClick={() => setDraft(null)}
             style={{
-              position: "absolute",
+              position: "fixed",
               inset: 0,
               background: "rgba(0,0,0,0.25)",
               display: "flex",
@@ -1253,88 +1249,95 @@ export function MapView() {
         {/* Tips Viewer Modal */}
         {tipsViewerOpen && viewerTips.length > 0 && (
           <div
-            onClick={() => {
-              setTipsViewerOpen(false);
-            }}
+            onClick={() => setTipsViewerOpen(false)}
             style={{
               position: "fixed",
               inset: 0,
-              background: "rgba(0,0,0,0.4)",
               display: "flex",
-              alignItems: isMobile ? "flex-end" : "center",
+              alignItems: "center",
               justifyContent: "center",
               zIndex: 10000,
-              padding: isMobile ? 0 : 16,
+              padding: isMobile ? 16 : 16,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-              <div style={{ fontWeight: 800, fontSize: 14 }}>� Tips</div>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "#fff9e6",
+                boxShadow: "0 10px 40px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.6)",
+                borderRadius: 4,
+                padding: "20px",
+                maxWidth: isMobile ? "85vw" : "380px",
+                width: "100%",
+                position: "relative",
+                transform: "rotate(-2deg)",
+                fontFamily: "'Segoe UI', Arial, sans-serif",
+                color: "#333",
+              }}
+            >
+              {/* Close button */}
               <button
-                onClick={() => {
-                  setTipsViewerOpen(false);
-                  // Show the post-it again when viewer is closed
-                  const tipsPostit = document.querySelector<HTMLDivElement>('[data-tips-postit]');
-                  if (tipsPostit) {
-                    tipsPostit.style.display = 'flex';
-                  }
-                }}
+                onClick={() => setTipsViewerOpen(false)}
                 style={{
+                  position: "absolute",
+                  top: "8px",
+                  right: "8px",
                   border: "none",
                   background: "transparent",
-                  fontSize: 16,
+                  fontSize: 20,
                   cursor: "pointer",
-                  padding: 0,
-                  color: "#333",
+                  padding: "4px 8px",
+                  color: "#999",
+                  fontWeight: "bold",
+                  transition: "color 0.2s",
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#333")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#999")}
+                aria-label="Close"
               >
                 ✕
               </button>
-            </div>
 
-            <div style={{ display: "grid", gap: 10 }}>
-              {viewerTips.map((tip, idx) => (
-                <label
-                  key={idx}
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    cursor: "pointer",
-                    alignItems: "flex-start",
-                    padding: "6px 0",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checkedTips.has(idx)}
-                    onChange={(e) => {
-                      const updated = new Set(checkedTips);
-                      if (e.target.checked) {
-                        updated.add(idx);
-                      } else {
-                        updated.delete(idx);
-                      }
-                      setCheckedTips(updated);
-                    }}
+              {/* Title */}
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: 16,
+                  marginBottom: 14,
+                  paddingRight: 24,
+                  color: "#222",
+                }}
+              >
+                💡 Tips
+              </div>
+
+              {/* Tips as bullet points */}
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                {viewerTips.map((tip, idx) => (
+                  <li
+                    key={idx}
                     style={{
-                      width: 18,
-                      height: 18,
-                      cursor: "pointer",
-                      marginTop: 0,
-                      accentColor: "#333",
-                      flexShrink: 0,
+                      display: "flex",
+                      gap: 10,
+                      fontSize: 13,
+                      lineHeight: "1.5",
+                      color: "#333",
                     }}
-                  />
-                  <span style={{ 
-                    fontSize: 13, 
-                    opacity: checkedTips.has(idx) ? 0.5 : 1, 
-                    textDecoration: checkedTips.has(idx) ? "line-through" : "none",
-                    lineHeight: "1.4",
-                    wordBreak: "break-word",
-                  }}>
-                    {tip}
-                  </span>
-                </label>
-              ))}
+                  >
+                    <span style={{ fontWeight: "bold", flexShrink: 0 }}>•</span>
+                    <span style={{ wordBreak: "break-word" }}>{tip}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         )}
@@ -1416,14 +1419,6 @@ export function MapView() {
         )}
       </div>
     </div>
+    </>
   );
-}
-
-function escapeHtml(s: string) {
-  return s
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }

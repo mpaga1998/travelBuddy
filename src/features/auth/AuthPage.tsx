@@ -6,6 +6,7 @@ export function AuthPage() {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [dob, setDob] = useState("");
   const [username, setUsername] = useState("");
 
   const [email, setEmail] = useState("");
@@ -37,6 +38,22 @@ export function AuthPage() {
         setErr("Username is required.");
         return;
       }
+      if (!dob.trim()) {
+        setErr("Date of birth is required.");
+        return;
+      }
+      // Validate age is 18+
+      const birthDate = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        setErr("You must be at least 18 years old.");
+        return;
+      }
     }
 
     setBusy(true);
@@ -60,6 +77,7 @@ export function AuthPage() {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             username: username.trim(),
+            dob: dob,
           },
         },
       });
@@ -85,9 +103,9 @@ export function AuthPage() {
   return (
     <div
       style={{
-        maxWidth: 420,
-        margin: "60px auto",
-        padding: 16,
+        maxWidth: "min(420px, 100vw - 20px)",
+        margin: "40px auto",
+        padding: "16px",
         background: "white",
         borderRadius: 12,
         border: "1px solid rgba(0,0,0,0.12)",
@@ -116,6 +134,15 @@ export function AuthPage() {
                 style={inputStyle}
               />
             </div>
+
+            <input
+              type="date"
+              value={dob}
+              onChange={(e) => setDob(e.target.value)}
+              placeholder="Date of birth"
+              style={inputStyle}
+              max={new Date().toISOString().split('T')[0]}
+            />
 
             <input
               value={username}
@@ -157,6 +184,8 @@ export function AuthPage() {
             setErr(null);
             setMsg(null);
             setMode(mode === "signin" ? "signup" : "signin");
+            setDob("");
+            setPassword("");
           }}
           style={secondaryBtnStyle}
         >
