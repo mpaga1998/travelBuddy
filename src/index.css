@@ -1,5 +1,7 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -11,6 +13,13 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Mobile-first optimizations */
+  font-size: 16px;
+  --safe-top: max(env(safe-area-inset-top, 12px), 12px);
+  --safe-bottom: max(env(safe-area-inset-bottom, 12px), 12px);
+  --safe-left: max(env(safe-area-inset-left, 12px), 12px);
+  --safe-right: max(env(safe-area-inset-right, 12px), 12px);
 }
 
 /* ✅ FULL-HEIGHT APP (needed for full-page Mapbox) */
@@ -18,7 +27,50 @@ html,
 body,
 #root {
   height: 100%;
+  width: 100%;
   margin: 0;
+  padding: 0;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  /* Prevent Safari rubber band scrolling on full-screen app */
+  position: fixed;
+  touch-action: manipulation;
+  /* Support notch/safe areas on mobile */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Prevent default zoom on double tap & mobile optimizations */
+input,
+textarea,
+select,
+button {
+  font-size: 16px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  /* Ensure minimum tap target size (44x44px) */
+  min-height: 44px;
+  border-radius: 10px;
+}
+
+button {
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  border: 1px solid rgba(0,0,0,0.18);
+  padding: 10px 12px;
 }
 
 a {
@@ -28,13 +80,6 @@ a {
 }
 a:hover {
   color: #535bf2;
-}
-
-/* ✅ IMPORTANT: remove centering layout that breaks full-screen map */
-body {
-  min-width: 320px;
-  min-height: 100vh;
-  /* was: display:flex; place-items:center; */
 }
 
 h1 {
@@ -52,13 +97,56 @@ button {
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
+  
+  /* Prevent tap highlight on mobile */
+  -webkit-tap-highlight-color: transparent;
+  
+  /* Ensure minimum touch target size (44px recommended by Apple) */
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
+
 button:hover {
   border-color: #646cff;
 }
+
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
+}
+
+/* Mobile optimizations */
+input,
+textarea,
+select {
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 16px; /* Prevent zoom on iOS */
+  
+  /* Remove default styling on iOS */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Remove default search input styling */
+input[type="search"] {
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 8px;
+}
+
+/* Improve select styling on mobile */
+select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 1.5em;
+  padding-right: 2.5em;
 }
 
 @media (prefers-color-scheme: light) {
@@ -72,4 +160,40 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Responsive typography */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2.2em;
+  }
+}
+
+/* Touch-friendly spacing */
+@media (hover: none) and (pointer: coarse) {
+  /* On touch devices, increase button hit areas */
+  button {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 10px 16px;
+  }
+}
+
+/* ===== MAPBOX POPUP OVERFLOW FIXES ===== */
+/* Ensure the popup measures correctly and doesn't overflow the viewport */
+.mapboxgl-popup {
+  max-width: min(420px, 92vw) !important;
+}
+
+.mapboxgl-popup-content {
+  padding: 0 !important;              /* you already pad inside your container */
+  overflow: hidden;                   /* prevents content spilling outside */
+  border-radius: 12px;                /* nicer rounded corners */
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* Important: allow flex children to shrink instead of forcing overflow */
+.mapboxgl-popup-content * {
+  box-sizing: border-box;
 }
