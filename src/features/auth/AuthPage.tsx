@@ -55,6 +55,7 @@ export function AuthPage() {
         email: cleanEmail,
         password: cleanPassword,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,  // Redirect to home after email confirmation
           data: {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
