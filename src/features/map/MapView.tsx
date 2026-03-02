@@ -942,7 +942,7 @@ export function MapView() {
                 width: isMobile ? "100%" : "min(520px, 100%)",
                 background: "white",
                 borderRadius: isMobile ? "16px 16px 0 0" : 16,
-                padding: 16,
+                padding: isMobile ? "16px 16px 80px 16px" : 16,
                 boxShadow: "0 18px 48px rgba(0,0,0,0.22)",
                 maxHeight: isMobile ? "90vh" : "auto",
                 overflow: isMobile ? "auto" : "visible",

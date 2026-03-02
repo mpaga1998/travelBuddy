@@ -4,17 +4,23 @@ import { supabase } from "./lib/supabaseClient";
 import { ensureProfile } from "./lib/ensureProfile";
 
 import { AuthPage } from "./features/auth/AuthPage";
+import { LoadingPage } from "./features/auth/LoadingPage";
+import { InitialPage } from "./features/auth/InitialPage";
 import { MapView } from "./features/map/MapView";
+
+type AppPage = "loading" | "auth" | "initial" | "map";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [showInitialPage, setShowInitialPage] = useState(true);
+  const [currentPage, setCurrentPage] = useState<AppPage>("loading");
 
   // 1️⃣ Get session on first load
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session ?? null);
-      setLoading(false);
+      setInitialLoading(false);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
@@ -24,7 +30,7 @@ export default function App() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // 2️⃣ ENSURE PROFILE — put it HERE
+  // 2️⃣ ENSURE PROFILE
   useEffect(() => {
     if (!session) return;
 
@@ -33,19 +39,54 @@ export default function App() {
     });
   }, [session]);
 
-  // log to check if profile is saved
+  // 3️⃣ Determine which page to show
   useEffect(() => {
-    if (!session) return;
-    console.log("SESSION USER:", session.user.id, session.user.email);
+    if (initialLoading) {
+      setCurrentPage("loading");
+      return;
+    }
 
-    ensureProfile()
-      .then((p) => console.log("PROFILE OK:", p))
-      .catch((e) => console.error("ensureProfile failed:", e));
-  }, [session]);
+    if (!session) {
+      setCurrentPage("auth");
+      return;
+    }
 
-  // 3️⃣ Render logic
-  if (loading) return <div style={{ padding: 16 }}>Loading…</div>;
-  if (!session) return <AuthPage />;
+    // Logged in: show initial page first
+    if (showInitialPage) {
+      setCurrentPage("initial");
+    } else {
+      setCurrentPage("map");
+    }
+  }, [initialLoading, session, showInitialPage]);
 
-  return <MapView />;
+  // Handle loading completion
+  const handleLoadingComplete = () => {
+    // If not logged in, go to auth. If logged in, stay on initial page
+    if (!session) {
+      setCurrentPage("auth");
+    }
+  };
+
+  // Render based on current page
+  if (currentPage === "loading") {
+    return <LoadingPage onLoadingComplete={handleLoadingComplete} />;
+  }
+
+  if (currentPage === "auth") {
+    return <AuthPage />;
+  }
+
+  if (currentPage === "initial") {
+    return (
+      <InitialPage
+        onGoToMap={() => setShowInitialPage(false)}
+      />
+    );
+  }
+
+  if (currentPage === "map") {
+    return <MapView />;
+  }
+
+  return <div>Unknown page state</div>;
 }
