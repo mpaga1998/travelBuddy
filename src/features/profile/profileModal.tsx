@@ -167,6 +167,8 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
   const initials =
     `${(firstName?.[0] ?? "").toUpperCase()}${(lastName?.[0] ?? "").toUpperCase()}` || "🙂";
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
     <div
       onClick={onClose}
@@ -175,28 +177,30 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
         inset: 0,
         background: "rgba(0,0,0,0.35)",
         display: "flex",
-        alignItems: "center",
+        alignItems: isMobile ? "flex-end" : "center",
         justifyContent: "center",
-        padding: 16,
+        padding: isMobile ? 0 : 16,
         zIndex: 50,
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: "min(720px, 100%)",
+          width: isMobile ? "100%" : "min(720px, 100%)",
           background: "white",
-          borderRadius: 16,
+          borderRadius: isMobile ? "16px 16px 0 0" : 16,
           padding: 16,
           boxShadow: "0 18px 48px rgba(0,0,0,0.22)",
           color: "#111",
+          maxHeight: isMobile ? "90vh" : "auto",
+          overflow: isMobile ? "auto" : "visible",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
           <div style={{ fontWeight: 800, fontSize: 16 }}>Profile</div>
           <button
             onClick={onClose}
-            style={{ border: "none", background: "transparent", fontSize: 18, cursor: "pointer" }}
+            style={{ border: "none", background: "transparent", fontSize: 18, cursor: "pointer", padding: isMobile ? "8px" : "4px", width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "unset" }}
             aria-label="Close"
           >
             ✕
@@ -211,15 +215,15 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
             <div style={{ marginTop: 14, display: "grid", justifyItems: "center", gap: 10 }}>
               <div
                 style={{
-                  width: 110,
-                  height: 110,
+                  width: isMobile ? 90 : 110,
+                  height: isMobile ? 90 : 110,
                   borderRadius: "999px",
                   overflow: "hidden",
                   background: "rgba(0,0,0,0.06)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 34,
+                  fontSize: isMobile ? 28 : 34,
                   fontWeight: 900,
                   border: "1px solid rgba(0,0,0,0.10)",
                 }}
@@ -237,13 +241,18 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
 
               <label
                 style={{
-                  padding: "8px 12px",
+                  padding: isMobile ? "12px 16px" : "8px 12px",
                   borderRadius: 10,
                   border: "1px solid rgba(0,0,0,0.18)",
                   background: "white",
                   cursor: busyAvatar ? "not-allowed" : "pointer",
                   fontWeight: 700,
                   opacity: busyAvatar ? 0.6 : 1,
+                  fontSize: 14,
+                  minHeight: 44,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 {busyAvatar ? "Uploading…" : "Change picture"}
@@ -258,7 +267,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
             </div>
 
             {/* Fields */}
-            <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
               <Field label="First name">
                 <input value={firstName} onChange={(e) => setFirstName(e.target.value)} style={inputStyle} />
               </Field>
@@ -326,12 +335,12 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
             {msg && <div style={{ marginTop: 12, color: "green", fontSize: 13 }}>{msg}</div>}
 
             {/* Actions */}
-            <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ marginTop: 14, display: "flex", justifyContent: isMobile ? "center" : "space-between", gap: 10, flexWrap: "wrap", flexDirection: isMobile ? "column" : "row" }}>
               <button onClick={onSignOut} style={dangerBtn}>
                 Sign out
               </button>
 
-              <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ display: "flex", gap: 10, flexDirection: isMobile ? "column" : "row" }}>
                 <button onClick={onClose} style={secondaryBtn}>
                   Close
                 </button>
@@ -357,52 +366,57 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputStyle: React.CSSProperties = {
-  padding: "10px 12px",
+  padding: "12px 14px",
   borderRadius: 10,
   border: "1px solid rgba(0,0,0,0.2)",
   outline: "none",
   color: "#111",
   background: "white",
+  minHeight: 44,
 };
 
 const smallBtn: React.CSSProperties = {
-  padding: "10px 12px",
+  padding: "10px 14px",
   borderRadius: 10,
   border: "1px solid rgba(0,0,0,0.18)",
   background: "white",
   color: "#111",
   cursor: "pointer",
   fontWeight: 800,
+  minHeight: 44,
 };
 
 const secondaryBtn: React.CSSProperties = {
-  padding: "10px 12px",
+  padding: "12px 16px",
   borderRadius: 10,
   border: "1px solid rgba(0,0,0,0.18)",
   background: "white",
   color: "#111",
   cursor: "pointer",
   fontWeight: 800,
+  minHeight: 44,
 };
 
 function primaryBtn(disabled: boolean): React.CSSProperties {
   return {
-    padding: "10px 12px",
+    padding: "12px 16px",
     borderRadius: 10,
     border: "none",
     background: disabled ? "rgba(0,0,0,0.25)" : "#111",
     color: "white",
     cursor: disabled ? "not-allowed" : "pointer",
     fontWeight: 900,
+    minHeight: 44,
   };
 }
 
 const dangerBtn: React.CSSProperties = {
-  padding: "10px 12px",
+  padding: "12px 16px",
   borderRadius: 10,
   border: "1px solid rgba(220,38,38,0.35)",
   background: "rgba(220,38,38,0.08)",
   color: "#991b1b",
   cursor: "pointer",
   fontWeight: 900,
+  minHeight: 44,
 };
