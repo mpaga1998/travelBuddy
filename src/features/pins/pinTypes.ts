@@ -16,6 +16,7 @@ export type Pin = {
   createdByLabel: string;
   createdByType: "traveler" | "hostel";
   createdById: string; // User ID of the creator
+  createdByAge: number | null; // Age of the creator
   likesCount: number;
   dislikesCount: number;
   tips?: string[];

@@ -36,6 +36,13 @@ const CATEGORIES: { value: PinCategory; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
+const AGE_RANGES = [
+  { value: "18-24", label: "18-24", min: 18, max: 24 },
+  { value: "25-34", label: "25-34", min: 25, max: 34 },
+  { value: "35-49", label: "35-49", min: 35, max: 49 },
+  { value: "50+", label: "50+", min: 50, max: 200 },
+];
+
 function categoryEmoji(cat: PinCategory) {
   switch (cat) {
     case "food":
@@ -80,6 +87,22 @@ function escapeHtml(s: string) {
     .replaceAll("'", "&#039;");
 }
 
+function isAgeInSelectedRanges(age: number | null, selectedRanges: string[]): boolean {
+  if (!age || selectedRanges.length === 0) return true;
+  
+  return selectedRanges.some((rangeValue) => {
+    const range = AGE_RANGES.find((r) => r.value === rangeValue);
+    if (!range) return false;
+    return age >= range.min && age <= range.max;
+  });
+}
+
+function getAgeFilterLabel(selectedRanges: string[]): string {
+  if (selectedRanges.length === 0) return "All ages";
+  const labels = selectedRanges.map((r) => AGE_RANGES.find((ar) => ar.value === r)?.label).filter(Boolean);
+  return labels.join(", ");
+}
+
 type MapViewProps = {
   onBack?: () => void;
 };
@@ -110,6 +133,8 @@ export function MapView({ onBack }: MapViewProps = {}) {
 
   // filters
   const [activeCategory, setActiveCategory] = useState<PinCategory | "all">("all");
+  const [selectedAgeRanges, setSelectedAgeRanges] = useState<string[]>([]);
+  const [ageFilterOpen, setAgeFilterOpen] = useState(false);
 
   // profile modal + avatar
   const [profileOpen, setProfileOpen] = useState(false);
@@ -134,9 +159,10 @@ export function MapView({ onBack }: MapViewProps = {}) {
   const filteredPins = useMemo(() => {
     return pins.filter((p) => {
       const okCat = activeCategory === "all" ? true : p.category === activeCategory;
-      return okCat;
+      const okAge = isAgeInSelectedRanges(p.createdByAge, selectedAgeRanges);
+      return okCat && okAge;
     });
-  }, [pins, activeCategory]);
+  }, [pins, activeCategory, selectedAgeRanges]);
 
   function forceReopenPopup(pinId: string) {
     setSelectedPinId(null);
@@ -160,6 +186,21 @@ export function MapView({ onBack }: MapViewProps = {}) {
   useEffect(() => {
     draftRef.current = draft;
   }, [draft]);
+
+  // Close age filter when clicking outside
+  useEffect(() => {
+    if (!ageFilterOpen) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Element;
+      if (!target.closest('[data-age-filter-btn]') && !target.closest('[data-age-filter-menu]')) {
+        setAgeFilterOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [ageFilterOpen]);
 
   useEffect(() => {
     reloadPins();
@@ -737,24 +778,116 @@ export function MapView({ onBack }: MapViewProps = {}) {
           {!isMobile && <div style={{ flex: 1 }} />}
 
           {!isMobile && (
-            <select
-              value={activeCategory}
-              onChange={(e) => setActiveCategory(e.target.value as any)}
-              style={{
-                padding: "8px 10px",
-                borderRadius: 10,
-                border: "1px solid rgba(0,0,0,0.18)",
-                minWidth: 170,
-                fontSize: 14,
-              }}
-            >
-              <option value="all">All</option>
-              {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {categoryEmoji(c.value)} {c.label}
-                </option>
-              ))}
-            </select>
+            <div style={{ position: "relative" }}>
+              <select
+                value={activeCategory}
+                onChange={(e) => setActiveCategory(e.target.value as any)}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(0,0,0,0.18)",
+                  minWidth: 170,
+                  fontSize: 14,
+                }}
+              >
+                <option value="all">All</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {categoryEmoji(c.value)} {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {!isMobile && (
+            <div style={{ position: "relative" }} data-age-filter>
+              <button
+                data-age-filter-btn
+                onClick={() => setAgeFilterOpen(!ageFilterOpen)}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(0,0,0,0.18)",
+                  minWidth: 170,
+                  fontSize: 14,
+                  background: "white",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  fontFamily: "inherit",
+                  color: "inherit",
+                }}
+              >
+                {getAgeFilterLabel(selectedAgeRanges)}
+              </button>
+              {ageFilterOpen && (
+                <div
+                  data-age-filter-menu
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    background: "white",
+                    border: "1px solid rgba(0,0,0,0.18)",
+                    borderRadius: 10,
+                    marginTop: 4,
+                    minWidth: 170,
+                    zIndex: 50,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  {AGE_RANGES.map((range, idx) => (
+                    <div
+                      key={range.value}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "6px 12px",
+                        gap: 8,
+                        borderBottom: idx < AGE_RANGES.length - 1 ? "1px solid rgba(0,0,0,0.08)" : "none",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedAgeRanges.includes(range.value)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedAgeRanges([...selectedAgeRanges, range.value]);
+                          } else {
+                            setSelectedAgeRanges(selectedAgeRanges.filter((r) => r !== range.value));
+                          }
+                        }}
+                        style={{
+                          cursor: "pointer",
+                          width: 12,
+                          height: 12,
+                          minWidth: 12,
+                          accentColor: "#2563eb",
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: 14,
+                          cursor: "pointer",
+                          flex: 1,
+                        }}
+                        onClick={(e) => {
+                          const checkbox = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                          checkbox.checked = !checkbox.checked;
+                          if (checkbox.checked) {
+                            setSelectedAgeRanges([...selectedAgeRanges, range.value]);
+                          } else {
+                            setSelectedAgeRanges(selectedAgeRanges.filter((r) => r !== range.value));
+                          }
+                        }}
+                      >
+                        {range.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           <div style={{ flex: 1 }} />
@@ -886,6 +1019,29 @@ export function MapView({ onBack }: MapViewProps = {}) {
                 {CATEGORIES.map((c) => (
                   <option key={c.value} value={c.value}>
                     {categoryEmoji(c.value)} {c.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                multiple
+                value={selectedAgeRanges}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.selectedOptions, (option) => option.value);
+                  setSelectedAgeRanges(selected);
+                }}
+                style={{
+                  padding: "12px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(0,0,0,0.18)",
+                  fontSize: 14,
+                  width: "100%",
+                  boxSizing: "border-box",
+                  minHeight: 44,
+                }}
+              >
+                {AGE_RANGES.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
                   </option>
                 ))}
               </select>

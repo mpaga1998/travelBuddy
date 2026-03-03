@@ -1,5 +1,6 @@
 import type { Pin, PinCategory } from "./pinTypes";
 import { supabase } from "../../lib/supabaseClient";
+import { calculateAge } from "../profile/profileApi";
 
 type DbPinRow = {
   id: string;
@@ -17,6 +18,7 @@ type DbPinRow = {
     username: string | null;
     role: "traveler" | "hostel";
     hostel_name: string | null;
+    dob: string | null;
   } | null;
 
   // ✅ IMPORTANT: Supabase returns joined relations as arrays
@@ -48,7 +50,7 @@ export async function listPins(): Promise<Pin[]> {
       `
       id, title, description, category, lat, lng, created_at, created_by,
       tips, image_urls,
-      profiles:created_by (id, username, role, hostel_name),
+      profiles:created_by (id, username, role, hostel_name, dob),
       reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
     `
     )
@@ -77,6 +79,7 @@ export async function listPins(): Promise<Pin[]> {
         row.profiles?.role === "hostel"
           ? row.profiles?.hostel_name ?? "Hostel"
           : row.profiles?.username ?? "Traveler",
+      createdByAge: row.profiles?.dob ? calculateAge(row.profiles.dob) : null,
 
       // ✅ now works
       likesCount: counts?.likes_count ?? 0,
