@@ -105,9 +105,10 @@ function getAgeFilterLabel(selectedRanges: string[]): string {
 
 type MapViewProps = {
   onBack?: () => void;
+  initialCenter?: { lng: number; lat: number } | null;
 };
 
-export function MapView({ onBack }: MapViewProps = {}) {
+export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapboxMap | null>(null);
 
@@ -151,6 +152,9 @@ export function MapView({ onBack }: MapViewProps = {}) {
   // current user
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  // map type filter (travelers or hostels)
+  const [mapType, setMapType] = useState<"travelers" | "hostels">("travelers");
+
   const selectedPin = useMemo(
     () => pins.find((p) => p.id === selectedPinId) ?? null,
     [pins, selectedPinId]
@@ -160,9 +164,10 @@ export function MapView({ onBack }: MapViewProps = {}) {
     return pins.filter((p) => {
       const okCat = activeCategory === "all" ? true : p.category === activeCategory;
       const okAge = isAgeInSelectedRanges(p.createdByAge, selectedAgeRanges);
-      return okCat && okAge;
+      const okType = mapType === "travelers" ? p.createdByType === "traveler" : p.createdByType === "hostel";
+      return okCat && okAge && okType;
     });
-  }, [pins, activeCategory, selectedAgeRanges]);
+  }, [pins, activeCategory, selectedAgeRanges, mapType]);
 
   function forceReopenPopup(pinId: string) {
     setSelectedPinId(null);
@@ -236,10 +241,12 @@ export function MapView({ onBack }: MapViewProps = {}) {
       return;
     }
 
+    const center = initialCenter || DEFAULT_CENTER;
+
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: [DEFAULT_CENTER.lng, DEFAULT_CENTER.lat],
+      center: [center.lng, center.lat],
       zoom: DEFAULT_ZOOM,
     });
 
@@ -778,29 +785,72 @@ export function MapView({ onBack }: MapViewProps = {}) {
           {!isMobile && <div style={{ flex: 1 }} />}
 
           {!isMobile && (
-            <div style={{ position: "relative" }}>
-              <select
-                value={activeCategory}
-                onChange={(e) => setActiveCategory(e.target.value as any)}
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                  minWidth: 170,
-                  fontSize: 14,
-                }}
-              >
-                <option value="all">All</option>
-                {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {categoryEmoji(c.value)} {c.label}
-                  </option>
-                ))}
-              </select>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              {/* Map type toggle */}
+              <div style={{ display: "flex", borderRadius: 10, border: "1px solid rgba(0,0,0,0.18)", background: "white", padding: 2 }}>
+                <button
+                  onClick={() => setMapType("travelers")}
+                  style={{
+                    padding: "6px 12px",
+                    border: "none",
+                    background: mapType === "travelers" ? "#2563eb" : "transparent",
+                    color: mapType === "travelers" ? "white" : "#111",
+                    cursor: "pointer",
+                    fontSize: 14,
+                    fontWeight: mapType === "travelers" ? 600 : 500,
+                    borderRadius: 8,
+                    transition: "all 0.2s ease",
+                  }}
+                  title="Show pins from travelers"
+                >
+                  👥 Travelers
+                </button>
+                <button
+                  onClick={() => setMapType("hostels")}
+                  style={{
+                    padding: "6px 12px",
+                    border: "none",
+                    background: mapType === "hostels" ? "#111" : "transparent",
+                    color: mapType === "hostels" ? "white" : "#111",
+                    cursor: "pointer",
+                    fontSize: 14,
+                    fontWeight: mapType === "hostels" ? 600 : 500,
+                    borderRadius: 8,
+                    transition: "all 0.2s ease",
+                  }}
+                  title="Show pins from hostels"
+                >
+                  🏫 Hostels
+                </button>
+              </div>
+
+              {/* Category filter - only show for travelers */}
+              {mapType === "travelers" && (
+                <div style={{ position: "relative" }}>
+                  <select
+                    value={activeCategory}
+                    onChange={(e) => setActiveCategory(e.target.value as any)}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: 10,
+                      border: "1px solid rgba(0,0,0,0.18)",
+                      minWidth: 170,
+                      fontSize: 14,
+                    }}
+                  >
+                    <option value="all">All</option>
+                    {CATEGORIES.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {categoryEmoji(c.value)} {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           )}
 
-          {!isMobile && (
+          {!isMobile && mapType === "travelers" && (
             <div style={{ position: "relative" }} data-age-filter>
               <button
                 data-age-filter-btn
@@ -978,7 +1028,8 @@ export function MapView({ onBack }: MapViewProps = {}) {
                 gap: 10,
               }}
             >
-              <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 12px 0 12px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 12px 0 12px" }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>Filters</span>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
                   style={{
@@ -998,6 +1049,51 @@ export function MapView({ onBack }: MapViewProps = {}) {
                   ✕
                 </button>
               </div>
+              
+              {/* Mobile map type toggle */}
+              <div style={{ padding: "0 12px" }}>
+                <div style={{ display: "flex", borderRadius: 10, border: "1px solid rgba(0,0,0,0.18)", background: "white", padding: 2, marginBottom: 10 }}>
+                  <button
+                    onClick={() => setMapType("travelers")}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      border: "none",
+                      background: mapType === "travelers" ? "#2563eb" : "transparent",
+                      color: mapType === "travelers" ? "white" : "#111",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: mapType === "travelers" ? 600 : 500,
+                      borderRadius: 8,
+                      transition: "all 0.2s ease",
+                    }}
+                    title="Show pins from travelers"
+                  >
+                    👥 Travelers
+                  </button>
+                  <button
+                    onClick={() => setMapType("hostels")}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      border: "none",
+                      background: mapType === "hostels" ? "#111" : "transparent",
+                      color: mapType === "hostels" ? "white" : "#111",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: mapType === "hostels" ? 600 : 500,
+                      borderRadius: 8,
+                      transition: "all 0.2s ease",
+                    }}
+                    title="Show pins from hostels"
+                  >
+                    🏫 Hostels
+                  </button>
+                </div>
+              </div>
+
+              {/* Mobile filters - only show for travelers */}
+              {mapType === "travelers" && (
               <div style={{ padding: "0 12px 12px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
               <select
                 value={activeCategory}
@@ -1046,6 +1142,7 @@ export function MapView({ onBack }: MapViewProps = {}) {
                 ))}
               </select>
               </div>
+            )}
             </div>
           </div>
         )}

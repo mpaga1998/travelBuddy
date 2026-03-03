@@ -15,6 +15,7 @@ export default function App() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [showInitialPage, setShowInitialPage] = useState(true);
   const [currentPage, setCurrentPage] = useState<AppPage>("loading");
+  const [mapCenter, setMapCenter] = useState<{ lng: number; lat: number } | null>(null);
 
   // 1️⃣ Get session on first load
   useEffect(() => {
@@ -79,13 +80,16 @@ export default function App() {
   if (currentPage === "initial") {
     return (
       <InitialPage
-        onGoToMap={() => setShowInitialPage(false)}
+        onGoToMap={(location) => {
+          setMapCenter(location);
+          setShowInitialPage(false);
+        }}
       />
     );
   }
 
   if (currentPage === "map") {
-    return <MapView onBack={() => setShowInitialPage(true)} />;
+    return <MapView onBack={() => setShowInitialPage(true)} initialCenter={mapCenter} />;
   }
 
   return <div>Unknown page state</div>;

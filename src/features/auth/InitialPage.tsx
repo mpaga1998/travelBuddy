@@ -1,14 +1,96 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 
 interface InitialPageProps {
-  onGoToMap: () => void;
+  onGoToMap: (location: { lng: number; lat: number }) => void;
+}
+
+interface Suggestion {
+  id: string;
+  place_name: string;
+  center: [number, number];
 }
 
 export function InitialPage({ onGoToMap }: InitialPageProps) {
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const [searchActive, setSearchActive] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
+
+  // Click outside handler
+  useEffect(() => {
+    if (!searchActive) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setSearchActive(false);
+        setSearchInput("");
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [searchActive]);
+
+  // Fetch suggestions as user types
+  useEffect(() => {
+    if (!searchInput.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+            searchInput
+          )}.json?access_token=${mapboxToken}&limit=5`
+        );
+        const data = await response.json();
+
+        if (data.features && data.features.length > 0) {
+          setSuggestions(
+            data.features.map((feature: any) => ({
+              id: feature.id,
+              place_name: feature.place_name,
+              center: feature.geometry.coordinates,
+            }))
+          );
+          setShowSuggestions(true);
+        } else {
+          setSuggestions([]);
+        }
+      } catch (error) {
+        console.error("Suggestions fetch failed:", error);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput, mapboxToken]);
+
+  async function handleSearchSubmit(location?: Suggestion) {
+    const selectedLocation = location || suggestions[0];
+    if (!selectedLocation) return;
+
+    const [lng, lat] = selectedLocation.center;
+    onGoToMap({ lng, lat });
+    setSearchActive(false);
+    setSearchInput("");
+    setSuggestions([]);
+    setShowSuggestions(false);
+  }
 
   async function handleSignOut() {
+    setShowSignOutConfirm(false);
     await supabase.auth.signOut();
   }
 
@@ -75,7 +157,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
 
       {/* Sign Out Button (Top Right) */}
       <button
-        onClick={handleSignOut}
+        onClick={() => setShowSignOutConfirm(true)}
         style={{
           position: "absolute",
           top: "20px",
@@ -115,46 +197,189 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
           gap: "12px",
         }}
       >
-        {/* Button 1: Where Next? */}
-        <button
-          onClick={onGoToMap}
-          style={{
-            width: "100%",
-            padding: "18px 20px",
-            fontSize: "18px",
-            fontWeight: "600",
-            border: "none",
-            borderRadius: "16px",
-            background: "white",
-            color: "#ff8c00",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "12px",
-            transition: "transform 0.2s, box-shadow 0.2s",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-          }}
-          onMouseDown={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.98)";
-          }}
-          onMouseUp={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-          }}
-          onTouchStart={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.98)";
-          }}
-          onTouchEnd={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-          }}
-        >
-          <span>🌍</span>
-          <span>Where next?</span>
-        </button>
+        {/* Button 1: Where Next? - Transforms into search bar */}
+        {!searchActive ? (
+          <button
+            onClick={() => setSearchActive(true)}
+            style={{
+              width: "100%",
+              padding: "18px 20px",
+              fontSize: "18px",
+              fontWeight: "600",
+              border: "none",
+              borderRadius: "16px",
+              background: "white",
+              color: "#ff8c00",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "12px",
+              transition: "transform 0.2s, box-shadow 0.2s",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            }}
+            onMouseDown={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.98)";
+            }}
+            onMouseUp={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+            }}
+            onTouchStart={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.98)";
+            }}
+            onTouchEnd={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+            }}
+          >
+            <span>🌍</span>
+            <span>Where next?</span>
+          </button>
+        ) : (
+          <div
+            ref={searchContainerRef}
+            style={{
+              width: "100%",
+              position: "relative",
+            }}
+          >
+            <div
+              style={{
+                width: "100%",
+                display: "flex",
+                gap: "12px",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "white",
+                borderRadius: "16px",
+                padding: "18px 20px",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                color: "#111",
+                lineHeight: "1",
+                minHeight: "56px",
+                boxSizing: "border-box",
+              }}
+            >
+              <span style={{ fontSize: "18px", flexShrink: 0, display: "flex", alignItems: "center" }}>🌍</span>
+              <input
+                autoFocus
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && suggestions.length > 0) {
+                    handleSearchSubmit(suggestions[0]);
+                  }
+                  if (e.key === "Escape") {
+                    setSearchActive(false);
+                    setSearchInput("");
+                    setSuggestions([]);
+                    setShowSuggestions(false);
+                  }
+                }}
+                placeholder="Search location..."
+                style={{
+                  flex: 1,
+                  border: "none",
+                  fontSize: "16px",
+                  outline: "none",
+                  fontFamily: "inherit",
+                  color: "#111",
+                  background: "transparent",
+                  height: "auto",
+                  margin: "0",
+                  padding: "0",
+                  lineHeight: "1",
+                  WebkitAppearance: "none",
+                  appearance: "none",
+                }}
+              />
+              <button
+                onClick={() => {
+                  setSearchActive(false);
+                  setSearchInput("");
+                  setSuggestions([]);
+                  setShowSuggestions(false);
+                }}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  padding: "0 4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#111",
+                  flexShrink: 0,
+                  height: "auto",
+                  minWidth: "24px",
+                  lineHeight: "1",
+                }}
+                title="Cancel"
+              >
+                ✕
+              </button>
+            </div>
 
-        {/* Button 2: Create Itinerary */}
+            {/* Suggestions Dropdown - Scrollable */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  left: 0,
+                  right: 0,
+                  background: "white",
+                  borderRadius: "12px",
+                  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.2)",
+                  maxHeight: "220px",
+                  overflowY: "scroll",
+                  overflow: "hidden",
+                  zIndex: 1000,
+                  WebkitOverflowScrolling: "touch",
+                }}
+              >
+                {suggestions.map((suggestion, idx) => (
+                  <div
+                    key={suggestion.id}
+                    onClick={() => handleSearchSubmit(suggestion)}
+                    style={{
+                      padding: "14px 16px",
+                      borderBottom: idx < suggestions.length - 1 ? "1px solid rgba(0, 0, 0, 0.08)" : "none",
+                      cursor: "pointer",
+                      transition: "background 0.2s",
+                      color: "#111",
+                      fontSize: "15px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background = "rgba(255, 140, 0, 0.08)";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background = "transparent";
+                    }}
+                  >
+                    📍 {suggestion.place_name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Button 2: Create Itinerary (closes search bar if active) */}
         <button
-          onClick={() => setShowComingSoon(true)}
+          onClick={() => {
+            if (searchActive) {
+              setSearchActive(false);
+              setSearchInput("");
+              setSuggestions([]);
+              setShowSuggestions(false);
+            }
+            setShowComingSoon(true);
+          }}
           style={{
             width: "100%",
             padding: "18px 20px",
@@ -189,6 +414,75 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
           <span>Create your custom travel itinerary!</span>
         </button>
       </div>
+
+      {/* Sign Out Confirmation Modal */}
+      {showSignOutConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+          }}
+          onClick={() => setShowSignOutConfirm(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "20px",
+              padding: "24px",
+              maxWidth: "300px",
+              boxShadow: "0 12px 48px rgba(0, 0, 0, 0.3)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 12px 0", fontSize: "18px", color: "#111" }}>
+              Sign out?
+            </h3>
+            <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#666", lineHeight: "1.5" }}>
+              Are you sure you want to sign out? You'll need to sign in again to access your profile.
+            </p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setShowSignOutConfirm(false)}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "10px",
+                  border: "1px solid rgba(0, 0, 0, 0.18)",
+                  background: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#111",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSignOut}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: "#ff4444",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "white",
+                }}
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Coming Soon Popup */}
       {showComingSoon && (

@@ -13,6 +13,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState<string>("");
@@ -158,6 +159,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
   }
 
   async function onSignOut() {
+    setShowSignOutConfirm(false);
     await supabase.auth.signOut();
     onClose();
     onSignedOut();
@@ -343,13 +345,82 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                 {saving ? "Saving…" : "Save"}
               </button>
 
-              <button onClick={onSignOut} style={dangerBtn}>
+              <button onClick={() => setShowSignOutConfirm(true)} style={dangerBtn}>
                 Sign out
               </button>
             </div>
           </>
         )}
       </div>
+
+      {/* Sign Out Confirmation Modal */}
+      {showSignOutConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+          }}
+          onClick={() => setShowSignOutConfirm(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "20px",
+              padding: "24px",
+              maxWidth: "300px",
+              boxShadow: "0 12px 48px rgba(0, 0, 0, 0.3)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 12px 0", fontSize: "18px", color: "#111" }}>
+              Sign out?
+            </h3>
+            <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#666", lineHeight: "1.5" }}>
+              Are you sure you want to sign out? You'll need to sign in again to access your profile.
+            </p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setShowSignOutConfirm(false)}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "10px",
+                  border: "1px solid rgba(0, 0, 0, 0.18)",
+                  background: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#111",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onSignOut}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: "#ff4444",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "white",
+                }}
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
