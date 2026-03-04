@@ -6,6 +6,8 @@
   margin: 0;
   padding: 0;
   flex: 1;
+  overflow: hidden;
+  position: relative;
 }
 
 /* Modal/Dialog base styles */
@@ -17,6 +19,9 @@
   align-items: flex-end;
   z-index: 1000;
   padding: env(safe-area-inset-left) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  /* iOS fixes */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .modal-content {
@@ -28,6 +33,14 @@
   -webkit-overflow-scrolling: touch;
   padding: 20px 16px;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  /* iOS optimizations */
+  -webkit-user-select: text;
+  user-select: text;
+  position: relative;
+  /* Prevent keyboard from pushing content */
+  overflow-y: scroll;
+  /* Better scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Input focus optimization */
@@ -44,6 +57,81 @@ select:focus {
 button:active {
   opacity: 0.85;
   transform: scale(0.98);
+}
+
+/* Mapbox Popup Styling for Pin Details */
+.pin-popup {
+  max-width: 100% !important;
+}
+
+/* Add top margin for breathing room from top nav */
+.mapboxgl-popup {
+  margin-top: 0 !important;
+  margin-bottom: 12px;
+  transform: translateY(20px) !important;
+}
+
+.pin-popup .mapboxgl-popup-content {
+  padding: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25) !important;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+  max-height: 55vh;
+  width: auto;
+}
+
+/* Ensure the container inside popup doesn't overflow */
+.pin-popup .mapboxgl-popup-content > div {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+  max-height: 100%;
+}
+
+.pin-popup .mapboxgl-popup-close-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+}
+
+/* Scrollbar styling for popup content */
+.pin-popup .mapboxgl-popup-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.pin-popup .mapboxgl-popup-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.025);
+}
+
+.pin-popup .mapboxgl-popup-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+
+/* Mobile popup adjustments */
+@media (max-width: 768px) {
+  .mapboxgl-popup {
+    transform: translateY(15px) !important;
+  }
+  
+  .pin-popup .mapboxgl-popup-content {
+    max-height: 50vh;
+    border-radius: 12px !important;
+  }
 }
 
 /* Scrollbar styling for modals */
@@ -97,4 +185,70 @@ button:active {
     padding: 14px 10px;
     border-radius: 12px 12px 0 0;
   }
+}
+
+/* iOS-specific optimizations */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  
+  .modal-overlay {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}
+
+/* Enhanced touch target sizing for iOS */
+button,
+input[type="button"],
+input[type="submit"],
+a[role="button"] {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 10px 12px !important;
+}
+
+/* Prevent zoom on input focus on iOS */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="password"],
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+/* Remove iOS default styling */
+button,
+input,
+textarea,
+select {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Improve button tap feedback */
+button {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  transition: all 0.15s ease-out;
+}
+
+button:active {
+  -webkit-transform: scale(0.98);
+  transform: scale(0.98);
+}
+
+/* Better select styling on iOS */
+select {
+  -webkit-appearance: none !important;
+  background-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2212%22%20height%3D%228%22%20viewBox%3D%220%200%2012%208%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M0%200l6%208%206-8z%22/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  padding-right: 30px;
 }

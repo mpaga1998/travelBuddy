@@ -385,26 +385,16 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     container.style.fontFamily = "system-ui, Arial";
     container.style.position = "relative";
     container.style.fontSize = isMobileViewport ? "13px" : "14px";
-    container.style.padding = "12px";
+    container.style.padding = "0";
     container.style.boxSizing = "border-box";
     container.style.overflow = "hidden";
+    container.style.display = "flex";
+    container.style.flexDirection = "column";
 
     container.innerHTML = `
-      <div style="font-weight:800; margin-bottom:6px; font-size:${isMobileViewport ? '15px' : '16px'};">
-        ${categoryEmoji(pin.category)} ${escapeHtml(pin.title)}
-      </div>
-
-      <div style="font-size:13px; opacity:0.9; margin-bottom:10px;">
-        ${
-          pin.description?.trim()
-            ? escapeHtml(pin.description)
-            : "<i style='opacity:0.7'>No description</i>"
-        }
-      </div>
-
       ${
         pin.imageUrls && pin.imageUrls.length > 0
-          ? `<div style="margin-bottom:10px; position:relative; width:100%; box-sizing:border-box; overflow:hidden; border-radius:8px;">
+          ? `<div style="margin-bottom:0; position:relative; width:100%; box-sizing:border-box; overflow:hidden; border-radius:8px 8px 0 0; flex-shrink:0;">
                <img src="${escapeHtml(pin.imageUrls[0])}" style="width:100%;max-width:100%;height:${isMobileViewport ? '120px' : '140px'};object-fit:cover;display:block;" data-lightbox-url="${escapeHtml(pin.imageUrls[0])}" class="pin-image-preview" />
                ${
                  pin.imageUrls.length > 1
@@ -413,68 +403,113 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                }
                ${
                  pin.imageUrls.length > 1
-                   ? `<div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;opacity:0;background:rgba(0,0,0,0.5);border-radius:8px;transition:opacity 0.2s;pointer-events:none;" class="pin-image-hover">👁️ Click to view all</div>`
-                   : `<div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;opacity:0;background:rgba(0,0,0,0.5);border-radius:8px;transition:opacity 0.2s;pointer-events:none;" class="pin-image-hover">👁️ Click to view!</div>`
+                   ? `<div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;opacity:0;background:rgba(0,0,0,0.5);border-radius:0;transition:opacity 0.2s;pointer-events:none;" class="pin-image-hover">👁️ Click to view all</div>`
+                   : `<div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;opacity:0;background:rgba(0,0,0,0.5);border-radius:0;transition:opacity 0.2s;pointer-events:none;" class="pin-image-hover">👁️ Click to view!</div>`
                }
              </div>`
           : ""
       }
+      <div style="padding:12px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; box-sizing: border-box; word-wrap: break-word;">
+        <div style="font-weight:800; margin-bottom:6px; font-size:${isMobileViewport ? '15px' : '16px'};">
+          ${categoryEmoji(pin.category)} ${escapeHtml(pin.title)}
+        </div>
 
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-        <span style="padding:4px 8px; border-radius:999px; background:rgba(0,0,0,0.06); font-size:12px;">
-          ${escapeHtml(pin.category)}
-        </span>
-        <span style="padding:4px 8px; border-radius:999px; background:rgba(37,99,235,0.12); font-size:12px;">
+        <div style="font-size:13px; opacity:0.9; margin-bottom:10px;">
           ${
-            pin.createdByType === "hostel"
-              ? `Recommended by ${escapeHtml(pin.createdByLabel)}`
-              : `Pinned by ${escapeHtml(pin.createdByLabel)}`
+            pin.description?.trim()
+              ? escapeHtml(pin.description)
+              : "<i style='opacity:0.7'>No description</i>"
           }
-        </span>
-      </div>
+        </div>
 
-      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; min-width:0;">
-        <button data-like style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
-          ❤️ <span style="margin-left:4px;">${pin.likesCount}</span>
-        </button>
-        <button data-dislike style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
-          💔 <span style="margin-left:4px;">${pin.dislikesCount}</span>
-        </button>
-        ${
-          pin.tips && pin.tips.length > 0
-            ? `<button data-tips style="flex:1 1 140px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:#fffaeb; cursor:pointer; font-weight:800; color:#b8860b; font-size:13px;">
-                💡 Tips (${pin.tips.length})
-              </button>`
-            : ""
-        }
-        <button data-fly style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:none; background:#111; color:white; cursor:pointer; font-weight:800; font-size:13px;">
-          Fly to
-        </button>
-        ${
-          pin.createdById === currentUserId
-            ? `<button data-delete style="padding:8px 10px; border-radius:10px; border:none; background:#dc2626; color:white; cursor:pointer; font-weight:800;">Delete</button>`
-            : ""
-        }
-      </div>
-    `;
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+          <span style="padding:4px 8px; border-radius:999px; background:rgba(0,0,0,0.06); font-size:12px;">
+            ${escapeHtml(pin.category)}
+          </span>
+          <span style="padding:4px 8px; border-radius:999px; background:rgba(37,99,235,0.12); font-size:12px;">
+            ${
+              pin.createdByType === "hostel"
+                ? `Recommended by ${escapeHtml(pin.createdByLabel)}`
+                : `Pinned by ${escapeHtml(pin.createdByLabel)}`
+            }
+          </span>
+        </div>
 
-    // Simply pan map to center on the pin
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; min-width:0;">
+          <button data-like style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
+            ❤️ <span style="margin-left:4px;">${pin.likesCount}</span>
+          </button>
+          <button data-dislike style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
+            💔 <span style="margin-left:4px;">${pin.dislikesCount}</span>
+          </button>
+          ${
+            pin.tips && pin.tips.length > 0
+              ? `<button data-tips style="flex:1 1 140px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:#fffaeb; cursor:pointer; font-weight:800; color:#b8860b; font-size:13px;">
+                  💡 Tips (${pin.tips.length})
+                </button>`
+              : ""
+          }
+          <button data-fly style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:none; background:#111; color:white; cursor:pointer; font-weight:800; font-size:13px;">
+            Fly to
+          </button>
+          ${
+            pin.createdById === currentUserId
+              ? `<button data-delete style="padding:8px 10px; border-radius:10px; border:none; background:#dc2626; color:white; cursor:pointer; font-weight:800;">Delete</button>`
+              : ""
+          }
+        </div>
+      </div>`;
+
+    // Simply pan map to center on the pin, but offset it lower on screen for popup space
     map.easeTo({
       center: [pin.lng, pin.lat],
       duration: 400,
+      padding: {
+        top: 180,    // Reserve space at top for popup
+        bottom: 80,  // Reserve space at bottom
+        left: 40,
+        right: 40,
+      },
     });
 
     // Create popup after pan completes
     setTimeout(() => {
+      // Calculate optimal popup width based on viewport
+      let popupMaxWidth: string;
+      if (isMobileViewport) {
+        // On mobile, use 90% of viewport width but cap at a reasonable width
+        const vwWidth = Math.min(window.innerWidth * 0.9, 360);
+        popupMaxWidth = `${vwWidth}px`;
+      } else {
+        popupMaxWidth = "400px";
+      }
+
+      // Calculate max height with generous top spacing for harmonious layout
+      // Reserve space: 110px top (nav bar + spacing) + 100px bottom (marker + controls)
+      const topMargin = 110; // More space for top bar + breathing room
+      const bottomMargin = 100; // Space for marker area and bottom controls
+      const availableHeight = window.innerHeight - topMargin - bottomMargin;
+      const popupMaxHeight = `${Math.min(availableHeight, 65)}vh`;
+
+      // Always position popup ABOVE the marker with offset
       const popup = new mapboxgl.Popup({
         closeButton: true,
         closeOnClick: false,
-        maxWidth: isMobileViewport ? "85vw" : "420px",
+        maxWidth: popupMaxWidth,
+        offset: [0, -10], // Minimal offset, pin is already positioned optimally
+        anchor: "bottom", // Anchor at bottom of popup (above marker)
+        focusAfterOpen: false,
         className: "pin-popup",
       })
         .setLngLat([pin.lng, pin.lat])
         .setDOMContent(container)
         .addTo(map);
+
+      // Apply max-height to popup content
+      const popupContent = popup.getElement()?.querySelector('.mapboxgl-popup-content');
+      if (popupContent) {
+        (popupContent as HTMLElement).style.maxHeight = popupMaxHeight;
+      }
 
       // Style the close button
       const closeBtn = popup.getElement()?.querySelector('.mapboxgl-popup-close-button') as HTMLButtonElement;
@@ -530,8 +565,9 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
           showImageLightbox(pin.imageUrls ?? []);
         });
         
-        // Add hover effect
+        // Add hover/touch effect - iOS compatible
         if (imageHover) {
+          // Show hover text on mouseenter/touchstart
           imagePreview.addEventListener("mouseenter", () => {
             imageHover.style.opacity = "1";
           });
@@ -539,6 +575,15 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
           imagePreview.addEventListener("mouseleave", () => {
             imageHover.style.opacity = "0";
           });
+          
+          // Touch support for iOS
+          imagePreview.addEventListener("touchstart", () => {
+            imageHover.style.opacity = "1";
+          }, { passive: true });
+          
+          imagePreview.addEventListener("touchend", () => {
+            imageHover.style.opacity = "0";
+          }, { passive: true });
         }
       }
 
@@ -1118,29 +1163,57 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                   </option>
                 ))}
               </select>
-              <select
-                multiple
-                value={selectedAgeRanges}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions, (option) => option.value);
-                  setSelectedAgeRanges(selected);
-                }}
-                style={{
-                  padding: "12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                  fontSize: 14,
-                  width: "100%",
-                  boxSizing: "border-box",
-                  minHeight: 44,
-                }}
-              >
-                {AGE_RANGES.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
-                  </option>
+              
+              {/* Age Ranges Filter - Multiple Selection with Checkboxes */}
+              <div style={{
+                border: "1px solid rgba(0,0,0,0.18)",
+                borderRadius: 10,
+                background: "white",
+                overflow: "hidden",
+              }}>
+                {AGE_RANGES.map((range, idx) => (
+                  <label
+                    key={range.value}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "16px 14px",
+                      borderBottom: idx < AGE_RANGES.length - 1 ? "1px solid rgba(0,0,0,0.1)" : "none",
+                      cursor: "pointer",
+                      background: "white",
+                      transition: "background 0.15s",
+                      userSelect: "none",
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                    }}
+                  >
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#111" }}>
+                      {range.label}
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={selectedAgeRanges.includes(range.value)}
+                      onChange={() => {
+                        if (selectedAgeRanges.includes(range.value)) {
+                          setSelectedAgeRanges(selectedAgeRanges.filter(r => r !== range.value));
+                        } else {
+                          setSelectedAgeRanges([...selectedAgeRanges, range.value]);
+                        }
+                      }}
+                      style={{
+                        cursor: "pointer",
+                        width: 24,
+                        height: 24,
+                        accentColor: "#2563eb",
+                        marginLeft: "12px",
+                        flexShrink: 0,
+                      }}
+                    />
+                  </label>
                 ))}
-              </select>
+              </div>
               </div>
             )}
             </div>
@@ -1225,6 +1298,9 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                   value={draft.title}
                   onChange={(e) => setDraft({ ...draft, title: e.target.value })}
                   placeholder="Title (required)"
+                  autoCorrect="off"
+                  autoCapitalize="sentences"
+                  spellCheck="true"
                   style={{
                     padding: "12px 14px",
                     borderRadius: 12,
@@ -1239,6 +1315,9 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                   onChange={(e) => setDraft({ ...draft, description: e.target.value })}
                   placeholder="Description"
                   rows={3}
+                  autoCorrect="off"
+                  autoCapitalize="sentences"
+                  spellCheck="true"
                   style={{
                     padding: "12px 14px",
                     borderRadius: 12,
@@ -1274,6 +1353,9 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                         }}
                         placeholder={`Tip ${idx + 1}`}
                         rows={2}
+                        autoCorrect="off"
+                        autoCapitalize="sentences"
+                        spellCheck="true"
                         style={{
                           padding: "12px 14px",
                           borderRadius: 12,
@@ -1543,7 +1625,10 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                   color: "#999",
                   fontWeight: "bold",
                   transition: "color 0.2s",
+                  WebkitTouchCallout: "none" as any,
                 }}
+                onTouchStart={(e) => (e.currentTarget.style.color = "#333")}
+                onTouchEnd={(e) => (e.currentTarget.style.color = "#999")}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#333")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "#999")}
                 aria-label="Close"
