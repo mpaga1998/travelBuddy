@@ -1,9 +1,15 @@
 import type { ItineraryInput, ItineraryResponse } from './types';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+// Use relative path for Vercel, fallback to localhost for local dev
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (() => {
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:3000/api';
+  }
+  return '/api';
+})();
 
 export async function generateItinerary(input: ItineraryInput): Promise<string> {
-  const response = await fetch(`${API_BASE}/itinerary/generate`, {
+  const response = await fetch(`${API_BASE}/itinerary`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
