@@ -1,4 +1,4 @@
-# iOS Optimization Changes - Summary
+# iOS Optimization Changes - Summary.
 
 ## ✅ Changes Made
 
