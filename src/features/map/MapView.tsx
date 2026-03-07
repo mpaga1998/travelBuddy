@@ -6,9 +6,14 @@ import { createPin, listPins, toggleReaction, uploadPinImage, deletePin } from "
 
 import { ProfileModal } from "../profile/profileModal";
 import { getMyProfile } from "../profile/profileApi";
+import { ItineraryModal } from "../itinerary/ItineraryModal";
 import { supabase } from "../../lib/supabaseClient";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
+
+// 🚀 FEATURE FLAGS
+// Set to false to show "feature in progress" instead
+const ITINERARY_FEATURE_ENABLED = true;
 
 // Centro demo (Lisbona)
 const DEFAULT_CENTER = { lng: -9.142685, lat: 38.736946 };
@@ -140,6 +145,9 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   // profile modal + avatar
   const [profileOpen, setProfileOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>("");
+
+  // itinerary modal
+  const [itineraryModalOpen, setItineraryModalOpen] = useState(false);
 
   // tips viewer
   const [tipsViewerOpen, setTipsViewerOpen] = useState(false);
@@ -892,6 +900,41 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                   </select>
                 </div>
               )}
+
+              {/* Itinerary Button */}
+              <button
+                onClick={() => {
+                  if (ITINERARY_FEATURE_ENABLED) {
+                    setItineraryModalOpen(true);
+                  } else {
+                    alert('✈️ Our AI Travel Agent is coming soon! Stay tuned for personalized itinerary generation.');
+                  }
+                }}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(0,0,0,0.18)",
+                  background: ITINERARY_FEATURE_ENABLED ? "white" : "rgba(255, 193, 7, 0.1)",
+                  color: ITINERARY_FEATURE_ENABLED ? "#111" : "#f59e0b",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  transition: "all 0.2s ease",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                }}
+                title={ITINERARY_FEATURE_ENABLED ? "Create your custom travel itinerary with AI" : "Coming soon!"}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = ITINERARY_FEATURE_ENABLED ? "#f3f4f6" : "rgba(255, 193, 7, 0.15)";
+                  e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = ITINERARY_FEATURE_ENABLED ? "white" : "rgba(255, 193, 7, 0.1)";
+                  e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
+                }}
+              >
+                ✈️ Create Itinerary{!ITINERARY_FEATURE_ENABLED && " (soon!)"}
+              </button>
             </div>
           )}
 
@@ -1135,6 +1178,34 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                     🏫 Hostels
                   </button>
                 </div>
+              </div>
+
+              {/* Mobile Itinerary Button */}
+              <div style={{ padding: "0 12px" }}>
+                <button
+                  onClick={() => {
+                    if (ITINERARY_FEATURE_ENABLED) {
+                      setItineraryModalOpen(true);
+                    } else {
+                      alert('✈️ Our AI Travel Agent is coming soon! Stay tuned for personalized itinerary generation.');
+                    }
+                    setMobileMenuOpen(false);
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: ITINERARY_FEATURE_ENABLED ? "#2563eb" : "#f59e0b",
+                    color: "white",
+                    cursor: "pointer",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    minHeight: 44,
+                  }}
+                >
+                  ✈️ Create Itinerary{!ITINERARY_FEATURE_ENABLED && " (soon!)"}
+                </button>
               </div>
 
               {/* Mobile filters - only show for travelers */}
@@ -1580,6 +1651,14 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
             // App.tsx will switch to AuthPage automatically
           }}
         />
+
+        {/* Itinerary modal */}
+        {ITINERARY_FEATURE_ENABLED && (
+          <ItineraryModal
+            open={itineraryModalOpen}
+            onClose={() => setItineraryModalOpen(false)}
+          />
+        )}
 
         {/* Tips Viewer Modal */}
         {tipsViewerOpen && viewerTips.length > 0 && (

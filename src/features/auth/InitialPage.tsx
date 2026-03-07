@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
+import { ItineraryModal } from "../itinerary/ItineraryModal";
 
 interface InitialPageProps {
   onGoToMap: (location: { lng: number; lat: number }) => void;
@@ -13,9 +14,9 @@ interface Suggestion {
 
 export function InitialPage({ onGoToMap }: InitialPageProps) {
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const [itineraryModalOpen, setItineraryModalOpen] = useState(false);
   const [searchActive, setSearchActive] = useState(false);
   const [searchInput, setSearchInput] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
@@ -378,7 +379,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
               setSuggestions([]);
               setShowSuggestions(false);
             }
-            setShowComingSoon(true);
+            setItineraryModalOpen(true);
           }}
           style={{
             width: "100%",
@@ -483,6 +484,12 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
           </div>
         </div>
       )}
+
+      {/* Itinerary Modal */}
+      <ItineraryModal
+        open={itineraryModalOpen}
+        onClose={() => setItineraryModalOpen(false)}
+      />
 
       {/* Coming Soon Popup */}
       {showComingSoon && (

@@ -1,0 +1,28 @@
+### Health Check
+GET http://localhost:3000/health
+
+### Generate Itinerary
+POST http://localhost:3000/api/itinerary/generate
+Content-Type: application/json
+
+{
+  "arrival": {
+    "date": "2026-04-01",
+    "location": "Barcelona, Spain"
+  },
+  "departure": {
+    "date": "2026-04-07",
+    "location": "Barcelona, Spain"
+  },
+  "desiredAttractions": [
+    "Sagrada Familia",
+    "Park Güell",
+    "Gothic Quarter",
+    "Las Ramblas",
+    "Montjuïc"
+  ],
+  "travelPace": "moderate",
+  "interests": ["architecture", "food", "culture"],
+  "budget": "mid-range",
+  "notes": "First time in Barcelona, prefer walkable areas"
+}
