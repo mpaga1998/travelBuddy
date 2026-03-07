@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { COUNTRIES } from "./countries";
 import { getMyProfile, sendPasswordReset, updateMyProfile, uploadMyAvatar, type Profile, calculateAge } from "./profileApi";
@@ -26,11 +26,6 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
 
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
-
-  const countryLabel = useMemo(() => {
-    const c = COUNTRIES.find((x) => x.code === countryCode);
-    return c ? `${c.flag} ${c.name}` : "";
-  }, [countryCode]);
 
   useEffect(() => {
     if (!open) return;
@@ -446,17 +441,6 @@ const inputStyle: React.CSSProperties = {
 
 const smallBtn: React.CSSProperties = {
   padding: "10px 14px",
-  borderRadius: 10,
-  border: "1px solid rgba(0,0,0,0.18)",
-  background: "white",
-  color: "#111",
-  cursor: "pointer",
-  fontWeight: 800,
-  minHeight: 44,
-};
-
-const secondaryBtn: React.CSSProperties = {
-  padding: "12px 16px",
   borderRadius: 10,
   border: "1px solid rgba(0,0,0,0.18)",
   background: "white",

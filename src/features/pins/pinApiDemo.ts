@@ -51,7 +51,7 @@ export async function createPin(input: CreatePinInput): Promise<Pin> {
     ...input,
     id: input.id ?? crypto.randomUUID(),
     likesCount: 0,
-    likedBy: [],
+    dislikesCount: 0,
     createdAt: new Date().toISOString(),
   };
 
@@ -60,7 +60,7 @@ export async function createPin(input: CreatePinInput): Promise<Pin> {
   return newPin;
 }
 
-export async function toggleLike(pinId: string, userId: string): Promise<Pin> {
+export async function toggleLike(pinId: string, _userId: string): Promise<Pin> {
   await sleep(150);
 
   const pins = readAll();
@@ -68,14 +68,10 @@ export async function toggleLike(pinId: string, userId: string): Promise<Pin> {
   if (idx === -1) throw new Error("Pin not found");
 
   const pin = pins[idx];
-  const alreadyLiked = pin.likedBy.includes(userId);
 
   const updated: Pin = {
     ...pin,
-    likedBy: alreadyLiked
-      ? pin.likedBy.filter((id) => id !== userId)
-      : [...pin.likedBy, userId],
-    likesCount: alreadyLiked ? pin.likesCount - 1 : pin.likesCount + 1,
+    likesCount: pin.likesCount + 1,
   };
 
   pins[idx] = updated;
