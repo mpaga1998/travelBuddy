@@ -644,7 +644,34 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
 
   async function onReact(pinId: string, kind: "like" | "dislike") {
     await toggleReaction(pinId, kind);
-    await reloadPins();
+    
+    // Update just this pin's counts without full reload to avoid popup flicker
+    const pin = pins.find(p => p.id === pinId);
+    if (!pin) return;
+    
+    // Fetch updated reaction counts for this pin
+    const { data: rows } = await supabase
+      .from("pins")
+      .select(`
+        id, title, description, category, lat, lng, created_at, created_by,
+        tips, image_urls,
+        profiles:created_by (id, username, role, hostel_name, dob),
+        reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
+      `)
+      .eq("id", pinId)
+      .maybeSingle();
+    
+    if (rows) {
+      const counts = (rows as any).reaction_counts?.[0] ?? null;
+      const updated: Pin = {
+        ...pin,
+        likesCount: counts?.likes_count ?? 0,
+        dislikesCount: counts?.dislikes_count ?? 0,
+      };
+      
+      // Update just this pin in the pins array
+      setPins(prev => prev.map(p => p.id === pinId ? updated : p));
+    }
   }
 
   function flyTo(pin: Pin) {
