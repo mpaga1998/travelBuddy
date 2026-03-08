@@ -910,6 +910,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
               fontWeight: 600,
               fontSize: 14,
               color: "#111",
+              outline: "none",
             }}
             aria-label="Back"
           >
@@ -948,6 +949,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                     fontWeight: mapType === "travelers" ? 600 : 500,
                     borderRadius: 8,
                     transition: "all 0.2s ease",
+                    outline: "none",
                   }}
                   title="Show pins from travelers"
                 >
@@ -965,6 +967,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                     fontWeight: mapType === "hostels" ? 600 : 500,
                     borderRadius: 8,
                     transition: "all 0.2s ease",
+                    outline: "none",
                   }}
                   title="Show pins from hostels"
                 >
@@ -982,6 +985,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                     fontWeight: mapType === "bookmarked" ? 600 : 500,
                     borderRadius: 8,
                     transition: "all 0.2s ease",
+                    outline: "none",
                   }}
                   title="Show your bookmarked pins"
                 >
@@ -1150,6 +1154,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                     justifyContent: "center",
                     minHeight: 44,
                     minWidth: 44,
+                    outline: "none",
                   }}
                   aria-label="Close"
                 >
@@ -1173,6 +1178,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                       fontWeight: mapType === "travelers" ? 600 : 500,
                       borderRadius: 8,
                       transition: "all 0.2s ease",
+                      outline: "none",
                     }}
                     title="Show pins from travelers"
                   >
@@ -1191,6 +1197,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                       fontWeight: mapType === "hostels" ? 600 : 500,
                       borderRadius: 8,
                       transition: "all 0.2s ease",
+                      outline: "none",
                     }}
                     title="Show pins from hostels"
                   >
@@ -1209,6 +1216,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                       fontWeight: mapType === "bookmarked" ? 600 : 500,
                       borderRadius: 8,
                       transition: "all 0.2s ease",
+                      outline: "none",
                     }}
                     title="Show your bookmarked pins"
                   >
