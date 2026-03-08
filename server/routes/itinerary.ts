@@ -3,13 +3,15 @@ import { generateItinerary, TripInput } from '../services/openaiService';
 
 const router = express.Router();
 
-router.post('/generate', async (req: Request, res: Response) => {
+// POST /api/itinerary - generate itinerary
+router.post('/', async (req: Request, res: Response) => {
   try {
     const tripInput: TripInput = req.body;
 
     // Basic validation
     if (!tripInput.arrival || !tripInput.departure) {
       res.status(400).json({
+        success: false,
         error: 'Missing required fields: arrival and departure dates/locations',
       });
       return;
@@ -17,6 +19,7 @@ router.post('/generate', async (req: Request, res: Response) => {
 
     if (!tripInput.desiredAttractions || tripInput.desiredAttractions.length === 0) {
       res.status(400).json({
+        success: false,
         error: 'At least one desired attraction is required',
       });
       return;
@@ -32,6 +35,7 @@ router.post('/generate', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('❌ Error generating itinerary:', error);
     res.status(500).json({
+      success: false,
       error: 'Failed to generate itinerary',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
