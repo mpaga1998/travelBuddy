@@ -144,12 +144,6 @@ const buildUserPrompt = (input: TripInput, firstName?: string): string => {
   // Calculate exact days for clarity
   const dayCount = Math.max(1, Math.round((departureDate.getTime() - arrivalDate.getTime()) / (1000 * 60 * 60 * 24)));
 
-  // IMPORTANT: Put name at the very start if available
-  const greeting = firstName && firstName.trim() ? `Hey ${firstName}!` : 'Please';
-  
-  // Calculate exact days for clarity
-  const dayCount = Math.max(1, Math.round((departureDate.getTime() - arrivalDate.getTime()) / (1000 * 60 * 60 * 24)));
-
   // For short trips (<=5 days), use detailed day-by-day format
   // For longer trips (>5 days), use regional grouping format
   const isLongTrip = dayCount > 5;
