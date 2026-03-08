@@ -42,7 +42,12 @@ const buildSystemPrompt = () => `You are an expert travel planner specializing i
 
 Your goal is to create highly personalized travel itineraries based on the user's preferences.
 
-**IMPORTANT: If the user provides their name in the message, use it throughout your response in greetings, recommendations, and closing remarks. This makes the itinerary feel personally crafted for them.**
+**CRITICAL: The user's name will be provided at the START of their message. You MUST use their name throughout the entire response:**
+- Address them by name in the opening greeting
+- Use their name when making personalized recommendations
+- Include their name in key sections (Day N recommendations, tips addressed to them)
+- Use their name in your closing remarks
+- This makes the itinerary feel personally crafted for them.
 
 Your tone should feel like a knowledgeable backpacker friend giving advice: practical, adventurous, social, and focused on authentic experiences rather than luxury tourism.
 
@@ -108,32 +113,43 @@ Important rules:
 • Write day-by-day with specific times and detailed activities`;
 
 const buildUserPrompt = (input: TripInput, firstName?: string): string => {
-  const startDate = new Date(input.arrival.date).toLocaleDateString('en-US', {
+  // Parse dates more reliably by extracting components
+  const [arrivalYear, arrivalMonth, arrivalDay] = input.arrival.date.split('-').map(Number);
+  const [departureYear, departureMonth, departureDay] = input.departure.date.split('-').map(Number);
+  
+  const arrivalDate = new Date(arrivalYear, arrivalMonth - 1, arrivalDay);
+  const departureDate = new Date(departureYear, departureMonth - 1, departureDay);
+  
+  const startDate = arrivalDate.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
 
-  const endDate = new Date(input.departure.date).toLocaleDateString('en-US', {
+  const endDate = departureDate.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
 
-  const tripDuration = Math.ceil(
-    (new Date(input.departure.date).getTime() -
-      new Date(input.arrival.date).getTime()) /
-      (1000 * 60 * 60 * 24)
-  );
+  // Calculate trip duration in complete days (without timezone issues)
+  const timeDiff = departureDate.getTime() - arrivalDate.getTime();
+  const tripDuration = Math.max(1, Math.round(timeDiff / (1000 * 60 * 60 * 24)));
 
-  return `${firstName ? `Hey ${firstName}! ` : ''}Please create a detailed travel itinerary with extensive day-by-day activities for the following trip:
+  // IMPORTANT: Put name at the very start if available
+  const greeting = firstName && firstName.trim() ? `Hey ${firstName}!` : 'Please';
+  
+  return `${greeting} Please create a detailed travel itinerary with extensive day-by-day activities for the following trip:
+
+**CRITICAL TRIP DURATION: ${tripDuration} FULL DAYS**
 
 **Trip Details:**
 - Destination: ${input.arrival.location}
 - Arrival: ${startDate}
-- Departure: ${endDate} (${tripDuration} days)
+- Departure: ${endDate}
+- **Duration: Exactly ${tripDuration} days of activities needed**
 - Travel Pace: ${input.travelPace || 'moderate'}
 - Budget Level: ${input.budget || 'mid-range'}
 - Interests: ${input.interests?.join(', ') || 'general tourism'}
@@ -144,7 +160,13 @@ ${input.desiredAttractions.map((attraction) => `- ${attraction}`).join('\n')}
 **Additional Notes:**
 ${input.notes || 'No specific notes'}
 
-Please create a comprehensive day-by-day itinerary that includes all desired attractions and fits them into a logical flow. Include practical details like opening hours, travel times, and dining recommendations.`;
+**REQUIREMENTS:**
+1. Create a comprehensive day-by-day itinerary for ALL ${tripDuration} days
+2. Use the traveler's name (${firstName || 'provided above'}) throughout your response
+3. Include all desired attractions in a logical geographical flow
+4. Provide practical details like opening hours, travel times, and dining recommendations
+5. Use time blocks for each day (morning, afternoon, evening, night)
+`;
 };
 
 async function getUserFirstName(userId: string): Promise<string | undefined> {
