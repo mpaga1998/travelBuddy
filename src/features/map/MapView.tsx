@@ -4,8 +4,6 @@ import mapboxgl, { Map as MapboxMap, Marker } from "mapbox-gl";
 import type { Pin, PinCategory } from "../pins/pinTypes";
 import { createPin, listPins, toggleReaction, uploadPinImage, deletePin, isBookmarked, toggleBookmark } from "../pins/pinApi";
 
-import { ProfileModal } from "../profile/profileModal";
-import { getMyProfile } from "../profile/profileApi";
 import { ItineraryModal } from "../itinerary/ItineraryModal";
 import { supabase } from "../../lib/supabaseClient";
 
@@ -137,10 +135,6 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   const [activeCategory, setActiveCategory] = useState<PinCategory | "all">("all");
   const [selectedAgeRanges, setSelectedAgeRanges] = useState<string[]>([]);
 
-  // profile modal + avatar
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string>("");
-
   // itinerary modal
   const [itineraryModalOpen, setItineraryModalOpen] = useState(false);
 
@@ -221,15 +215,9 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     reloadPins();
   }, []);
 
-  // Load avatar and current user once on mount
+  // Load current user and bookmarked pins once on mount
   useEffect(() => {
     (async () => {
-      try {
-        const p = await getMyProfile();
-        setAvatarUrl(p.avatar_url ?? "");
-      } catch {
-        // ignore
-      }
       try {
         const { data: userData } = await supabase.auth.getUser();
         if (userData.user?.id) {
@@ -1095,36 +1083,6 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
               <div style={{ position: "absolute", left: 2, bottom: 4, width: 8, height: 8, background: "#111", borderRadius: "50%" }} />
             </button>
           )}
-
-          {/* Profile button */}
-          <button
-            onClick={() => setProfileOpen(true)}
-            style={{
-              width: isMobile ? 44 : 40,
-              height: isMobile ? 44 : 40,
-              borderRadius: 999,
-              border: "1px solid rgba(0,0,0,0.18)",
-              background: "white",
-              cursor: "pointer",
-              overflow: "hidden",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 0,
-            }}
-            aria-label="Open profile"
-            title="Profile"
-          >
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt="avatar"
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            ) : (
-              <span style={{ fontSize: 20 }}>🙂</span>
-            )}
-          </button>
         </div>
 
         {/* Mobile menu drawer */}
@@ -1649,23 +1607,6 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
             </div>
           </div>
         )}
-
-        {/* Profile modal */}
-        <ProfileModal
-          open={profileOpen}
-          onClose={async () => {
-            setProfileOpen(false);
-            try {
-              const p = await getMyProfile();
-              setAvatarUrl(p.avatar_url ?? "");
-            } catch {
-              // ignore
-            }
-          }}
-          onSignedOut={() => {
-            // App.tsx will switch to AuthPage automatically
-          }}
-        />
 
         {/* Itinerary modal */}
         {ITINERARY_FEATURE_ENABLED && (

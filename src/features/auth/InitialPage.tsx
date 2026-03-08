@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { ItineraryModal } from "../itinerary/ItineraryModal";
+import { ProfileModal } from "../profile/profileModal";
+import { getMyProfile } from "../profile/profileApi";
 
 interface InitialPageProps {
   onGoToMap: (location: { lng: number; lat: number }) => void;
@@ -20,6 +22,8 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState("");
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
@@ -77,6 +81,18 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
 
     return () => clearTimeout(timer);
   }, [searchInput, mapboxToken]);
+
+  // Load profile avatar on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const p = await getMyProfile();
+        setAvatarUrl(p.avatar_url ?? "");
+      } catch (error) {
+        console.error("Failed to load profile:", error);
+      }
+    })();
+  }, []);
 
   async function handleSearchSubmit(location?: Suggestion) {
     const selectedLocation = location || suggestions[0];
@@ -155,6 +171,53 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
       >
         Discover amazing places and create unforgettable memories
       </p>
+
+      {/* Profile Button (Top Left) */}
+      <button
+        onClick={() => setProfileOpen(true)}
+        style={{
+          position: "absolute",
+          top: "20px",
+          left: "20px",
+          width: "44px",
+          height: "44px",
+          borderRadius: "50%",
+          border: "none",
+          background: "rgba(255, 255, 255, 0.25)",
+          cursor: "pointer",
+          overflow: "hidden",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 0,
+          transition: "background 0.2s",
+          backdropFilter: "blur(10px)",
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = "rgba(255, 255, 255, 0.35)";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = "rgba(255, 255, 255, 0.25)";
+        }}
+        onTouchStart={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = "rgba(255, 255, 255, 0.35)";
+        }}
+        onTouchEnd={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = "rgba(255, 255, 255, 0.25)";
+        }}
+        aria-label="Open profile"
+        title="Profile"
+      >
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt="avatar"
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        ) : (
+          <span style={{ fontSize: 20, color: "white" }}>🙂</span>
+        )}
+      </button>
 
       {/* Sign Out Button (Top Right) */}
       <button
@@ -489,6 +552,23 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
       <ItineraryModal
         open={itineraryModalOpen}
         onClose={() => setItineraryModalOpen(false)}
+      />
+
+      {/* Profile Modal */}
+      <ProfileModal
+        open={profileOpen}
+        onClose={async () => {
+          setProfileOpen(false);
+          try {
+            const p = await getMyProfile();
+            setAvatarUrl(p.avatar_url ?? "");
+          } catch {
+            // ignore
+          }
+        }}
+        onSignedOut={() => {
+          // App.tsx will switch to AuthPage automatically
+        }}
       />
 
       {/* Coming Soon Popup */}
