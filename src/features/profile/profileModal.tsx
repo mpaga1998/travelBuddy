@@ -6,10 +6,11 @@ import { getMyProfile, sendPasswordReset, updateMyProfile, uploadMyAvatar, getMy
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSignedOut: () => void; // optional hook
+  onSignedOut: () => void;
+  onPinClick?: (pin: any) => void;
 };
 
-export function ProfileModal({ open, onClose, onSignedOut }: Props) {
+export function ProfileModal({ open, onClose, onSignedOut, onPinClick }: Props) {
   const [loading, setLoading] = useState(true); // Always start loading
   const [saving, setSaving] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
@@ -258,7 +259,6 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
               fontSize: 14,
               fontWeight: currentTab === "profile" ? 600 : 500,
               color: currentTab === "profile" ? "#2563eb" : "#666",
-              borderBottom: currentTab === "profile" ? "3px solid #2563eb" : "none",
             }}
           >
             👤 Profile
@@ -276,7 +276,6 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
               fontSize: 14,
               fontWeight: currentTab === "saved" ? 600 : 500,
               color: currentTab === "saved" ? "#2563eb" : "#666",
-              borderBottom: currentTab === "saved" ? "3px solid #2563eb" : "none",
             }}
           >
             🔖 Saved ({bookmarkedPins.length})
@@ -511,8 +510,12 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                       minHeight: isMobile ? 140 : 160,
                       touchAction: "manipulation",
                     }}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onTouchStart={(e) => e.preventDefault()}
+                    onClick={() => {
+                      if (onPinClick) {
+                        onPinClick(pin);
+                        onClose();
+                      }
+                    }}
                     role="button"
                     tabIndex={0}
                   >
@@ -535,6 +538,13 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                             width: "100%",
                             height: "100%",
                             objectFit: "cover",
+                          }}
+                          onError={(e) => {
+                            console.error(`❌ Failed to load image for pin "${pin.title}": ${pin.images[0]}`);
+                            e.currentTarget.style.display = "none";
+                          }}
+                          onLoad={() => {
+                            console.log(`✅ Loaded image for pin "${pin.title}": ${pin.images[0]}`);
                           }}
                         />
                       ) : (

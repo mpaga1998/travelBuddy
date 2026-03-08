@@ -569,6 +569,10 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
         onSignedOut={() => {
           // App.tsx will switch to AuthPage automatically
         }}
+        onPinClick={(pin) => {
+          setProfileOpen(false);
+          onGoToMap({ lng: pin.lng, lat: pin.lat });
+        }}
       />
 
       {/* Coming Soon Popup */}

@@ -180,6 +180,9 @@ export async function getMyBookmarkedPins(): Promise<any[]> {
   // Map to Pin format
   return pins.map((pin) => {
     const counts = pin.reaction_counts?.[0] ?? null;
+    const images = pin.image_urls ?? [];
+
+    console.log(`🖼️ Pin "${pin.title}": image_urls =`, images);
 
     return {
       id: pin.id,
@@ -191,8 +194,8 @@ export async function getMyBookmarkedPins(): Promise<any[]> {
       createdAt: pin.created_at,
       createdById: pin.created_by,
       tips: pin.tips ?? [],
-      images: pin.image_urls ?? [],
-      imageUrls: pin.image_urls ?? [],
+      images: images,
+      imageUrls: images,
       bookmark_count: pin.bookmark_count ?? 0,
       bookmarkCount: pin.bookmark_count ?? 0,
       likes_count: counts?.likes_count ?? 0,
