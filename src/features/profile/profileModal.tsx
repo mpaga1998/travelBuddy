@@ -10,7 +10,7 @@ type Props = {
 };
 
 export function ProfileModal({ open, onClose, onSignedOut }: Props) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(open); // Start loading if modal opens
   const [saving, setSaving] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
@@ -28,11 +28,14 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setLoading(false);
+      return;
+    }
 
+    setLoading(true);
     setErr(null);
     setMsg(null);
-    setLoading(true);
 
     (async () => {
       try {
