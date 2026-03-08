@@ -62,6 +62,8 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const [departureSuggestions, setDepartureSuggestions] = useState<LocationSuggestion[]>([]);
   const [showArrivalSuggestions, setShowArrivalSuggestions] = useState(false);
   const [showDepartureSuggestions, setShowDepartureSuggestions] = useState(false);
+  const [isArrivalFocused, setIsArrivalFocused] = useState(false);
+  const [isDepartureFocused, setIsDepartureFocused] = useState(false);
   const arrivalRef = useRef<HTMLDivElement>(null);
   const departureRef = useRef<HTMLDivElement>(null);
   
@@ -70,6 +72,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const [currentStop, setCurrentStop] = useState('');
   const [stopSuggestions, setStopSuggestions] = useState<LocationSuggestion[]>([]);
   const [showStopSuggestions, setShowStopSuggestions] = useState(false);
+  const [isStopFocused, setIsStopFocused] = useState(false);
   const stopRef = useRef<HTMLDivElement>(null);
   
   const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
@@ -221,12 +224,15 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
     const handleClickOutside = (event: MouseEvent) => {
       if (arrivalRef.current && !arrivalRef.current.contains(event.target as Node)) {
         setShowArrivalSuggestions(false);
+        setIsArrivalFocused(false);
       }
       if (departureRef.current && !departureRef.current.contains(event.target as Node)) {
         setShowDepartureSuggestions(false);
+        setIsDepartureFocused(false);
       }
       if (stopRef.current && !stopRef.current.contains(event.target as Node)) {
         setShowStopSuggestions(false);
+        setIsStopFocused(false);
       }
     };
 
@@ -455,7 +461,11 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                       type="text"
                       value={arrivalLocation}
                       onChange={(e) => setArrivalLocation(e.target.value)}
-                      onFocus={() => arrivalLocation.trim() && setShowArrivalSuggestions(true)}
+                      onFocus={() => {
+                        setIsArrivalFocused(true);
+                        arrivalLocation.trim() && setShowArrivalSuggestions(true);
+                      }}
+                      onBlur={() => setIsArrivalFocused(false)}
                       placeholder="e.g., Barcelona, Spain"
                       required
                       style={{
@@ -470,7 +480,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                         color: '#111',
                       }}
                     />
-                    {showArrivalSuggestions && arrivalSuggestions.length > 0 && (
+                    {showArrivalSuggestions && arrivalSuggestions.length > 0 && isArrivalFocused && (
                       <div
                         style={{
                           position: 'absolute',
@@ -494,6 +504,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                             onClick={() => {
                               setArrivalLocation(suggestion.place_name);
                               setShowArrivalSuggestions(false);
+                              setIsArrivalFocused(false);
                             }}
                             style={{
                               display: 'block',
@@ -529,7 +540,11 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                       type="text"
                       value={departureLocation}
                       onChange={(e) => setDepartureLocation(e.target.value)}
-                      onFocus={() => departureLocation.trim() && setShowDepartureSuggestions(true)}
+                      onFocus={() => {
+                        setIsDepartureFocused(true);
+                        departureLocation.trim() && setShowDepartureSuggestions(true);
+                      }}
+                      onBlur={() => setIsDepartureFocused(false)}
                       placeholder="e.g., Barcelona, Spain"
                       required
                       style={{
@@ -544,7 +559,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                         color: '#111',
                       }}
                     />
-                    {showDepartureSuggestions && departureSuggestions.length > 0 && (
+                    {showDepartureSuggestions && departureSuggestions.length > 0 && isDepartureFocused && (
                       <div
                         style={{
                           position: 'absolute',
@@ -568,6 +583,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                             onClick={() => {
                               setDepartureLocation(suggestion.place_name);
                               setShowDepartureSuggestions(false);
+                              setIsDepartureFocused(false);
                             }}
                             style={{
                               display: 'block',
@@ -611,7 +627,11 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                         type="text"
                         value={currentStop}
                         onChange={(e) => setCurrentStop(e.target.value)}
-                        onFocus={() => currentStop.trim() && setShowStopSuggestions(true)}
+                        onFocus={() => {
+                          setIsStopFocused(true);
+                          currentStop.trim() && setShowStopSuggestions(true);
+                        }}
+                        onBlur={() => setIsStopFocused(false)}
                         placeholder="e.g., Valencia, Spain"
                         style={{
                           flex: 1,
@@ -651,7 +671,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                         +
                       </button>
                     </div>
-                    {showStopSuggestions && stopSuggestions.length > 0 && (
+                    {showStopSuggestions && stopSuggestions.length > 0 && isStopFocused && (
                       <div
                         style={{
                           position: 'absolute',
@@ -675,6 +695,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                             onClick={() => {
                               setCurrentStop(suggestion.place_name);
                               setShowStopSuggestions(false);
+                              setIsStopFocused(false);
                             }}
                             style={{
                               display: 'block',
