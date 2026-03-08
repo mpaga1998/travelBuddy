@@ -153,7 +153,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
           }}
         >
           <div style={{ flex: 1 }}>
-            <h2 style={{ margin: 0, fontSize: isMobile ? 18 : 20, fontWeight: 700 }}>
+            <h2 style={{ margin: 0, fontSize: isMobile ? 18 : 20, fontWeight: 700, color: '#111' }}>
               ✈️ Plan Your Itinerary
             </h2>
             <p style={{ margin: '6px 0 0 0', fontSize: isMobile ? 12 : 13, fontWeight: 600, color: '#666' }}>
