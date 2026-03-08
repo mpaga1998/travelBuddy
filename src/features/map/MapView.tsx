@@ -1196,6 +1196,24 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                   >
                     🏫 Hostels
                   </button>
+                  <button
+                    onClick={() => setMapType("bookmarked")}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      border: "none",
+                      background: mapType === "bookmarked" ? "#16a34a" : "transparent",
+                      color: mapType === "bookmarked" ? "white" : "#111",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: mapType === "bookmarked" ? 600 : 500,
+                      borderRadius: 8,
+                      transition: "all 0.2s ease",
+                    }}
+                    title="Show your bookmarked pins"
+                  >
+                    🔖 Your Map
+                  </button>
                 </div>
               </div>
 
