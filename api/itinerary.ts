@@ -113,6 +113,14 @@ Important rules:
 • Do NOT use asterisks randomly in text - only for *italics* or **bold**
 • Write day-by-day with specific times and detailed activities`;
 
+// Helper to format dates as "Month Day(th), Year"
+function formatDate(date: Date): string {
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const day = date.getDate();
+  const suffix = day % 10 === 1 && day !== 11 ? 'st' : day % 10 === 2 && day !== 12 ? 'nd' : day % 10 === 3 && day !== 13 ? 'rd' : 'th';
+  return `${monthNames[date.getMonth()]} ${day}${suffix}, ${date.getFullYear()}`;
+}
+
 const buildUserPrompt = (input: TripInput, firstName?: string): string => {
   // Parse dates more reliably by extracting components
   const [arrivalYear, arrivalMonth, arrivalDay] = input.arrival.date.split('-').map(Number);
@@ -121,46 +129,45 @@ const buildUserPrompt = (input: TripInput, firstName?: string): string => {
   const arrivalDate = new Date(arrivalYear, arrivalMonth - 1, arrivalDay);
   const departureDate = new Date(departureYear, departureMonth - 1, departureDay);
   
-  const startDate = arrivalDate.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  const endDate = departureDate.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  // Format dates as simple, clear strings
+  const startDate = formatDate(arrivalDate);
+  const endDate = formatDate(departureDate);
+  
+  // Calculate exact days for clarity
+  const dayCount = Math.max(1, Math.round((departureDate.getTime() - arrivalDate.getTime()) / (1000 * 60 * 60 * 24)));
 
   // IMPORTANT: Put name at the very start if available
   const greeting = firstName && firstName.trim() ? `Hey ${firstName}!` : 'Please';
   
-  return `${greeting} Please create a detailed travel itinerary with extensive day-by-day activities for the following trip:
+  return `${greeting} I need a detailed travel itinerary for a ${dayCount}-day trip.
 
-**Trip Details:**
-- Destination: ${input.arrival.location}
-- Departure from destination: ${endDate}
-- Arrival at destination: ${startDate}
+**TRIP DURATION: ${dayCount} FULL DAYS**
+**From:** ${startDate}
+**To:** ${endDate}
+**Destination:** ${input.arrival.location}
+
+**Traveler Details:**
 - Travel Pace: ${input.travelPace || 'moderate'}
 - Budget Level: ${input.budget || 'mid-range'}
 - Interests: ${input.interests?.join(', ') || 'general tourism'}
 
-**Places/Attractions to Visit:**
+**Must-Visit Attractions:**
 ${input.desiredAttractions.map((attraction) => `- ${attraction}`).join('\n')}
 
-**Additional Notes:**
+**Additional Context:**
 ${input.notes || 'No specific notes'}
 
-**REQUIREMENTS:**
-1. Calculate the exact number of days between ${startDate} and ${endDate}
-2. Create a comprehensive day-by-day itinerary for EVERY DAY of the trip
-3. ${firstName ? `Use ${firstName}'s name` : 'Use the traveler\'s name'} throughout your response in greetings, recommendations, and closing
-4. Include all desired attractions in a logical geographical flow
-5. Provide practical details like opening hours, travel times, and dining recommendations
-6. Use time blocks for each day (🌅 morning / ☀️ afternoon / 🌇 evening / 🌙 night)
+**YOUR TASK:**
+Create an itinerary with a detailed activity plan for ALL ${dayCount} DAYS, from day 1 (${startDate}) through day ${dayCount} (${endDate}).
+
+${firstName ? `**Address ${firstName} by name** throughout the itinerary in greetings, tips, and recommendations.` : ''}
+
+**Format Requirements:**
+- Organize as Day 1, Day 2... through Day ${dayCount}
+- For each day, include: 🌅 Morning | ☀️ Afternoon | 🌇 Evening | 🌙 Night
+- Include all attractions in a logical flow
+- Add practical details: hours, travel times, local food spots
+- Use emoji and clean Markdown formatting
 `;
 };
 
