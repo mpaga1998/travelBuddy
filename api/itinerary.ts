@@ -162,6 +162,7 @@ ${input.notes || 'No specific notes'}
 5. Provide practical details like opening hours, travel times, and dining recommendations
 6. Use time blocks for each day (🌅 morning / ☀️ afternoon / 🌇 evening / 🌙 night)
 `;
+};
 
 async function getUserFirstName(userId: string): Promise<string | undefined> {
   try {
