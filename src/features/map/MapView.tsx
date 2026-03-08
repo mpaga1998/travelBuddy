@@ -1043,6 +1043,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                     color: selectedAgeRanges.includes(range.value) ? "#2563eb" : "#111",
                     minHeight: 44,
                     whiteSpace: "nowrap",
+                    outline: "none",
                   }}
                 >
                   {range.label}
@@ -1280,6 +1281,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                       minHeight: 44,
                       flex: "1 1 auto",
                       minWidth: "calc(50% - 4px)",
+                      outline: "none",
                     }}
                   >
                     {range.label}
