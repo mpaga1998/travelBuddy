@@ -19,6 +19,7 @@ export type Pin = {
   createdByAge: number | null; // Age of the creator
   likesCount: number;
   dislikesCount: number;
+  bookmarkCount: number;
   tips?: string[];
   imageUrls?: string[];
   createdAt: string;

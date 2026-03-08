@@ -11,6 +11,7 @@ type DbPinRow = {
   lng: number;
   created_at: string;
   created_by: string; // Add this field
+  bookmark_count: number;
   tips?: string[],
   image_urls?: string[],
   profiles: {
@@ -48,7 +49,7 @@ export async function listPins(): Promise<Pin[]> {
     .from("pins")
     .select(
       `
-      id, title, description, category, lat, lng, created_at, created_by,
+      id, title, description, category, lat, lng, created_at, created_by, bookmark_count,
       tips, image_urls,
       profiles:created_by (id, username, role, hostel_name, dob),
       reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
@@ -84,6 +85,7 @@ export async function listPins(): Promise<Pin[]> {
       // ✅ now works
       likesCount: counts?.likes_count ?? 0,
       dislikesCount: counts?.dislikes_count ?? 0,
+      bookmarkCount: row.bookmark_count ?? 0,
     };
   });
 }

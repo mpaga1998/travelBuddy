@@ -158,9 +158,6 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   // map type filter (travelers or hostels)
   const [mapType, setMapType] = useState<"travelers" | "hostels">("travelers");
 
-  // bookmark state
-  const [isPinBookmarked, setIsPinBookmarked] = useState(false);
-
   const selectedPin = useMemo(
     () => pins.find((p) => p.id === selectedPinId) ?? null,
     [pins, selectedPinId]
@@ -374,40 +371,39 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
 
     const pin = selectedPin;
 
-    // Check bookmark status
+    // Create popup with async bookmark check
     (async () => {
+      // Fetch bookmark status FIRST
       const bookmarked = await isBookmarked(pin.id);
-      setIsPinBookmarked(bookmarked);
-    })();
 
-    const container = document.createElement("div");
+      const container = document.createElement("div");
 
-    // Prevent popup clicks from reaching the map
-    container.addEventListener("click", (ev) => ev.stopPropagation());
-    container.addEventListener("mousedown", (ev) => ev.stopPropagation());
-    container.addEventListener("touchstart", (ev) => ev.stopPropagation());
+      // Prevent popup clicks from reaching the map
+      container.addEventListener("click", (ev) => ev.stopPropagation());
+      container.addEventListener("mousedown", (ev) => ev.stopPropagation());
+      container.addEventListener("touchstart", (ev) => ev.stopPropagation());
 
-    const isMobileViewport = window.innerWidth < MOBILE_BREAKPOINT;
-    container.style.width = "100%";
-    container.style.maxWidth = "100%";
-    container.style.minWidth = isMobileViewport ? "0" : "360px";
-    container.style.color = "#111";
-    container.style.fontFamily = "system-ui, Arial";
-    container.style.position = "relative";
-    container.style.fontSize = isMobileViewport ? "13px" : "14px";
-    container.style.padding = "0";
-    container.style.boxSizing = "border-box";
-    container.style.overflow = "hidden";
-    container.style.display = "flex";
-    container.style.flexDirection = "column";
+      const isMobileViewport = window.innerWidth < MOBILE_BREAKPOINT;
+      container.style.width = "100%";
+      container.style.maxWidth = "100%";
+      container.style.minWidth = isMobileViewport ? "0" : "360px";
+      container.style.color = "#111";
+      container.style.fontFamily = "system-ui, Arial";
+      container.style.position = "relative";
+      container.style.fontSize = isMobileViewport ? "13px" : "14px";
+      container.style.padding = "0";
+      container.style.boxSizing = "border-box";
+      container.style.overflow = "hidden";
+      container.style.display = "flex";
+      container.style.flexDirection = "column";
 
-    container.innerHTML = `
-      ${
-        pin.imageUrls && pin.imageUrls.length > 0
-          ? `<div style="margin-bottom:0; position:relative; width:100%; box-sizing:border-box; overflow:hidden; border-radius:8px 8px 0 0; flex-shrink:0;">
-               <img src="${escapeHtml(pin.imageUrls[0])}" style="width:100%;max-width:100%;height:${isMobileViewport ? '120px' : '140px'};object-fit:cover;display:block;" data-lightbox-url="${escapeHtml(pin.imageUrls[0])}" class="pin-image-preview" />
-               ${
-                 pin.imageUrls.length > 1
+      container.innerHTML = `
+        ${
+          pin.imageUrls && pin.imageUrls.length > 0
+            ? `<div style="margin-bottom:0; position:relative; width:100%; box-sizing:border-box; overflow:hidden; border-radius:8px 8px 0 0; flex-shrink:0;">
+                 <img src="${escapeHtml(pin.imageUrls[0])}" style="width:100%;max-width:100%;height:${isMobileViewport ? '120px' : '140px'};object-fit:cover;display:block;" data-lightbox-url="${escapeHtml(pin.imageUrls[0])}" class="pin-image-preview" />
+                 ${
+                   pin.imageUrls.length > 1
                    ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.7);color:white;padding:4px 8px;border-radius:6px;font-weight:bold;font-size:12px;">+${pin.imageUrls.length - 1}</div>`
                    : ""
                }
@@ -443,6 +439,9 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                 : `Pinned by ${escapeHtml(pin.createdByLabel)}`
             }
           </span>
+          <span style="padding:4px 8px; border-radius:999px; background:rgba(34,197,94,0.12); font-size:12px;">
+            🔖 ${pin.bookmarkCount} ${pin.bookmarkCount === 1 ? "bookmark" : "bookmarks"}
+          </span>
         </div>
 
         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; min-width:0;">
@@ -468,8 +467,8 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                 </button>`
               : ""
           }
-          <button data-bookmark style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:2px solid #16a34a; background:white; color:#111; cursor:pointer; font-weight:800; font-size:13px; outline:none;" data-bookmarked="false">
-            🔖 Bookmark
+          <button data-bookmark style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:2px solid #16a34a; background:white; color:#111; cursor:pointer; font-weight:800; font-size:13px; outline:none; transition: all 0.2s;" data-bookmarked="false">
+            ⏳ Loading...
           </button>
           ${
             pin.createdById === currentUserId
@@ -562,32 +561,37 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       });
 
       // Update bookmark button styling based on state
-      const updateBookmarkButton = (bookmarked: boolean) => {
+      const updateBookmarkButton = (isBookmarked: boolean) => {
         if (bookmarkBtn) {
-          bookmarkBtn.setAttribute("data-bookmarked", bookmarked ? "true" : "false");
-          if (bookmarked) {
+          bookmarkBtn.setAttribute("data-bookmarked", isBookmarked ? "true" : "false");
+          bookmarkBtn.disabled = false;
+          if (isBookmarked) {
             bookmarkBtn.style.background = "#16a34a";
             bookmarkBtn.style.color = "white";
+            bookmarkBtn.style.borderColor = "#16a34a";
             bookmarkBtn.textContent = "🔖 Bookmarked";
           } else {
             bookmarkBtn.style.background = "white";
             bookmarkBtn.style.color = "#111";
+            bookmarkBtn.style.borderColor = "#16a34a";
             bookmarkBtn.textContent = "🔖 Bookmark";
           }
         }
       };
 
-      // Set initial bookmark button styling
-      updateBookmarkButton(isPinBookmarked);
+      // Set initial bookmark button styling using the fetched bookmark status
+      updateBookmarkButton(bookmarked);
 
       bookmarkBtn?.addEventListener("click", async (ev) => {
         ev.stopPropagation();
+        ev.preventDefault();
+        if (bookmarkBtn) bookmarkBtn.disabled = true;
         try {
           const newBookmarked = await toggleBookmark(pin.id);
-          setIsPinBookmarked(newBookmarked);
           updateBookmarkButton(newBookmarked);
         } catch (e) {
           console.error("Bookmark toggle failed:", e);
+          updateBookmarkButton(bookmarked);
         }
       });
 
@@ -637,6 +641,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
 
       popupRef.current = popup;
     }, 400); // Wait for pan animation to complete
+    })();
 
     return () => {
       if (popupRef.current) {
