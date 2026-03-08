@@ -172,11 +172,6 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     });
   }, [pins, activeCategory, selectedAgeRanges, mapType]);
 
-  function forceReopenPopup(pinId: string) {
-    setSelectedPinId(null);
-    setTimeout(() => setSelectedPinId(pinId), 0);
-  }
-
   async function reloadPins() {
     setLoading(true);
     try {
@@ -194,6 +189,15 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   useEffect(() => {
     draftRef.current = draft;
   }, [draft]);
+
+  // Close popup when switching between travelers/hostels map views
+  useEffect(() => {
+    if (popupRef.current) {
+      popupRef.current.remove();
+      popupRef.current = null;
+      setSelectedPinId(null);
+    }
+  }, [mapType]);
 
   useEffect(() => {
     reloadPins();
@@ -344,6 +348,15 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     }
   }, [filteredPins]);
 
+  // Close popup when mapType changes
+  useEffect(() => {
+    if (popupRef.current) {
+      popupRef.current.remove();
+      popupRef.current = null;
+      setSelectedPinId(null);
+    }
+  }, [mapType]);
+
   // Popup for selected pin
   useEffect(() => {
     const map = mapRef.current;
@@ -426,32 +439,32 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; min-width:0;">
           ${
             (pin.tips && pin.tips.length > 0) || pin.createdById === currentUserId
-              ? `<button data-like style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
+              ? `<button data-like style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px; outline:none;">
                   ❤️ <span style="margin-left:4px;">${pin.likesCount}</span>
                 </button>
-                <button data-dislike style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
+                <button data-dislike style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px; outline:none;">
                   💔 <span style="margin-left:4px;">${pin.dislikesCount}</span>
                 </button>`
-              : `<button data-like style="flex:1; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
+              : `<button data-like style="flex:1; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px; outline:none;">
                   ❤️ <span style="margin-left:4px;">${pin.likesCount}</span>
                 </button>
-                <button data-dislike style="flex:1; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
+                <button data-dislike style="flex:1; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px; outline:none;">
                   💔 <span style="margin-left:4px;">${pin.dislikesCount}</span>
                 </button>`
           }
           ${
             pin.tips && pin.tips.length > 0
-              ? `<button data-tips style="flex:1 1 140px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:#fffaeb; cursor:pointer; font-weight:800; color:#b8860b; font-size:13px;">
+              ? `<button data-tips style="flex:1 1 140px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:#fffaeb; cursor:pointer; font-weight:800; color:#b8860b; font-size:13px; outline:none;">
                   💡 Tips (${pin.tips.length})
                 </button>`
               : ""
           }
-          <button data-fly style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:none; background:#111; color:white; cursor:pointer; font-weight:800; font-size:13px;">
+          <button data-fly style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:none; background:#111; color:white; cursor:pointer; font-weight:800; font-size:13px; outline:none;">
             Fly to
           </button>
           ${
             pin.createdById === currentUserId
-              ? `<button data-delete style="padding:8px 10px; border-radius:10px; border:none; background:#dc2626; color:white; cursor:pointer; font-weight:800;">Delete</button>`
+              ? `<button data-delete style="padding:8px 10px; border-radius:10px; border:none; background:#dc2626; color:white; cursor:pointer; font-weight:800; outline:none;">Delete</button>`
               : ""
           }
         </div>
@@ -526,13 +539,11 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       likeBtn?.addEventListener("click", async (ev) => {
         ev.stopPropagation();
         await onReact(pin.id, "like");
-        forceReopenPopup(pin.id);
       });
 
       dislikeBtn?.addEventListener("click", async (ev) => {
         ev.stopPropagation();
         await onReact(pin.id, "dislike");
-        forceReopenPopup(pin.id);
       });
 
       tipsBtn?.addEventListener("click", async (ev) => {
