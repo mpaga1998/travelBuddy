@@ -141,77 +141,85 @@ const buildUserPrompt = (input: TripInput, firstName?: string): string => {
   const startDate = formatDate(arrivalDate);
   const endDate = formatDate(departureDate);
   
-  // Calculate exact days for clarity
-  const dayCount = Math.max(1, Math.round((departureDate.getTime() - arrivalDate.getTime()) / (1000 * 60 * 60 * 24)));
+  // Calculate days and nights correctly
+  // If arriving April 7 and departing April 9: 2 nights (7-8 and 8-9)
+  const nights = Math.max(1, Math.round((departureDate.getTime() - arrivalDate.getTime()) / (1000 * 60 * 60 * 24)));
+  const fullDays = nights; // Same number of full travel days
 
   // For short trips (<=5 days), use detailed day-by-day format
   // For longer trips (>5 days), use regional grouping format
-  const isLongTrip = dayCount > 5;
+  const isLongTrip = fullDays > 5;
   
   if (isLongTrip) {
-    return `${firstName ? `Hey ${firstName}!` : 'Please'} I need a detailed travel itinerary for a ${dayCount}-day trip across ${input.arrival.location}.
+    return `${firstName ? `Hey ${firstName}!` : 'Hello!'} Let's plan your ${fullDays}-day adventure in ${input.arrival.location}!
 
-**TRIP OVERVIEW**
-**Duration:** ${dayCount} days (${dayCount - 1} nights)
-**Dates:** ${startDate} to ${endDate}
-**Primary Destination:** ${input.arrival.location}
-${input.interests?.length ? `**Interests:** ${input.interests.join(', ')}` : ''}
-**Travel Pace:** ${input.travelPace || 'moderate'}
-**Budget:** ${input.budget || 'mid-range'}
+🗓️ **YOUR TRIP**
+${startDate} → ${endDate} (${nights} nights, ${fullDays} days on the ground)
 
-**Key Attractions/Places to Include:**
+🏘️ **WHAT YOU WANT TO SEE**
 ${input.desiredAttractions.map((attr) => `• ${attr}`).join('\n')}
 
-${input.notes ? `**Additional Context:**\n${input.notes}\n` : ''}
-**YOUR TASK:**
-For a ${dayCount}-day trip, structure the itinerary by regions/cities/areas rather than hour-by-hour. Group consecutive days (e.g., "Days 1-2 in City A — 2 nights") and outline:
+✈️ **TRAVEL STYLE**
+${input.travelPace === 'relaxed' ? 'Relaxed pace - time to breathe' : input.travelPace === 'active' ? 'Active pace - pack it in' : 'Balanced - see stuff, also rest'} | Budget: ${input.budget} | Interests: ${input.interests?.join(', ') || 'mixed'}
 
-• What to see and do in each area
-• Realistic time needed at each destination
-• Suggested travel routes between locations
-• Alternative options and honest logistical notes
-• Recommended pacing (how many nights in each place)
+${input.notes ? `📝 **NOTES FROM YOU**\n${input.notes}\n` : ''}
+**YOUR MISSION:**
+Build a realistic itinerary that respects travel times, fatigue, and logistics. For a ${fullDays}-day trip:
 
-${firstName ? `**Use ${firstName}'s name** in the opening and recommendations to personalize the itinerary.` : ''}
+✅ **BE HONEST ABOUT:**
+• Real travel times between cities (not Google Maps optimistic times)
+• How much you can see in one day without exhaustion
+• If the attractions fit geographically or if transfers eat the day
+• Whether ${fullDays} days is enough, tight, or super rushed
+• Suggest alternatives if something doesn't work timeline-wise
 
-**Format Examples:**
-🏘️ City/Region Name
-Dates — N night(s)
-Key attractions and overview
-Logistics and tips
+✅ **STRUCTURE BY REGION/CITY** (not hour-by-hour)
+Example format:
+🏘️ City Name  |  Days 1-2  |  2 nights
+- What to see
+- Realistic timing (e.g., "3-4 hours walking" or "full day for this")
+- Local tips
+- Transport to next location (time required)
 
-Be specific about why you're suggesting time in each place and mention alternative routing if applicable.`;
+✅ **CRITICAL: MENTION IF IT'S TIGHT**
+If the itinerary is rushed or logistically challenging, say so clearly. Suggest what to skip or what needs more time.
+
+✅ **USE ${firstName ? firstName + "'S" : "THE TRAVELER'S"} NAME** throughout - make it personal.
+
+Be realistic, be friendly, and prioritize **actually enjoying the trip** over checking boxes.`;
   } else {
-    return `${firstName ? `Hey ${firstName}!` : 'Please'} I need a detailed travel itinerary for a ${dayCount}-day trip.
+    return `${firstName ? `Hey ${firstName}!` : 'Hey there!'} Let's plan an awesome ${fullDays}-day trip to ${input.arrival.location}!
 
-**TRIP DURATION: ${dayCount} FULL DAYS**
-**From:** ${startDate}
-**To:** ${endDate}
-**Destination:** ${input.arrival.location}
+🗓️ **YOUR TRIP**
+${startDate} → ${endDate} (${nights} nights, ${fullDays} days)
 
-**Traveler Details:**
-- Travel Pace: ${input.travelPace || 'moderate'}
-- Budget Level: ${input.budget || 'mid-range'}
-- Interests: ${input.interests?.join(', ') || 'general tourism'}
+🎯 **WHAT YOU WANT TO SEE**
+${input.desiredAttractions.map((attraction) => `• ${attraction}`).join('\n')}
 
-**Must-Visit Attractions:**
-${input.desiredAttractions.map((attraction) => `- ${attraction}`).join('\n')}
+🎒 **YOUR STYLE**
+${input.travelPace === 'relaxed' ? 'Relaxed vibes' : input.travelPace === 'active' ? 'Go go go!' : 'Balanced pace'} | ${input.interests?.join(', ') || 'all interests'} | Budget: ${input.budget}
 
-**Additional Context:**
-${input.notes || 'No specific notes'}
+${input.notes ? `📝 **SPECIAL NOTES**\n${input.notes}\n` : ''}
+**BUILD ME AN ITINERARY:**
+Create a DAY-BY-DAY plan for all ${fullDays} days:
 
-**YOUR TASK:**
-Create an itinerary with a detailed activity plan for ALL ${dayCount} DAYS, from day 1 (${startDate}) through day ${dayCount} (${endDate}).
+✅ **FOR EACH DAY, INCLUDE:**
+🌅 Morning - specific place & time
+☀️ Afternoon - what to do, realistic times
+🌇 Evening - restaurants/experiences
+🌙 Night - social/nightlife suggestions
+💡 Logistics - transport times, bookings, hours
 
-${firstName ? `**Address ${firstName} by name** throughout the itinerary in greetings, tips, and recommendations.` : ''}
+✅ **REALISTIC PLANNING:**
+• Include actual travel times between places
+• Don't pack 8 hours of activities if travel takes time
+• Account for fatigue and rest
+• Mention if anything is a tight fit
+• Suggest alternatives if needed
 
-**Format Requirements:**
-- Organize as Day 1, Day 2... through Day ${dayCount}
-- For each day, include: 🌅 Morning | ☀️ Afternoon | 🌇 Evening | 🌙 Night
-- Include all attractions in a logical flow
-- Add practical details: hours, travel times, local food spots
-- Use emoji and clean Markdown formatting
-`;
+✅ **MAKE IT PERSONAL:** Use ${firstName ? firstName + "'s" : 'the'} name and make recommendations feel tailored.
+
+Prioritize experiences that actually fit in ${fullDays} days - quality over quantity!`;
   }
 };
 
