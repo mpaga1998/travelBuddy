@@ -55,7 +55,10 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        console.log('👤 Current user from auth:', user.id);
         setCurrentUserId(user.id);
+      } else {
+        console.log('⚠️ No user logged in');
       }
     };
     
@@ -97,6 +100,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
         notes: notes.trim() || undefined,
       };
 
+      console.log('📤 Sending itinerary request with userId:', input.userId);
       const result = await generateItinerary(input);
       setItinerary(result);
       setStep('result');

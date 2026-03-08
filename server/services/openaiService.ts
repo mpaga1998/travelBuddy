@@ -179,14 +179,22 @@ ${input.notes || 'No specific notes'}
 
 async function getUserFirstName(userId: string): Promise<string | undefined> {
   try {
-    const { data } = await supabase
+    console.log('🔍 Fetching profile for userId:', userId);
+    const { data, error } = await supabase
       .from('profiles')
-      .select('first_name')
+      .select('first_name, id, username')
       .eq('id', userId)
       .single();
-    return data?.first_name;
+    
+    if (error) {
+      console.error('❌ Error fetching profile:', error);
+      return undefined;
+    }
+    
+    console.log('✅ Profile data retrieved:', { id: data?.id, username: data?.username, first_name: data?.first_name });
+    return data?.first_name || undefined;
   } catch (error) {
-    console.error('Error fetching user profile:', error);
+    console.error('❌ Exception fetching user profile:', error);
     return undefined;
   }
 }
@@ -197,8 +205,12 @@ export async function generateItinerary(input: TripInput): Promise<string> {
   }
 
   let firstName: string | undefined;
+  console.log('🔍 Itinerary request - userId:', input.userId);
   if (input.userId) {
     firstName = await getUserFirstName(input.userId);
+    console.log('👤 Fetched firstName:', firstName);
+  } else {
+    console.log('⚠️ No userId provided in request');
   }
 
   const completion = await openai.chat.completions.create({
