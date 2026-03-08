@@ -424,12 +424,21 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
         </div>
 
         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; min-width:0;">
-          <button data-like style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
-            ❤️ <span style="margin-left:4px;">${pin.likesCount}</span>
-          </button>
-          <button data-dislike style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
-            💔 <span style="margin-left:4px;">${pin.dislikesCount}</span>
-          </button>
+          ${
+            (pin.tips && pin.tips.length > 0) || pin.createdById === currentUserId
+              ? `<button data-like style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
+                  ❤️ <span style="margin-left:4px;">${pin.likesCount}</span>
+                </button>
+                <button data-dislike style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
+                  💔 <span style="margin-left:4px;">${pin.dislikesCount}</span>
+                </button>`
+              : `<button data-like style="flex:0 1 auto; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
+                  ❤️ <span style="margin-left:4px;">${pin.likesCount}</span>
+                </button>
+                <button data-dislike style="flex:0 1 auto; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
+                  💔 <span style="margin-left:4px;">${pin.dislikesCount}</span>
+                </button>`
+          }
           ${
             pin.tips && pin.tips.length > 0
               ? `<button data-tips style="flex:1 1 140px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:#fffaeb; cursor:pointer; font-weight:800; color:#b8860b; font-size:13px;">
