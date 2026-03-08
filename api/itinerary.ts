@@ -22,6 +22,7 @@ interface TripInput {
     date: string;
     location: string;
   };
+  stops?: string[];
   desiredAttractions: string[];
   travelPace?: 'relaxed' | 'moderate' | 'active';
   interests?: string[];
@@ -130,12 +131,13 @@ const buildUserPrompt = (input: TripInput, firstName?: string): string => {
 **TRIP CONSTRAINTS:**
 - Arrive: ${startDate} in ${input.arrival.location}
 - Depart: ${endDate} from ${input.departure.location}
+${input.stops && input.stops.length > 0 ? `- Stops: ${input.stops.join(', ')}` : ''}
 - Total: ${nights} nights on the ground
 - Pace: ${input.travelPace === 'relaxed' ? 'Relaxed pace - time to breathe' : input.travelPace === 'active' ? 'Active pace - pack it in' : 'Balanced'}
 - Budget: ${input.budget}
 
 **WANT TO SEE:**
-${input.desiredAttractions.map((attr) => `- ${attr}`).join('\n')}
+${input.desiredAttractions.length > 0 ? input.desiredAttractions.map((attr) => `- ${attr}`).join('\n') : '(No specific attractions mentioned)'}
 
 ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 
@@ -154,12 +156,13 @@ Use ${firstName ? firstName + "'s" : 'the user\'s'} name throughout. Be realisti
 **TRIP CONSTRAINTS:**
 - Arrive: ${startDate} in ${input.arrival.location}
 - Depart: ${endDate} from ${input.departure.location}
+${input.stops && input.stops.length > 0 ? `- Stops: ${input.stops.join(', ')}` : ''}
 - Total: ${nights} nights on the ground
 - Pace: ${input.travelPace === 'relaxed' ? 'Relaxed pace - time to breathe' : input.travelPace === 'active' ? 'Active pace - pack it in' : 'Balanced'}
 - Budget: ${input.budget}
 
 **WANT TO SEE:**
-${input.desiredAttractions.map((attraction) => `- ${attraction}`).join('\n')}
+${input.desiredAttractions.length > 0 ? input.desiredAttractions.map((attraction) => `- ${attraction}`).join('\n') : '(No specific attractions mentioned)'}
 
 ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 
@@ -275,16 +278,6 @@ export default async function handler(
         success: false,
         itinerary: '',
         error: 'Arrival and departure dates are required',
-      };
-      res.status(400).json(response);
-      return;
-    }
-
-    if (!tripInput.desiredAttractions || tripInput.desiredAttractions.length === 0) {
-      const response: ItineraryResponse = {
-        success: false,
-        itinerary: '',
-        error: 'At least one attraction or activity is required',
       };
       res.status(400).json(response);
       return;

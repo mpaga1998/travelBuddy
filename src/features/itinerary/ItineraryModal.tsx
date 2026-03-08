@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ItineraryInput } from './types';
 import { generateItinerary } from './itineraryApi';
 import { supabase } from '../../lib/supabaseClient';
@@ -6,6 +6,12 @@ import { supabase } from '../../lib/supabaseClient';
 interface ItineraryModalProps {
   open: boolean;
   onClose: () => void;
+}
+
+interface LocationSuggestion {
+  id: string;
+  place_name: string;
+  center: [number, number];
 }
 
 const TRAVEL_PACE_OPTIONS = [
@@ -51,6 +57,23 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const [budget, setBudget] = useState<'budget' | 'mid-range' | 'luxury'>('mid-range');
   const [notes, setNotes] = useState('');
 
+  // Location autocomplete state
+  const [arrivalSuggestions, setArrivalSuggestions] = useState<LocationSuggestion[]>([]);
+  const [departureSuggestions, setDepartureSuggestions] = useState<LocationSuggestion[]>([]);
+  const [showArrivalSuggestions, setShowArrivalSuggestions] = useState(false);
+  const [showDepartureSuggestions, setShowDepartureSuggestions] = useState(false);
+  const arrivalRef = useRef<HTMLDivElement>(null);
+  const departureRef = useRef<HTMLDivElement>(null);
+  
+  // Stops state
+  const [stops, setStops] = useState<string[]>([]);
+  const [currentStop, setCurrentStop] = useState('');
+  const [stopSuggestions, setStopSuggestions] = useState<LocationSuggestion[]>([]);
+  const [showStopSuggestions, setShowStopSuggestions] = useState(false);
+  const stopRef = useRef<HTMLDivElement>(null);
+  
+  const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
+
   // Get current user ID and name when modal opens
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -86,6 +109,133 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
     }
   }, [open]);
 
+  // Fetch location suggestions as user types
+  useEffect(() => {
+    if (!arrivalLocation.trim()) {
+      setArrivalSuggestions([]);
+      setShowArrivalSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+            arrivalLocation
+          )}.json?access_token=${mapboxToken}&limit=5`
+        );
+        const data = await response.json();
+        if (data.features && data.features.length > 0) {
+          setArrivalSuggestions(
+            data.features.map((feature: any) => ({
+              id: feature.id,
+              place_name: feature.place_name,
+              center: feature.geometry.coordinates,
+            }))
+          );
+          setShowArrivalSuggestions(true);
+        } else {
+          setArrivalSuggestions([]);
+        }
+      } catch (error) {
+        console.error("Arrival suggestions fetch failed:", error);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [arrivalLocation, mapboxToken]);
+
+  useEffect(() => {
+    if (!departureLocation.trim()) {
+      setDepartureSuggestions([]);
+      setShowDepartureSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+            departureLocation
+          )}.json?access_token=${mapboxToken}&limit=5`
+        );
+        const data = await response.json();
+        if (data.features && data.features.length > 0) {
+          setDepartureSuggestions(
+            data.features.map((feature: any) => ({
+              id: feature.id,
+              place_name: feature.place_name,
+              center: feature.geometry.coordinates,
+            }))
+          );
+          setShowDepartureSuggestions(true);
+        } else {
+          setDepartureSuggestions([]);
+        }
+      } catch (error) {
+        console.error("Departure suggestions fetch failed:", error);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [departureLocation, mapboxToken]);
+
+  // Fetch stop suggestions as user types
+  useEffect(() => {
+    if (!currentStop.trim()) {
+      setStopSuggestions([]);
+      setShowStopSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+            currentStop
+          )}.json?access_token=${mapboxToken}&limit=5`
+        );
+        const data = await response.json();
+        if (data.features && data.features.length > 0) {
+          setStopSuggestions(
+            data.features.map((feature: any) => ({
+              id: feature.id,
+              place_name: feature.place_name,
+              center: feature.geometry.coordinates,
+            }))
+          );
+          setShowStopSuggestions(true);
+        } else {
+          setStopSuggestions([]);
+        }
+      } catch (error) {
+        console.error("Stop suggestions fetch failed:", error);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [currentStop, mapboxToken]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (arrivalRef.current && !arrivalRef.current.contains(event.target as Node)) {
+        setShowArrivalSuggestions(false);
+      }
+      if (departureRef.current && !departureRef.current.contains(event.target as Node)) {
+        setShowDepartureSuggestions(false);
+      }
+      if (stopRef.current && !stopRef.current.contains(event.target as Node)) {
+        setShowStopSuggestions(false);
+      }
+    };
+
+    if (showArrivalSuggestions || showDepartureSuggestions || showStopSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showArrivalSuggestions, showDepartureSuggestions, showStopSuggestions]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -98,10 +248,6 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
         .map(a => a.trim())
         .filter(a => a.length > 0);
 
-      if (attractionsList.length === 0) {
-        throw new Error('Please add at least one attraction');
-      }
-
       const input: ItineraryInput = {
         userId: currentUserId || undefined,
         userFirstName: currentUserName || undefined,
@@ -113,6 +259,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
           date: departureDate,
           location: departureLocation,
         },
+        stops: stops.length > 0 ? stops : undefined,
         desiredAttractions: attractionsList,
         travelPace,
         interests: selectedInterests.length > 0 ? selectedInterests : undefined,
@@ -138,6 +285,8 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
     setArrivalLocation('');
     setDepartureDate('');
     setDepartureLocation('');
+    setStops([]);
+    setCurrentStop('');
     setAttractions('');
     setTravelPace('moderate');
     setSelectedInterests([]);
@@ -298,7 +447,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                   📍 Where are you going?
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
-                  <div>
+                  <div style={{ position: 'relative' }} ref={arrivalRef}>
                     <label style={{ fontSize: 11, fontWeight: 600, opacity: 0.9, display: 'block', marginBottom: 6, color: '#111' }}>
                       Arrival Location
                     </label>
@@ -306,6 +455,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                       type="text"
                       value={arrivalLocation}
                       onChange={(e) => setArrivalLocation(e.target.value)}
+                      onFocus={() => arrivalLocation.trim() && setShowArrivalSuggestions(true)}
                       placeholder="e.g., Barcelona, Spain"
                       required
                       style={{
@@ -320,8 +470,58 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                         color: '#111',
                       }}
                     />
+                    {showArrivalSuggestions && arrivalSuggestions.length > 0 && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          marginTop: 4,
+                          background: 'white',
+                          border: '1px solid rgba(0,0,0,0.15)',
+                          borderRadius: 10,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          zIndex: 10,
+                          maxHeight: 200,
+                          overflow: 'auto',
+                        }}
+                      >
+                        {arrivalSuggestions.map((suggestion) => (
+                          <button
+                            key={suggestion.id}
+                            type="button"
+                            onClick={() => {
+                              setArrivalLocation(suggestion.place_name);
+                              setShowArrivalSuggestions(false);
+                            }}
+                            style={{
+                              display: 'block',
+                              width: '100%',
+                              padding: '12px',
+                              border: 'none',
+                              background: 'transparent',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: 13,
+                              color: '#111',
+                              borderBottom: '1px solid rgba(0,0,0,0.08)',
+                              outline: 'none',
+                            }}
+                            onMouseEnter={(e) => {
+                              (e.currentTarget as HTMLButtonElement).style.background = '#f3f4f6';
+                            }}
+                            onMouseLeave={(e) => {
+                              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                            }}
+                          >
+                            🌍 {suggestion.place_name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div>
+                  <div style={{ position: 'relative' }} ref={departureRef}>
                     <label style={{ fontSize: 11, fontWeight: 600, opacity: 0.9, display: 'block', marginBottom: 6, color: '#111' }}>
                       Departure Location
                     </label>
@@ -329,6 +529,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                       type="text"
                       value={departureLocation}
                       onChange={(e) => setDepartureLocation(e.target.value)}
+                      onFocus={() => departureLocation.trim() && setShowDepartureSuggestions(true)}
                       placeholder="e.g., Barcelona, Spain"
                       required
                       style={{
@@ -343,6 +544,56 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                         color: '#111',
                       }}
                     />
+                    {showDepartureSuggestions && departureSuggestions.length > 0 && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          marginTop: 4,
+                          background: 'white',
+                          border: '1px solid rgba(0,0,0,0.15)',
+                          borderRadius: 10,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          zIndex: 10,
+                          maxHeight: 200,
+                          overflow: 'auto',
+                        }}
+                      >
+                        {departureSuggestions.map((suggestion) => (
+                          <button
+                            key={suggestion.id}
+                            type="button"
+                            onClick={() => {
+                              setDepartureLocation(suggestion.place_name);
+                              setShowDepartureSuggestions(false);
+                            }}
+                            style={{
+                              display: 'block',
+                              width: '100%',
+                              padding: '12px',
+                              border: 'none',
+                              background: 'transparent',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: 13,
+                              color: '#111',
+                              borderBottom: '1px solid rgba(0,0,0,0.08)',
+                              outline: 'none',
+                            }}
+                            onMouseEnter={(e) => {
+                              (e.currentTarget as HTMLButtonElement).style.background = '#f3f4f6';
+                            }}
+                            onMouseLeave={(e) => {
+                              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                            }}
+                          >
+                            🌍 {suggestion.place_name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -350,13 +601,167 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
               {/* Attractions */}
               <div>
                 <label style={{ fontSize: 13, fontWeight: 700, opacity: 1, display: 'block', marginBottom: 12, color: '#111' }}>
-                  🎯 Places to visit <span style={{ color: '#dc2626' }}>*</span>
+                  🛑 Stops Along the Way (optional)
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {/* Stop Input */}
+                  <div style={{ position: 'relative' }} ref={stopRef}>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        type="text"
+                        value={currentStop}
+                        onChange={(e) => setCurrentStop(e.target.value)}
+                        onFocus={() => currentStop.trim() && setShowStopSuggestions(true)}
+                        placeholder="e.g., Valencia, Spain"
+                        style={{
+                          flex: 1,
+                          padding: '10px 12px',
+                          borderRadius: 10,
+                          border: '2px solid rgba(0,0,0,0.25)',
+                          fontSize: 14,
+                          boxSizing: 'border-box',
+                          minHeight: 44,
+                          backgroundColor: '#fff',
+                          color: '#111',
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (currentStop.trim()) {
+                            setStops([...stops, currentStop.trim()]);
+                            setCurrentStop('');
+                            setShowStopSuggestions(false);
+                          }
+                        }}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 10,
+                          border: 'none',
+                          background: '#2563eb',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: 13,
+                          fontWeight: 600,
+                          minHeight: 44,
+                          minWidth: 44,
+                          flexShrink: 0,
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                    {showStopSuggestions && stopSuggestions.length > 0 && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          marginTop: 4,
+                          background: 'white',
+                          border: '1px solid rgba(0,0,0,0.15)',
+                          borderRadius: 10,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          zIndex: 10,
+                          maxHeight: 200,
+                          overflow: 'auto',
+                        }}
+                      >
+                        {stopSuggestions.map((suggestion) => (
+                          <button
+                            key={suggestion.id}
+                            type="button"
+                            onClick={() => {
+                              setCurrentStop(suggestion.place_name);
+                              setShowStopSuggestions(false);
+                            }}
+                            style={{
+                              display: 'block',
+                              width: '100%',
+                              padding: '12px',
+                              border: 'none',
+                              background: 'transparent',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: 13,
+                              color: '#111',
+                              borderBottom: '1px solid rgba(0,0,0,0.08)',
+                              outline: 'none',
+                            }}
+                            onMouseEnter={(e) => {
+                              (e.currentTarget as HTMLButtonElement).style.background = '#f3f4f6';
+                            }}
+                            onMouseLeave={(e) => {
+                              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                            }}
+                          >
+                            🌍 {suggestion.place_name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Stops List */}
+                  {stops.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {stops.map((stop, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '10px 12px',
+                            background: '#f3f4f6',
+                            borderRadius: 8,
+                            border: '1px solid rgba(0,0,0,0.1)',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#666' }}>#{index + 1}</span>
+                            <span style={{ fontSize: 13, color: '#111' }}>🌍 {stop}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setStops(stops.filter((_, i) => i !== index))}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: 6,
+                              border: 'none',
+                              background: 'transparent',
+                              color: '#dc2626',
+                              cursor: 'pointer',
+                              fontSize: 12,
+                              fontWeight: 600,
+                              outline: 'none',
+                            }}
+                            onMouseEnter={(e) => {
+                              (e.currentTarget as HTMLButtonElement).style.background = '#fee2e2';
+                            }}
+                            onMouseLeave={(e) => {
+                              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                            }}
+                          >
+                            ✕ Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Attractions */}
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 700, opacity: 1, display: 'block', marginBottom: 12, color: '#111' }}>
+                  🎯 Places to visit (optional)
                 </label>
                 <textarea
                   value={attractions}
                   onChange={(e) => setAttractions(e.target.value)}
                   placeholder="e.g., Sagrada Familia, Park Güell, Gothic Quarter (separate by comma)"
-                  required
                   rows={3}
                   style={{
                     width: '100%',

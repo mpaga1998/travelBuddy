@@ -9,6 +9,7 @@ export interface ItineraryInput {
     date: string; // YYYY-MM-DD
     location: string;
   };
+  stops?: string[]; // Intermediate stops between arrival and departure
   desiredAttractions: string[];
   travelPace?: 'relaxed' | 'moderate' | 'active';
   interests?: string[];
