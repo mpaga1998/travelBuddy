@@ -501,6 +501,8 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                           <button
                             key={suggestion.id}
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onTouchStart={(e) => e.preventDefault()}
                             onClick={() => {
                               setArrivalLocation(suggestion.place_name);
                               setShowArrivalSuggestions(false);
@@ -580,6 +582,8 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                           <button
                             key={suggestion.id}
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onTouchStart={(e) => e.preventDefault()}
                             onClick={() => {
                               setDepartureLocation(suggestion.place_name);
                               setShowDepartureSuggestions(false);
@@ -692,6 +696,8 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                           <button
                             key={suggestion.id}
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onTouchStart={(e) => e.preventDefault()}
                             onClick={() => {
                               setCurrentStop(suggestion.place_name);
                               setShowStopSuggestions(false);
