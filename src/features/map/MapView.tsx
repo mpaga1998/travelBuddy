@@ -643,34 +643,34 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   }
 
   async function onReact(pinId: string, kind: "like" | "dislike") {
-    await toggleReaction(pinId, kind);
+    // Optimistic UI: update the button immediately without React state change
+    const btn = kind === "like" 
+      ? document.querySelector<HTMLButtonElement>("[data-like]")
+      : document.querySelector<HTMLButtonElement>("[data-dislike]");
     
-    // Update just this pin's counts without full reload to avoid popup flicker
-    const pin = pins.find(p => p.id === pinId);
-    if (!pin) return;
+    if (btn) {
+      const countSpan = btn.querySelector("span");
+      if (countSpan) {
+        const currentCount = parseInt(countSpan.textContent || "0");
+        // Optimistically predict: if clicking same reaction, it removes (-1), otherwise adds (+1)
+        const newCount = currentCount + 1;
+        countSpan.textContent = newCount.toString();
+      }
+    }
     
-    // Fetch updated reaction counts for this pin
-    const { data: rows } = await supabase
-      .from("pins")
-      .select(`
-        id, title, description, category, lat, lng, created_at, created_by,
-        tips, image_urls,
-        profiles:created_by (id, username, role, hostel_name, dob),
-        reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
-      `)
-      .eq("id", pinId)
-      .maybeSingle();
-    
-    if (rows) {
-      const counts = (rows as any).reaction_counts?.[0] ?? null;
-      const updated: Pin = {
-        ...pin,
-        likesCount: counts?.likes_count ?? 0,
-        dislikesCount: counts?.dislikes_count ?? 0,
-      };
-      
-      // Update just this pin in the pins array
-      setPins(prev => prev.map(p => p.id === pinId ? updated : p));
+    // Call backend - don't reload or update state
+    try {
+      await toggleReaction(pinId, kind);
+    } catch (e) {
+      console.error("Reaction failed:", e);
+      // Revert optimistic update on error
+      if (btn) {
+        const countSpan = btn.querySelector("span");
+        if (countSpan) {
+          const failedCount = parseInt(countSpan.textContent || "0");
+          countSpan.textContent = (failedCount - 1).toString();
+        }
+      }
     }
   }
 
