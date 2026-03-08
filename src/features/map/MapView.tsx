@@ -155,8 +155,11 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   // current user
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // map type filter (travelers or hostels)
-  const [mapType, setMapType] = useState<"travelers" | "hostels">("travelers");
+  // bookmarked pins
+  const [bookmarkedPinIds, setBookmarkedPinIds] = useState<Set<string>>(new Set());
+
+  // map type filter (travelers, hostels, or bookmarked)
+  const [mapType, setMapType] = useState<"travelers" | "hostels" | "bookmarked">("travelers");
 
   const selectedPin = useMemo(
     () => pins.find((p) => p.id === selectedPinId) ?? null,
@@ -165,18 +168,33 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
 
   const filteredPins = useMemo(() => {
     return pins.filter((p) => {
+      if (mapType === "bookmarked") {
+        return bookmarkedPinIds.has(p.id);
+      }
       const okCat = activeCategory === "all" ? true : p.category === activeCategory;
       const okAge = isAgeInSelectedRanges(p.createdByAge, selectedAgeRanges);
       const okType = mapType === "travelers" ? p.createdByType === "traveler" : p.createdByType === "hostel";
       return okCat && okAge && okType;
     });
-  }, [pins, activeCategory, selectedAgeRanges, mapType]);
+  }, [pins, activeCategory, selectedAgeRanges, mapType, bookmarkedPinIds]);
 
   async function reloadPins() {
     setLoading(true);
     try {
       const data = await listPins();
       setPins(data);
+      
+      // Load user's bookmarked pins
+      if (currentUserId) {
+        const { data: bookmarks, error } = await supabase
+          .from("pin_bookmarks")
+          .select("pin_id")
+          .eq("user_id", currentUserId);
+        
+        if (!error && bookmarks) {
+          setBookmarkedPinIds(new Set(bookmarks.map(b => b.pin_id)));
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -216,6 +234,16 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
         const { data: userData } = await supabase.auth.getUser();
         if (userData.user?.id) {
           setCurrentUserId(userData.user.id);
+          
+          // Load user's bookmarked pins
+          const { data: bookmarks, error } = await supabase
+            .from("pin_bookmarks")
+            .select("pin_id")
+            .eq("user_id", userData.user.id);
+          
+          if (!error && bookmarks) {
+            setBookmarkedPinIds(new Set(bookmarks.map(b => b.pin_id)));
+          }
         }
       } catch {
         // ignore
@@ -429,18 +457,12 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
         </div>
 
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-          <span style="padding:4px 8px; border-radius:999px; background:rgba(0,0,0,0.06); font-size:12px;">
-            ${escapeHtml(pin.category)}
-          </span>
           <span style="padding:4px 8px; border-radius:999px; background:rgba(37,99,235,0.12); font-size:12px;">
             ${
               pin.createdByType === "hostel"
                 ? `Recommended by ${escapeHtml(pin.createdByLabel)}`
                 : `Pinned by ${escapeHtml(pin.createdByLabel)}`
             }
-          </span>
-          <span style="padding:4px 8px; border-radius:999px; background:rgba(34,197,94,0.12); font-size:12px;">
-            🔖 ${pin.bookmarkCount} ${pin.bookmarkCount === 1 ? "bookmark" : "bookmarks"}
           </span>
         </div>
 
@@ -589,6 +611,15 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
         try {
           const newBookmarked = await toggleBookmark(pin.id);
           updateBookmarkButton(newBookmarked);
+          
+          // Update bookmarked pins set
+          const updated = new Set(bookmarkedPinIds);
+          if (newBookmarked) {
+            updated.add(pin.id);
+          } else {
+            updated.delete(pin.id);
+          }
+          setBookmarkedPinIds(updated);
         } catch (e) {
           console.error("Bookmark toggle failed:", e);
           updateBookmarkButton(bookmarked);
@@ -939,10 +970,27 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                 >
                   🏫 Hostels
                 </button>
+                <button
+                  onClick={() => setMapType("bookmarked")}
+                  style={{
+                    padding: "6px 12px",
+                    border: "none",
+                    background: mapType === "bookmarked" ? "#16a34a" : "transparent",
+                    color: mapType === "bookmarked" ? "white" : "#111",
+                    cursor: "pointer",
+                    fontSize: 14,
+                    fontWeight: mapType === "bookmarked" ? 600 : 500,
+                    borderRadius: 8,
+                    transition: "all 0.2s ease",
+                  }}
+                  title="Show your bookmarked pins"
+                >
+                  🔖 Your Map
+                </button>
               </div>
 
-              {/* Category filter - only show for travelers */}
-              {mapType === "travelers" && (
+              {/* Category filter - only show for travelers and hostels */}
+              {mapType !== "bookmarked" && (
                 <div style={{ position: "relative" }}>
                   <select
                     value={activeCategory}
