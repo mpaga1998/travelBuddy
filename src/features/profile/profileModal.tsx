@@ -81,10 +81,13 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
     setLoadingBookmarks(true);
     (async () => {
       try {
+        console.log("🔖 Fetching bookmarked pins...");
         const pins = await getMyBookmarkedPins();
+        console.log("✅ Bookmarked pins fetched:", pins);
         setBookmarkedPins(pins);
       } catch (e: any) {
-        console.error("Failed to load bookmarked pins:", e);
+        console.error("❌ Failed to load bookmarked pins:", e?.message || e);
+        setBookmarkedPins([]);
       } finally {
         setLoadingBookmarks(false);
       }

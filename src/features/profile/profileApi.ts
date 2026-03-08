@@ -125,35 +125,78 @@ export async function getMyBookmarkedPins(): Promise<any[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { data, error } = await supabase
+  console.log("🔐 Current user ID:", user.id);
+
+  // Get list of bookmarked pin IDs for this user
+  const { data: bookmarks, error: bookmarkError } = await supabase
     .from("pin_bookmarks")
-    .select(`
-      pin_id,
-      pins (
-        id,
-        title,
-        description,
-        category,
-        lat,
-        lng,
-        created_by_label,
-        created_by_type,
-        created_by_id,
-        created_by_age,
-        likes_count,
-        bookmark_count,
-        image_urls
-      )
-    `)
+    .select("pin_id")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  if (bookmarkError) {
+    console.error("❌ Error fetching bookmarks:", bookmarkError);
+    throw bookmarkError;
+  }
 
-  // Flatten the nested structure and map image_urls to images for UI consistency
-  return (data || []).map((item: any) => ({
-    ...item.pins,
-    id: item.pins.id,
-    images: item.pins.image_urls || [],
-  }));
+  console.log("📌 Bookmarked pin IDs:", bookmarks?.map(b => b.pin_id));
+
+  if (!bookmarks || bookmarks.length === 0) {
+    console.log("⚠️ No bookmarks found");
+    return [];
+  }
+
+  // Get the full pin data for those bookmarks
+  const pinIds = bookmarks.map((b) => b.pin_id);
+  
+  const { data: pins, error: pinError } = await supabase
+    .from("pins")
+    .select(`
+      id,
+      title,
+      description,
+      category,
+      lat,
+      lng,
+      created_at,
+      created_by,
+      bookmark_count,
+      tips,
+      image_urls,
+      profiles:created_by (id, username, role, hostel_name, dob),
+      reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
+    `)
+    .in("id", pinIds);
+
+  if (pinError) {
+    console.error("❌ Error fetching pins:", pinError);
+    throw pinError;
+  }
+
+  console.log("✅ Fetched pins:", pins?.length);
+
+  if (!pins) return [];
+
+  // Map to Pin format
+  return pins.map((pin) => {
+    const counts = pin.reaction_counts?.[0] ?? null;
+
+    return {
+      id: pin.id,
+      title: pin.title,
+      description: pin.description ?? "",
+      category: pin.category,
+      lat: pin.lat,
+      lng: pin.lng,
+      createdAt: pin.created_at,
+      createdById: pin.created_by,
+      tips: pin.tips ?? [],
+      images: pin.image_urls ?? [],
+      imageUrls: pin.image_urls ?? [],
+      bookmark_count: pin.bookmark_count ?? 0,
+      bookmarkCount: pin.bookmark_count ?? 0,
+      likes_count: counts?.likes_count ?? 0,
+      dislikes_count: counts?.dislikes_count ?? 0,
+    };
+  });
 }
