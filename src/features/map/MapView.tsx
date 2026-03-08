@@ -432,10 +432,10 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                 <button data-dislike style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
                   💔 <span style="margin-left:4px;">${pin.dislikesCount}</span>
                 </button>`
-              : `<button data-like style="flex:0 1 auto; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
+              : `<button data-like style="flex:1; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
                   ❤️ <span style="margin-left:4px;">${pin.likesCount}</span>
                 </button>
-                <button data-dislike style="flex:0 1 auto; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
+                <button data-dislike style="flex:1; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px;">
                   💔 <span style="margin-left:4px;">${pin.dislikesCount}</span>
                 </button>`
           }
