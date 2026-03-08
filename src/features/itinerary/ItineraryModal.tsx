@@ -38,6 +38,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [itinerary, setItinerary] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
 
   // Form state
   const [arrivalDate, setArrivalDate] = useState('');
@@ -50,13 +51,31 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const [budget, setBudget] = useState<'budget' | 'mid-range' | 'luxury'>('mid-range');
   const [notes, setNotes] = useState('');
 
-  // Get current user ID when modal opens
+  // Get current user ID and name when modal opens
   useEffect(() => {
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         console.log('👤 Current user from auth:', user.id);
         setCurrentUserId(user.id);
+        
+        // Fetch user's first name from profile
+        try {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('first_name')
+            .eq('id', user.id)
+            .single();
+          
+          if (error) {
+            console.error('❌ Error fetching profile:', error);
+          } else if (profile?.first_name) {
+            console.log('✅ Profile name fetched:', profile.first_name);
+            setCurrentUserName(profile.first_name);
+          }
+        } catch (err) {
+          console.error('❌ Exception fetching profile:', err);
+        }
       } else {
         console.log('⚠️ No user logged in');
       }
@@ -85,6 +104,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
 
       const input: ItineraryInput = {
         userId: currentUserId || undefined,
+        userFirstName: currentUserName || undefined,
         arrival: {
           date: arrivalDate,
           location: arrivalLocation,
@@ -100,7 +120,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
         notes: notes.trim() || undefined,
       };
 
-      console.log('📤 Sending itinerary request with userId:', input.userId);
+      console.log('📤 Sending itinerary request with userId:', input.userId, 'and name:', input.userFirstName);
       const result = await generateItinerary(input);
       setItinerary(result);
       setStep('result');

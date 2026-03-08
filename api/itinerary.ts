@@ -13,6 +13,7 @@ const supabase = createClient(
 
 interface TripInput {
   userId?: string;
+  userFirstName?: string;
   arrival: {
     date: string;
     location: string;
@@ -134,22 +135,15 @@ const buildUserPrompt = (input: TripInput, firstName?: string): string => {
     day: 'numeric',
   });
 
-  // Calculate trip duration in complete days (without timezone issues)
-  const timeDiff = departureDate.getTime() - arrivalDate.getTime();
-  const tripDuration = Math.max(1, Math.round(timeDiff / (1000 * 60 * 60 * 24)));
-
   // IMPORTANT: Put name at the very start if available
   const greeting = firstName && firstName.trim() ? `Hey ${firstName}!` : 'Please';
   
   return `${greeting} Please create a detailed travel itinerary with extensive day-by-day activities for the following trip:
 
-**CRITICAL TRIP DURATION: ${tripDuration} FULL DAYS**
-
 **Trip Details:**
 - Destination: ${input.arrival.location}
-- Arrival: ${startDate}
-- Departure: ${endDate}
-- **Duration: Exactly ${tripDuration} days of activities needed**
+- Departure from destination: ${endDate}
+- Arrival at destination: ${startDate}
 - Travel Pace: ${input.travelPace || 'moderate'}
 - Budget Level: ${input.budget || 'mid-range'}
 - Interests: ${input.interests?.join(', ') || 'general tourism'}
@@ -161,13 +155,13 @@ ${input.desiredAttractions.map((attraction) => `- ${attraction}`).join('\n')}
 ${input.notes || 'No specific notes'}
 
 **REQUIREMENTS:**
-1. Create a comprehensive day-by-day itinerary for ALL ${tripDuration} days
-2. Use the traveler's name (${firstName || 'provided above'}) throughout your response
-3. Include all desired attractions in a logical geographical flow
-4. Provide practical details like opening hours, travel times, and dining recommendations
-5. Use time blocks for each day (morning, afternoon, evening, night)
+1. Calculate the exact number of days between ${startDate} and ${endDate}
+2. Create a comprehensive day-by-day itinerary for EVERY DAY of the trip
+3. ${firstName ? `Use ${firstName}'s name` : 'Use the traveler\'s name'} throughout your response in greetings, recommendations, and closing
+4. Include all desired attractions in a logical geographical flow
+5. Provide practical details like opening hours, travel times, and dining recommendations
+6. Use time blocks for each day (🌅 morning / ☀️ afternoon / 🌇 evening / 🌙 night)
 `;
-};
 
 async function getUserFirstName(userId: string): Promise<string | undefined> {
   try {
@@ -191,15 +185,18 @@ async function getUserFirstName(userId: string): Promise<string | undefined> {
   }
 }
 
-async function generateItinerary(input: TripInput): Promise<string> {
-  let firstName: string | undefined;
-  console.log('🔍 [Vercel] Itinerary request - userId:', input.userId);
-  if (input.userId) {
-    firstName = await getUserFirstName(input.userId);
-    console.log('👤 [Vercel] Fetched firstName:', firstName);
-  } else {
-    console.log('⚠️ [Vercel] No userId provided in request');
+// For backward compatibility, but now we prefer using userFirstName from the request
+function getUserFirstNameFromRequest(input: TripInput): string | undefined {
+  if (input.userFirstName) {
+    console.log('✅ [Vercel] Using firstName from request:', input.userFirstName);
+    return input.userFirstName;
   }
+  return undefined;
+}
+
+async function generateItinerary(input: TripInput): Promise<string> {
+  let firstName = getUserFirstNameFromRequest(input);
+  console.log('🔍 [Vercel] Itinerary request - userId:', input.userId, 'firstName:', firstName);
 
   const response = await openai.chat.completions.create({
     model: 'gpt-3.5-turbo',
