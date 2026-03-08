@@ -643,34 +643,38 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   }
 
   async function onReact(pinId: string, kind: "like" | "dislike") {
-    // Optimistic UI: update the button immediately without React state change
-    const btn = kind === "like" 
-      ? document.querySelector<HTMLButtonElement>("[data-like]")
-      : document.querySelector<HTMLButtonElement>("[data-dislike]");
-    
-    if (btn) {
-      const countSpan = btn.querySelector("span");
-      if (countSpan) {
-        const currentCount = parseInt(countSpan.textContent || "0");
-        // Optimistically predict: if clicking same reaction, it removes (-1), otherwise adds (+1)
-        const newCount = currentCount + 1;
-        countSpan.textContent = newCount.toString();
-      }
-    }
-    
-    // Call backend - don't reload or update state
+    // Call backend
     try {
       await toggleReaction(pinId, kind);
-    } catch (e) {
-      console.error("Reaction failed:", e);
-      // Revert optimistic update on error
-      if (btn) {
-        const countSpan = btn.querySelector("span");
-        if (countSpan) {
-          const failedCount = parseInt(countSpan.textContent || "0");
-          countSpan.textContent = (failedCount - 1).toString();
+      
+      // Fetch ACTUAL updated counts from backend
+      const { data: rows } = await supabase
+        .from("pins")
+        .select(`reaction_counts:pin_reaction_counts (likes_count, dislikes_count)`)
+        .eq("id", pinId)
+        .maybeSingle();
+      
+      if (rows) {
+        const counts = (rows as any).reaction_counts?.[0] ?? null;
+        const likeCount = counts?.likes_count ?? 0;
+        const dislikeCount = counts?.dislikes_count ?? 0;
+        
+        // Update ONLY the button text in DOM, no React state
+        const likeBtn = document.querySelector<HTMLButtonElement>("[data-like]");
+        const dislikeBtn = document.querySelector<HTMLButtonElement>("[data-dislike]");
+        
+        if (likeBtn) {
+          const countSpan = likeBtn.querySelector("span");
+          if (countSpan) countSpan.textContent = likeCount.toString();
+        }
+        
+        if (dislikeBtn) {
+          const countSpan = dislikeBtn.querySelector("span");
+          if (countSpan) countSpan.textContent = dislikeCount.toString();
         }
       }
+    } catch (e) {
+      console.error("Reaction failed:", e);
     }
   }
 
