@@ -209,7 +209,33 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
         </div>
 
         {loading ? (
-          <div style={{ padding: 16 }}>Loading…</div>
+          <div style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 16,
+            padding: 32,
+            minHeight: isMobile ? 300 : 400,
+          }}>
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                border: "4px solid #e5e7eb",
+                borderTop: "4px solid #2563eb",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+              }}
+            />
+            <div style={{ fontSize: 14, color: "#666", fontWeight: 500 }}>Loading profile…</div>
+            <style>{`
+              @keyframes spin {
+                to { transform: rotate(360deg); }
+              }
+            `}</style>
+          </div>
         ) : (
           <>
             <div style={{ flex: 1, overflow: "auto", padding: 16, display: "flex", flexDirection: "column" }}>
