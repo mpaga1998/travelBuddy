@@ -1,4 +1,5 @@
 export interface ItineraryInput {
+  userId?: string;
   arrival: {
     date: string; // YYYY-MM-DD
     location: string;

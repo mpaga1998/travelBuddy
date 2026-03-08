@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ItineraryInput } from './types';
 import { generateItinerary } from './itineraryApi';
+import { supabase } from '../../lib/supabaseClient';
 
 interface ItineraryModalProps {
   open: boolean;
@@ -36,6 +37,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const [step, setStep] = useState<'form' | 'loading' | 'result'>('form');
   const [error, setError] = useState<string | null>(null);
   const [itinerary, setItinerary] = useState<string>('');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Form state
   const [arrivalDate, setArrivalDate] = useState('');
@@ -47,6 +49,20 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [budget, setBudget] = useState<'budget' | 'mid-range' | 'luxury'>('mid-range');
   const [notes, setNotes] = useState('');
+
+  // Get current user ID when modal opens
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    
+    if (open) {
+      getCurrentUser();
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +81,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
       }
 
       const input: ItineraryInput = {
+        userId: currentUserId || undefined,
         arrival: {
           date: arrivalDate,
           location: arrivalLocation,
@@ -508,7 +525,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                   paddingBottom: 20,
                 }}
               >
-                {/* Render markdown as HTML - simple approach */}
+                {/* Render markdown as HTML */}
                 {itinerary.split('\n').map((line, idx) => {
                   // Headers
                   if (line.startsWith('###')) {
@@ -533,7 +550,6 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                     );
                   }
 
-                  // Bold and italic
                   let content = line;
                   if (content.trim() === '') {
                     return <div key={idx} style={{ height: 8 }} />;
@@ -541,10 +557,15 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
 
                   // Bullet lists
                   if (line.startsWith('-') || line.startsWith('*')) {
+                    const bulletContent = line.replace(/^[-*]\s/, '');
                     return (
                       <div key={idx} style={{ marginLeft: 20, marginBottom: 4, display: 'flex', gap: 8 }}>
                         <span>•</span>
-                        <span>{line.replace(/^[-*]\s/, '')}</span>
+                        <span>
+                          {bulletContent.split(/\*\*/).map((segment, i) =>
+                            i % 2 === 0 ? segment : <strong key={i}>{segment}</strong>
+                          )}
+                        </span>
                       </div>
                     );
                   }
@@ -552,16 +573,21 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                   // Numbered lists
                   const numberMatch = line.match(/^\d+\.\s/);
                   if (numberMatch) {
+                    const listContent = line.replace(/^\d+\.\s/, '');
                     return (
                       <div key={idx} style={{ marginLeft: 20, marginBottom: 4 }}>
-                        {line}
+                        {line.match(/^\d+\./)?.[0]} {listContent.split(/\*\*/).map((segment, i) =>
+                          i % 2 === 0 ? segment : <strong key={i}>{segment}</strong>
+                        )}
                       </div>
                     );
                   }
 
                   return (
                     <div key={idx} style={{ marginBottom: 8 }}>
-                      {line}
+                      {content.split(/\*\*/).map((segment, i) =>
+                        i % 2 === 0 ? segment : <strong key={i}>{segment}</strong>
+                      )}
                     </div>
                   );
                 })}
