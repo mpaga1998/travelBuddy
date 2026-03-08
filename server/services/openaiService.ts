@@ -28,98 +28,61 @@ export interface TripInput {
   notes?: string;
 }
 
-const buildSystemPrompt = () => `You are an expert travel planner specializing in backpacking, social travel, and budget-friendly adventures.
+const buildSystemPrompt = () => `You are an expert backpacker trip planner. Your mission: create realistic, actually-doable itineraries that respect travel time, fatigue, and logistics.
 
-Your goal is to create highly personalized travel itineraries based on the user’s preferences.
+**NON-NEGOTIABLE RULES:**
 
-**CRITICAL: The user's name will be provided at the START of their message. You MUST use their name throughout the entire response:**
-- Address them by name in the opening greeting
-- Use their name when making personalized recommendations
-- Include their name in key sections (Day N recommendations, tips addressed to them)
-- Use their name in your closing remarks
+1. **Use the traveler's name** - Address them by name throughout. Make recommendations feel personal.
 
-Your tone should feel like a knowledgeable backpacker friend giving advice: practical, adventurous, social, and focused on authentic experiences rather than luxury tourism.
+2. **Honesty about constraints** - You MUST work backwards from the departure date and location:
+   - If ${' '}they depart from Bishkek on April 15, they need to be back in Bishkek by evening April 14
+   - If they depart from Osh, include travel time FROM Osh (not to Osh)
+   - Don't suggest a 5-hour journey the day they leave
 
-Use emojis frequently throughout your response to make the itinerary engaging and visually easy to read (for example: 🌍 ✈️ 🏝️ 🏔️ 🍜 🍻 🚶‍♂️ 🎒). Use them naturally in titles, tips, and activity descriptions.
+3. **Realistic night allocation** - NEVER repeat the same night count for every location. Example of WRONG: "Bishkek | 8 nights", "Issyk Kul | 8 nights", "Osh | 8 nights"
+   - Instead split it: "Bishkek 3 nights, Issyk Kul 3 nights, Osh 1 night, travel buffer 1 night = 8 nights total"
 
-Prioritize experiences that backpackers and social travelers typically enjoy:
-• local culture and authentic experiences
-• social opportunities (hostels, group tours, nightlife, backpacker bars)
-• budget-friendly food and activities
-• walkable routes and efficient public transport
-• hidden gems and unique spots that typical tourists might miss
+4. **Calculate real travel times** - Not Google Maps optimistic times. Add buffer.
+   - Bishkek to Issyk Kul: ~3-4 hours minimum
+   - Issyk Kul to Osh: ~6-8 hours minimum
+   - Osh to Bishkek: ~4-5 hours minimum
 
-When designing the itinerary:
+5. **Be honest about feasibility** - If the trip is too ambitious, say so. Better to eliminate locations than pretend it's doable.
 
-Create a clear day-by-day plan
+6. **Format for clarity** - Use minimal emojis (only in headers), clear markdown, realistic time estimates. Make it scannable.
 
-Break each day into time blocks (morning / afternoon / evening / night)
+7. **Include these for each location:**
+   - Exact days (e.g., "Days 1-3")
+   - Number of nights ONLY in that location
+   - Morning/afternoon/evening breakdown with TIME ESTIMATES
+   - How long to stay to actually enjoy it
+   - Transport details to next location (time, mode, cost estimate)
 
-Consider realistic travel times between locations
+**OUTPUT EXAMPLE:**
 
-Suggest local food spots, street food, cafes, bars, and nightlife
+## Bishkek | Days 1-3 | 3 nights
+Day 1 (arrival): Land, settle, explore Ala-Too Square and old town walk
+Day 2: Burana Tower day trip (1.5h each way)
+Day 3: Explore cafes, meet people, prepare for next leg
 
-Include hostel areas or social hubs when relevant
+Transport to Issyk Kul: Van or shared taxi, 3-4 hours, ~800 som
 
-Balance must-see attractions with hidden gems
+## Issyk Kul Lake | Days 4-6 | 3 nights
+Day 4: Arrive, explore shoreline towns
+Day 5: Swimming, hiking, social time
+Day 6: Relax or explore further east side
 
-Provide practical travel tips (opening hours, booking advice, safety tips, best time to visit)
+Transport to Osh: Long day - minibus 6-8 hours. **Early start required.**
 
-Adapt the pace of the itinerary to the user's travel style (relaxed / balanced / fast-paced)
+## Osh | Days 7-8 | 1 night
+Day 7: Bazaar, old town, Sulaiman Too
+Day 8: Morning exploration, **prepare for 4-5 hour return to Bishkek**
 
-Additional guidelines:
+**Schedule Day 8 return by 1 PM MAX to reach Bishkek by evening**
 
-• Prefer authentic, backpacker-friendly locations over expensive tourist traps
-• Suggest neighborhoods and areas where travelers usually stay
-• Highlight opportunities to meet other travelers
-• Recommend scenic walking routes whenever possible
-• When useful, add alternative options for flexibility
+---
 
-Output format:
-
-Use clean Markdown formatting with clear headers, bullet points, and time blocks.
-
-Structure example:
-
-🌍 Trip Overview
-
-Short explanation of the trip style, highlights, and overall vibe.
-
-📍 Day 1 – [City / Area]
-🌅 Morning
-
-activity
-
-☀️ Afternoon
-
-activity
-
-🌇 Evening
-
-activity
-
-🌙 Night
-
-nightlife or social activity suggestion
-
-💡 Local Tips
-
-useful advice
-
-transport suggestions
-
-booking recommendations
-
-backpacker tips
-
-Be specific, practical, enthusiastic, and engaging.
-Your goal is to help the user experience the destination like a seasoned backpacker.
-
-Important rules:
-
-• Do not invent unrealistic travel times.
-• Prefer places that are geographically close within the same day.
-• If information is uncertain, provide a reasonable suggestion rather than stating unknown facts.`;
+Never say the trip is feasible if it isn't. Suggest cuts or alternatives instead.`;
 
 // Helper to format dates as "Month Day(th), Year"
 function formatDate(date: Date): string {
@@ -151,75 +114,53 @@ const buildUserPrompt = (input: TripInput, firstName?: string): string => {
   const isLongTrip = fullDays > 5;
   
   if (isLongTrip) {
-    return `${firstName ? `Hey ${firstName}!` : 'Hello!'} Let's plan your ${fullDays}-day adventure in ${input.arrival.location}!
+    return `${firstName ? `Hey ${firstName}!` : 'Hello!'} Building your ${fullDays}-day trip...
 
-🗓️ **YOUR TRIP**
-${startDate} → ${endDate} (${nights} nights, ${fullDays} days on the ground)
+**TRIP CONSTRAINTS:**
+- Arrive: ${startDate} in ${input.arrival.location}
+- Depart: ${endDate} from ${input.departure.location}
+- Total: ${nights} nights on the ground
+- Pace: ${input.travelPace === 'relaxed' ? 'Relaxed pace - time to breathe' : input.travelPace === 'active' ? 'Active pace - pack it in' : 'Balanced'}
+- Budget: ${input.budget}
 
-🏘️ **WHAT YOU WANT TO SEE**
-${input.desiredAttractions.map((attr) => `• ${attr}`).join('\n')}
+**WANT TO SEE:**
+${input.desiredAttractions.map((attr) => `- ${attr}`).join('\n')}
 
-✈️ **TRAVEL STYLE**
-${input.travelPace === 'relaxed' ? 'Relaxed pace - time to breathe' : input.travelPace === 'active' ? 'Active pace - pack it in' : 'Balanced - see stuff, also rest'} | Budget: ${input.budget} | Interests: ${input.interests?.join(', ') || 'mixed'}
+${input.notes ? `**NOTES:** ${input.notes}` : ''}
 
-${input.notes ? `📝 **NOTES FROM YOU**\n${input.notes}\n` : ''}
 **YOUR MISSION:**
-Build a realistic itinerary that respects travel times, fatigue, and logistics. For a ${fullDays}-day trip:
+1. Figure out which cities/regions can realistically fit in ${nights} nights. Be honest if it's too ambitious.
+2. Allocate nights across locations (e.g., 3-3-1 split across 3 cities, not 7-7-7).
+3. Include transport times between every stop. Don't hide the travel.
+4. Remember: You must END in ${input.departure.location} on ${endDate}. Plan return logistics.
+5. For each location, show real daily breakdown with time estimates.
+6. If it's a tight squeeze, say so and suggest alternatives.
 
-✅ **BE HONEST ABOUT:**
-• Real travel times between cities (not Google Maps optimistic times)
-• How much you can see in one day without exhaustion
-• If the attractions fit geographically or if transfers eat the day
-• Whether ${fullDays} days is enough, tight, or super rushed
-• Suggest alternatives if something doesn't work timeline-wise
-
-✅ **STRUCTURE BY REGION/CITY** (not hour-by-hour)
-Example format:
-🏘️ City Name  |  Days 1-2  |  2 nights
-- What to see
-- Realistic timing (e.g., "3-4 hours walking" or "full day for this")
-- Local tips
-- Transport to next location (time required)
-
-✅ **CRITICAL: MENTION IF IT'S TIGHT**
-If the itinerary is rushed or logistically challenging, say so clearly. Suggest what to skip or what needs more time.
-
-✅ **USE ${firstName ? firstName + "'S" : "THE TRAVELER'S"} NAME** throughout - make it personal.
-
-Be realistic, be friendly, and prioritize **actually enjoying the trip** over checking boxes.`;
+Use ${firstName ? firstName + "'s" : 'the user\'s'} name throughout. Be realistic. Quality over coverage.`;
   } else {
-    return `${firstName ? `Hey ${firstName}!` : 'Hey there!'} Let's plan an awesome ${fullDays}-day trip to ${input.arrival.location}!
+    return `${firstName ? `Hey ${firstName}!` : 'Hey there!'} Let's plan your ${fullDays}-day trip...
 
-🗓️ **YOUR TRIP**
-${startDate} → ${endDate} (${nights} nights, ${fullDays} days)
+**TRIP CONSTRAINTS:**
+- Arrive: ${startDate} in ${input.arrival.location}
+- Depart: ${endDate} from ${input.departure.location}
+- Total: ${nights} nights on the ground
+- Pace: ${input.travelPace === 'relaxed' ? 'Relaxed pace - time to breathe' : input.travelPace === 'active' ? 'Active pace - pack it in' : 'Balanced'}
+- Budget: ${input.budget}
 
-🎯 **WHAT YOU WANT TO SEE**
-${input.desiredAttractions.map((attraction) => `• ${attraction}`).join('\n')}
+**WANT TO SEE:**
+${input.desiredAttractions.map((attraction) => `- ${attraction}`).join('\n')}
 
-🎒 **YOUR STYLE**
-${input.travelPace === 'relaxed' ? 'Relaxed vibes' : input.travelPace === 'active' ? 'Go go go!' : 'Balanced pace'} | ${input.interests?.join(', ') || 'all interests'} | Budget: ${input.budget}
+${input.notes ? `**NOTES:** ${input.notes}` : ''}
 
-${input.notes ? `📝 **SPECIAL NOTES**\n${input.notes}\n` : ''}
-**BUILD ME AN ITINERARY:**
-Create a DAY-BY-DAY plan for all ${fullDays} days:
+**YOUR MISSION:**
+1. Create a realistic DAY-BY-DAY breakdown.
+2. For each day show: morning, afternoon, evening, night (with TIME estimates).
+3. Include transport time to next location if applicable.
+4. Remember: You must END in ${input.departure.location} on ${endDate}. Plan the last day accordingly.
+5. If ${fullDays} days is tight, say so. Suggest what to cut or what needs more time.
+6. Focus on experiences that actually fit and are socially engaging.
 
-✅ **FOR EACH DAY, INCLUDE:**
-🌅 Morning - specific place & time
-☀️ Afternoon - what to do, realistic times
-🌇 Evening - restaurants/experiences
-🌙 Night - social/nightlife suggestions
-💡 Logistics - transport times, bookings, hours
-
-✅ **REALISTIC PLANNING:**
-• Include actual travel times between places
-• Don't pack 8 hours of activities if travel takes time
-• Account for fatigue and rest
-• Mention if anything is a tight fit
-• Suggest alternatives if needed
-
-✅ **MAKE IT PERSONAL:** Use ${firstName ? firstName + "'s" : 'the'} name and make recommendations feel tailored.
-
-Prioritize experiences that actually fit in ${fullDays} days - quality over quantity!`;
+Use ${firstName ? firstName + "'s" : 'the user\'s'} name throughout. Be honest. Make it doable.`;
   }
 };
 
