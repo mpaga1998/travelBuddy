@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl, { Map as MapboxMap, Marker } from "mapbox-gl";
 
 import type { Pin, PinCategory } from "../pins/pinTypes";
-import { createPin, listPins, toggleReaction, uploadPinImage, deletePin } from "../pins/pinApi";
+import { createPin, listPins, toggleReaction, uploadPinImage, deletePin, isBookmarked, toggleBookmark } from "../pins/pinApi";
 
 import { ProfileModal } from "../profile/profileModal";
 import { getMyProfile } from "../profile/profileApi";
@@ -157,6 +157,9 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
 
   // map type filter (travelers or hostels)
   const [mapType, setMapType] = useState<"travelers" | "hostels">("travelers");
+
+  // bookmark state
+  const [isPinBookmarked, setIsPinBookmarked] = useState(false);
 
   const selectedPin = useMemo(
     () => pins.find((p) => p.id === selectedPinId) ?? null,
@@ -371,6 +374,12 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
 
     const pin = selectedPin;
 
+    // Check bookmark status
+    (async () => {
+      const bookmarked = await isBookmarked(pin.id);
+      setIsPinBookmarked(bookmarked);
+    })();
+
     const container = document.createElement("div");
 
     // Prevent popup clicks from reaching the map
@@ -459,8 +468,8 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                 </button>`
               : ""
           }
-          <button data-fly style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:none; background:#111; color:white; cursor:pointer; font-weight:800; font-size:13px; outline:none;">
-            Fly to
+          <button data-bookmark style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:2px solid #16a34a; background:white; color:#111; cursor:pointer; font-weight:800; font-size:13px; outline:none;" data-bookmarked="false">
+            🔖 Bookmark
           </button>
           ${
             pin.createdById === currentUserId
@@ -533,7 +542,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       const likeBtn = container.querySelector<HTMLButtonElement>("[data-like]");
       const dislikeBtn = container.querySelector<HTMLButtonElement>("[data-dislike]");
       const tipsBtn = container.querySelector<HTMLButtonElement>("[data-tips]");
-      const flyBtn = container.querySelector<HTMLButtonElement>("[data-fly]");
+      const bookmarkBtn = container.querySelector<HTMLButtonElement>("[data-bookmark]");
       const deleteBtn = container.querySelector<HTMLButtonElement>("[data-delete]");
 
       likeBtn?.addEventListener("click", async (ev) => {
@@ -552,9 +561,34 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
         setTipsViewerOpen(true);
       });
 
-      flyBtn?.addEventListener("click", (ev) => {
+      // Update bookmark button styling based on state
+      const updateBookmarkButton = (bookmarked: boolean) => {
+        if (bookmarkBtn) {
+          bookmarkBtn.setAttribute("data-bookmarked", bookmarked ? "true" : "false");
+          if (bookmarked) {
+            bookmarkBtn.style.background = "#16a34a";
+            bookmarkBtn.style.color = "white";
+            bookmarkBtn.textContent = "🔖 Bookmarked";
+          } else {
+            bookmarkBtn.style.background = "white";
+            bookmarkBtn.style.color = "#111";
+            bookmarkBtn.textContent = "🔖 Bookmark";
+          }
+        }
+      };
+
+      // Set initial bookmark button styling
+      updateBookmarkButton(isPinBookmarked);
+
+      bookmarkBtn?.addEventListener("click", async (ev) => {
         ev.stopPropagation();
-        flyTo(pin);
+        try {
+          const newBookmarked = await toggleBookmark(pin.id);
+          setIsPinBookmarked(newBookmarked);
+          updateBookmarkButton(newBookmarked);
+        } catch (e) {
+          console.error("Bookmark toggle failed:", e);
+        }
       });
 
       deleteBtn?.addEventListener("click", (ev) => {
@@ -676,12 +710,6 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     } catch (e) {
       console.error("Reaction failed:", e);
     }
-  }
-
-  function flyTo(pin: Pin) {
-    const map = mapRef.current;
-    if (!map) return;
-    map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(map.getZoom(), 14) });
   }
 
   async function onConfirmDelete(pinId: string) {

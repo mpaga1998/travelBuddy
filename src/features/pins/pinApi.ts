@@ -202,3 +202,67 @@ export async function deletePin(pinId: string): Promise<void> {
 
   if (error) throw error;
 }
+
+/**
+ * Check if current user has bookmarked a pin
+ */
+export async function isBookmarked(pinId: string): Promise<boolean> {
+  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userData.user) return false;
+
+  const { data, error } = await supabase
+    .from("pin_bookmarks")
+    .select("id")
+    .eq("pin_id", pinId)
+    .eq("user_id", userData.user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error checking bookmark:", error);
+    return false;
+  }
+
+  return !!data;
+}
+
+/**
+ * Toggle bookmark for current user
+ */
+export async function toggleBookmark(pinId: string): Promise<boolean> {
+  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  if (userErr) throw userErr;
+
+  const user = userData.user;
+  if (!user) throw new Error("Not authenticated");
+
+  // Check if already bookmarked
+  const { data: existing, error: checkErr } = await supabase
+    .from("pin_bookmarks")
+    .select("id")
+    .eq("pin_id", pinId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (checkErr) throw checkErr;
+
+  if (existing) {
+    // Remove bookmark
+    const { error } = await supabase
+      .from("pin_bookmarks")
+      .delete()
+      .eq("pin_id", pinId)
+      .eq("user_id", user.id);
+    if (error) throw error;
+    return false; // Now unbookmarked
+  } else {
+    // Add bookmark
+    const { error } = await supabase
+      .from("pin_bookmarks")
+      .insert({
+        pin_id: pinId,
+        user_id: user.id,
+      });
+    if (error) throw error;
+    return true; // Now bookmarked
+  }
+}
