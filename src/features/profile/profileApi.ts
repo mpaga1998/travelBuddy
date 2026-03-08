@@ -120,3 +120,40 @@ export async function sendPasswordReset(email: string): Promise<void> {
   });
   if (error) throw error;
 }
+
+export async function getMyBookmarkedPins(): Promise<any[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data, error } = await supabase
+    .from("pin_bookmarks")
+    .select(`
+      pin_id,
+      pins (
+        id,
+        title,
+        description,
+        category,
+        lat,
+        lng,
+        created_by_label,
+        created_by_type,
+        created_by_id,
+        created_by_age,
+        likes_count,
+        bookmark_count,
+        image_urls
+      )
+    `)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  // Flatten the nested structure and map image_urls to images for UI consistency
+  return (data || []).map((item: any) => ({
+    ...item.pins,
+    id: item.pins.id,
+    images: item.pins.image_urls || [],
+  }));
+}

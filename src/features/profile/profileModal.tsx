@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { COUNTRIES } from "./countries";
-import { getMyProfile, sendPasswordReset, updateMyProfile, uploadMyAvatar, type Profile, calculateAge } from "./profileApi";
+import { getMyProfile, sendPasswordReset, updateMyProfile, uploadMyAvatar, getMyBookmarkedPins, type Profile, calculateAge } from "./profileApi";
 
 type Props = {
   open: boolean;
@@ -14,6 +14,9 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
   const [saving, setSaving] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [currentTab, setCurrentTab] = useState<"profile" | "saved">("profile"); // Tab selection
+  const [bookmarkedPins, setBookmarkedPins] = useState<any[]>([]);
+  const [loadingBookmarks, setLoadingBookmarks] = useState(false);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState<string>("");
@@ -30,6 +33,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
   useEffect(() => {
     if (!open) {
       setLoading(true);
+      setCurrentTab("profile");
       // Reset all form data when modal closes
       setProfile(null);
       setEmail("");
@@ -38,6 +42,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
       setUsername("");
       setCountryCode("");
       setDob("");
+      setBookmarkedPins([]);
       setErr(null);
       setMsg(null);
       return;
@@ -68,6 +73,23 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
       }
     })();
   }, [open]);
+
+  // Load bookmarked pins when Saved tab is opened
+  useEffect(() => {
+    if (!open || currentTab !== "saved") return;
+
+    setLoadingBookmarks(true);
+    (async () => {
+      try {
+        const pins = await getMyBookmarkedPins();
+        setBookmarkedPins(pins);
+      } catch (e: any) {
+        console.error("Failed to load bookmarked pins:", e);
+      } finally {
+        setLoadingBookmarks(false);
+      }
+    })();
+  }, [open, currentTab]);
 
   if (!open) return null;
 
@@ -218,6 +240,46 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
           </button>
         </div>
 
+        {/* Tab Bar */}
+        <div style={{ display: "flex", borderBottom: "1px solid rgba(0,0,0,0.08)", background: "rgba(0,0,0,0.02)", flexShrink: 0 }}>
+          <button
+            onClick={() => setCurrentTab("profile")}
+            onTouchStart={(e) => e.preventDefault()}
+            type="button"
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              border: "none",
+              background: currentTab === "profile" ? "white" : "transparent",
+              cursor: "pointer",
+              fontSize: 14,
+              fontWeight: currentTab === "profile" ? 600 : 500,
+              color: currentTab === "profile" ? "#2563eb" : "#666",
+              borderBottom: currentTab === "profile" ? "3px solid #2563eb" : "none",
+            }}
+          >
+            👤 Profile
+          </button>
+          <button
+            onClick={() => setCurrentTab("saved")}
+            onTouchStart={(e) => e.preventDefault()}
+            type="button"
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              border: "none",
+              background: currentTab === "saved" ? "white" : "transparent",
+              cursor: "pointer",
+              fontSize: 14,
+              fontWeight: currentTab === "saved" ? 600 : 500,
+              color: currentTab === "saved" ? "#2563eb" : "#666",
+              borderBottom: currentTab === "saved" ? "3px solid #2563eb" : "none",
+            }}
+          >
+            🔖 Saved ({bookmarkedPins.length})
+          </button>
+        </div>
+
         {loading ? (
           <div style={{
             flex: 1,
@@ -246,7 +308,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
               }
             `}</style>
           </div>
-        ) : (
+        ) : currentTab === "profile" ? (
           <>
             <div style={{ flex: 1, overflow: "auto", padding: 16, display: "flex", flexDirection: "column" }}>
               {/* Avatar */}
@@ -384,6 +446,150 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
               </button>
             </div>
           </>
+        ) : (
+          /* Saved Pins Tab */
+          <div style={{ flex: 1, overflow: "auto", padding: 16, display: "flex", flexDirection: "column" }}>
+            {loadingBookmarks ? (
+              <div style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 16,
+              }}>
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    border: "3px solid #e5e7eb",
+                    borderTop: "3px solid #2563eb",
+                    borderRadius: "50%",
+                    animation: "spin 1s linear infinite",
+                  }}
+                />
+                <div style={{ fontSize: 13, color: "#666", fontWeight: 500 }}>Loading saved pins…</div>
+              </div>
+            ) : bookmarkedPins.length === 0 ? (
+              <div style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 12,
+                color: "#666",
+              }}>
+                <div style={{ fontSize: 32 }}>🔖</div>
+                <div style={{ fontSize: 14, fontWeight: 500 }}>No saved pins yet</div>
+                <div style={{ fontSize: 12, opacity: 0.75, textAlign: "center" }}>
+                  Bookmark pins from the map to save them here
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
+                gap: isMobile ? 12 : 16,
+              }}>
+                {bookmarkedPins.map((pin) => (
+                  <div
+                    key={pin.id}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      borderRadius: 12,
+                      border: "1px solid rgba(0,0,0,0.08)",
+                      overflow: "hidden",
+                      background: "white",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                      minHeight: isMobile ? 140 : 160,
+                      touchAction: "manipulation",
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onTouchStart={(e) => e.preventDefault()}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    {/* Pin Image or Placeholder */}
+                    <div style={{
+                      flex: 1,
+                      background: "#f3f4f6",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: isMobile ? 28 : 32,
+                      overflow: "hidden",
+                      position: "relative",
+                    }}>
+                      {pin.images && pin.images.length > 0 ? (
+                        <img
+                          src={pin.images[0]}
+                          alt={pin.title}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        <div>📍</div>
+                      )}
+                    </div>
+
+                    {/* Pin Info */}
+                    <div style={{
+                      padding: isMobile ? 10 : 12,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 4,
+                    }}>
+                      {/* Title */}
+                      <div style={{
+                        fontSize: isMobile ? 12 : 13,
+                        fontWeight: 600,
+                        color: "#111",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}>
+                        {pin.title}
+                      </div>
+
+                      {/* Category Badge */}
+                      {pin.category && (
+                        <div style={{
+                          fontSize: 10,
+                          fontWeight: 500,
+                          color: "#0066cc",
+                          background: "rgba(0, 102, 204, 0.1)",
+                          borderRadius: 4,
+                          padding: "2px 6px",
+                          width: "fit-content",
+                          textTransform: "capitalize",
+                        }}>
+                          {pin.category}
+                        </div>
+                      )}
+
+                      {/* Bookmark Count */}
+                      {pin.bookmark_count > 0 && (
+                        <div style={{
+                          fontSize: 10,
+                          color: "#666",
+                          marginTop: 2,
+                        }}>
+                          ❤️ {pin.bookmark_count}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
