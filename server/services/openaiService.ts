@@ -135,10 +135,8 @@ const buildUserPrompt = (input: TripInput, firstName?: string): string => {
     (new Date(input.departure.date).getTime() - new Date(input.arrival.date).getTime()) /
     (1000 * 60 * 60 * 24)
   );
-
-  const greeting = firstName ? `Hey ${firstName}! ` : '';
   
-  return `${greeting}Please create a detailed travel itinerary for the following trip:
+  return `${firstName ? `Hey ${firstName}! ` : ''}Please create a detailed travel itinerary with extensive day-by-day activities for the following trip:
 
 **Trip Details:**
 - Destination: ${input.arrival.location}

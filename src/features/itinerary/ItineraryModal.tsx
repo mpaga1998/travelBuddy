@@ -525,7 +525,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                   paddingBottom: 20,
                 }}
               >
-                {/* Render markdown as HTML */}
+                {/* Render markdown as HTML - precise formatting */}
                 {itinerary.split('\n').map((line, idx) => {
                   // Headers
                   if (line.startsWith('###')) {
@@ -555,17 +555,46 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                     return <div key={idx} style={{ height: 8 }} />;
                   }
 
-                  // Bullet lists
-                  if (line.startsWith('-') || line.startsWith('*')) {
-                    const bulletContent = line.replace(/^[-*]\s/, '');
+                  // Helper function to render inline markdown (bold and italic)
+                  const renderInlineMarkdown = (text: string) => {
+                    // Split by bold first (**text**)
+                    const boldParts = text.split(/(\*\*[^*]+\*\*)/);
+                    
+                    return boldParts.map((part, i) => {
+                      if (part.startsWith('**') && part.endsWith('**')) {
+                        // Bold text
+                        const boldContent = part.slice(2, -2);
+                        // Now handle italics within bold
+                        const italicParts = boldContent.split(/(\*[^*]+\*)/);
+                        return (
+                          <strong key={i}>
+                            {italicParts.map((segment, j) => {
+                              if (segment.startsWith('*') && segment.endsWith('*') && segment.length > 2) {
+                                return <em key={j}>{segment.slice(1, -1)}</em>;
+                              }
+                              return segment;
+                            })}
+                          </strong>
+                        );
+                      }
+                      // Handle italics in non-bold text (*text*)
+                      const italicParts = part.split(/(\*[^*]+\*)/);
+                      return italicParts.map((segment, j) => {
+                        if (segment.startsWith('*') && segment.endsWith('*') && segment.length > 2) {
+                          return <em key={j}>{segment.slice(1, -1)}</em>;
+                        }
+                        return segment;
+                      });
+                    });
+                  };
+
+                  // Bullet lists - only if starts with - or * followed by space
+                  if (/^[-]\s/.test(line)) {
+                    const bulletContent = line.replace(/^-\s/, '');
                     return (
                       <div key={idx} style={{ marginLeft: 20, marginBottom: 4, display: 'flex', gap: 8 }}>
                         <span>•</span>
-                        <span>
-                          {bulletContent.split(/\*\*/).map((segment, i) =>
-                            i % 2 === 0 ? segment : <strong key={i}>{segment}</strong>
-                          )}
-                        </span>
+                        <span>{renderInlineMarkdown(bulletContent)}</span>
                       </div>
                     );
                   }
@@ -574,20 +603,17 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                   const numberMatch = line.match(/^\d+\.\s/);
                   if (numberMatch) {
                     const listContent = line.replace(/^\d+\.\s/, '');
+                    const numberPart = line.match(/^\d+\./)?.[0];
                     return (
                       <div key={idx} style={{ marginLeft: 20, marginBottom: 4 }}>
-                        {line.match(/^\d+\./)?.[0]} {listContent.split(/\*\*/).map((segment, i) =>
-                          i % 2 === 0 ? segment : <strong key={i}>{segment}</strong>
-                        )}
+                        <span style={{ fontWeight: 600 }}>{numberPart}</span> {renderInlineMarkdown(listContent)}
                       </div>
                     );
                   }
 
                   return (
                     <div key={idx} style={{ marginBottom: 8 }}>
-                      {content.split(/\*\*/).map((segment, i) =>
-                        i % 2 === 0 ? segment : <strong key={i}>{segment}</strong>
-                      )}
+                      {renderInlineMarkdown(content)}
                     </div>
                   );
                 })}
