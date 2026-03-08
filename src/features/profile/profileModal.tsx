@@ -7,10 +7,9 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onSignedOut: () => void;
-  onPinClick?: (pin: any) => void;
 };
 
-export function ProfileModal({ open, onClose, onSignedOut, onPinClick }: Props) {
+export function ProfileModal({ open, onClose, onSignedOut }: Props) {
   const [loading, setLoading] = useState(true); // Always start loading
   const [saving, setSaving] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
@@ -18,6 +17,7 @@ export function ProfileModal({ open, onClose, onSignedOut, onPinClick }: Props) 
   const [currentTab, setCurrentTab] = useState<"profile" | "saved">("profile"); // Tab selection
   const [bookmarkedPins, setBookmarkedPins] = useState<any[]>([]);
   const [loadingBookmarks, setLoadingBookmarks] = useState(false);
+  const [selectedPin, setSelectedPin] = useState<any | null>(null); // Pin detail view
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState<string>("");
@@ -35,6 +35,7 @@ export function ProfileModal({ open, onClose, onSignedOut, onPinClick }: Props) 
     if (!open) {
       setLoading(true);
       setCurrentTab("profile");
+      setSelectedPin(null);
       // Reset all form data when modal closes
       setProfile(null);
       setEmail("");
@@ -451,7 +452,158 @@ export function ProfileModal({ open, onClose, onSignedOut, onPinClick }: Props) 
         ) : (
           /* Saved Pins Tab */
           <div style={{ flex: 1, overflow: "auto", padding: 16, display: "flex", flexDirection: "column" }}>
-            {loadingBookmarks ? (
+            {selectedPin ? (
+              /* Pin Detail View */
+              <>
+                <button
+                  onClick={() => setSelectedPin(null)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 18,
+                    color: "#2563eb",
+                    fontWeight: 600,
+                    marginBottom: 12,
+                    padding: 0,
+                    textAlign: "left",
+                  }}
+                >
+                  ← Back
+                </button>
+
+                {/* Pin Image */}
+                {selectedPin.images && selectedPin.images.length > 0 && (
+                  <div style={{
+                    width: "100%",
+                    height: 200,
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    marginBottom: 16,
+                    background: "#f3f4f6",
+                  }}>
+                    <img
+                      src={selectedPin.images[0]}
+                      alt={selectedPin.title}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Pin Title */}
+                <div style={{
+                  fontSize: isMobile ? 18 : 20,
+                  fontWeight: 700,
+                  color: "#111",
+                  marginBottom: 8,
+                }}>
+                  {selectedPin.title}
+                </div>
+
+                {/* Pin Category */}
+                {selectedPin.category && (
+                  <div style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#0066cc",
+                    background: "rgba(0, 102, 204, 0.1)",
+                    borderRadius: 6,
+                    padding: "4px 10px",
+                    width: "fit-content",
+                    textTransform: "capitalize",
+                    marginBottom: 12,
+                  }}>
+                    {selectedPin.category}
+                  </div>
+                )}
+
+                {/* Pin Description */}
+                {selectedPin.description && (
+                  <div style={{
+                    fontSize: 14,
+                    color: "#333",
+                    lineHeight: 1.6,
+                    marginBottom: 16,
+                  }}>
+                    {selectedPin.description}
+                  </div>
+                )}
+
+                {/* Pin Stats */}
+                <div style={{
+                  display: "flex",
+                  gap: 16,
+                  flexWrap: "wrap",
+                  marginBottom: 16,
+                  paddingTop: 12,
+                  borderTop: "1px solid rgba(0,0,0,0.08)",
+                }}>
+                  {selectedPin.bookmark_count > 0 && (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      fontSize: 14,
+                      color: "#666",
+                    }}>
+                      <span>❤️</span>
+                      <span>{selectedPin.bookmark_count} bookmarks</span>
+                    </div>
+                  )}
+                  {selectedPin.likes_count > 0 && (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      fontSize: 14,
+                      color: "#666",
+                    }}>
+                      <span>👍</span>
+                      <span>{selectedPin.likes_count} likes</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Pin Tips */}
+                {selectedPin.tips && selectedPin.tips.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#666",
+                      marginBottom: 8,
+                      textTransform: "uppercase",
+                    }}>
+                      Tips
+                    </div>
+                    <div style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 4,
+                    }}>
+                      {selectedPin.tips.map((tip: string, idx: number) => (
+                        <div
+                          key={idx}
+                          style={{
+                            fontSize: 13,
+                            color: "#555",
+                            padding: "6px 8px",
+                            background: "rgba(0,0,0,0.04)",
+                            borderRadius: 6,
+                          }}
+                        >
+                          • {tip}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : loadingBookmarks ? (
               <div style={{
                 flex: 1,
                 display: "flex",
@@ -510,12 +662,7 @@ export function ProfileModal({ open, onClose, onSignedOut, onPinClick }: Props) 
                       minHeight: isMobile ? 140 : 160,
                       touchAction: "manipulation",
                     }}
-                    onClick={() => {
-                      if (onPinClick) {
-                        onPinClick(pin);
-                        onClose();
-                      }
-                    }}
+                    onClick={() => setSelectedPin(pin)}
                     role="button"
                     tabIndex={0}
                   >
