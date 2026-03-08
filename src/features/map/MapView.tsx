@@ -270,10 +270,6 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       zoom: DEFAULT_ZOOM,
     });
 
-    // Position navigation control based on viewport
-    const isMobileVP = window.innerWidth < MOBILE_BREAKPOINT;
-    map.addControl(new mapboxgl.NavigationControl(), isMobileVP ? "bottom-right" : "top-right");
-
     // click on map -> close popup first, second click opens add-pin modal
     map.on("click", (e) => {
       // If there's an open popup, close it instead of opening create-pin modal
@@ -917,8 +913,17 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
             ↩️ Back
           </button>
           
-          {/* Centered Logo */}
-          <div
+          {/* Centered Logo - clickable to recenter on north */}
+          <button
+            onClick={() => {
+              if (mapRef.current) {
+                mapRef.current.easeTo({
+                  bearing: 0,
+                  pitch: 0,
+                  duration: 600,
+                });
+              }
+            }}
             style={{
               position: isMobile ? "absolute" : "relative",
               left: isMobile ? "50%" : "auto",
@@ -926,10 +931,17 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
               fontWeight: 700,
               whiteSpace: "nowrap",
               fontSize: isMobile ? 14 : 16,
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              padding: "4px 8px",
+              outline: "none",
+              color: "#111",
             }}
+            title="Click to recenter on north"
           >
             🎒 travelBuddy
-          </div>
+          </button>
           
           {!isMobile && <div style={{ flex: 1 }} />}
 
