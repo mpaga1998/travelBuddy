@@ -102,11 +102,7 @@ function isAgeInSelectedRanges(age: number | null, selectedRanges: string[]): bo
   });
 }
 
-function getAgeFilterLabel(selectedRanges: string[]): string {
-  if (selectedRanges.length === 0) return "All ages";
-  const labels = selectedRanges.map((r) => AGE_RANGES.find((ar) => ar.value === r)?.label).filter(Boolean);
-  return labels.join(", ");
-}
+
 
 type MapViewProps = {
   onBack?: () => void;
@@ -140,7 +136,6 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   // filters
   const [activeCategory, setActiveCategory] = useState<PinCategory | "all">("all");
   const [selectedAgeRanges, setSelectedAgeRanges] = useState<string[]>([]);
-  const [ageFilterOpen, setAgeFilterOpen] = useState(false);
 
   // profile modal + avatar
   const [profileOpen, setProfileOpen] = useState(false);
@@ -199,21 +194,6 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   useEffect(() => {
     draftRef.current = draft;
   }, [draft]);
-
-  // Close age filter when clicking outside
-  useEffect(() => {
-    if (!ageFilterOpen) return;
-
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as Element;
-      if (!target.closest('[data-age-filter-btn]') && !target.closest('[data-age-filter-menu]')) {
-        setAgeFilterOpen(false);
-      }
-    };
-
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
-  }, [ageFilterOpen]);
 
   useEffect(() => {
     reloadPins();
@@ -901,130 +881,37 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                 </div>
               )}
 
-              {/* Itinerary Button */}
-              <button
-                onClick={() => {
-                  if (ITINERARY_FEATURE_ENABLED) {
-                    setItineraryModalOpen(true);
-                  } else {
-                    alert('✈️ Our AI Travel Agent is coming soon! Stay tuned for personalized itinerary generation.');
-                  }
-                }}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                  background: ITINERARY_FEATURE_ENABLED ? "white" : "rgba(255, 193, 7, 0.1)",
-                  color: ITINERARY_FEATURE_ENABLED ? "#111" : "#f59e0b",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  whiteSpace: "nowrap",
-                  transition: "all 0.2s ease",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                }}
-                title={ITINERARY_FEATURE_ENABLED ? "Create your custom travel itinerary with AI" : "Coming soon!"}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = ITINERARY_FEATURE_ENABLED ? "#f3f4f6" : "rgba(255, 193, 7, 0.15)";
-                  e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = ITINERARY_FEATURE_ENABLED ? "white" : "rgba(255, 193, 7, 0.1)";
-                  e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
-                }}
-              >
-                ✈️ Create Itinerary{!ITINERARY_FEATURE_ENABLED && " (soon!)"}
-              </button>
             </div>
           )}
 
           {!isMobile && mapType === "travelers" && (
-            <div style={{ position: "relative" }} data-age-filter>
-              <button
-                data-age-filter-btn
-                onClick={() => setAgeFilterOpen(!ageFilterOpen)}
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                  minWidth: 170,
-                  fontSize: 14,
-                  background: "white",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  fontFamily: "inherit",
-                  color: "inherit",
-                }}
-              >
-                {getAgeFilterLabel(selectedAgeRanges)}
-              </button>
-              {ageFilterOpen && (
-                <div
-                  data-age-filter-menu
+            <div style={{ display: "flex", gap: 8 }}>
+              {AGE_RANGES.map((range) => (
+                <button
+                  key={range.value}
+                  onClick={() => {
+                    if (selectedAgeRanges.includes(range.value)) {
+                      setSelectedAgeRanges(selectedAgeRanges.filter((r) => r !== range.value));
+                    } else {
+                      setSelectedAgeRanges([...selectedAgeRanges, range.value]);
+                    }
+                  }}
                   style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    background: "white",
-                    border: "1px solid rgba(0,0,0,0.18)",
+                    padding: "8px 12px",
                     borderRadius: 10,
-                    marginTop: 4,
-                    minWidth: 170,
-                    zIndex: 50,
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                    border: selectedAgeRanges.includes(range.value) ? "2px solid #2563eb" : "1px solid rgba(0,0,0,0.18)",
+                    background: selectedAgeRanges.includes(range.value) ? "#eff6ff" : "white",
+                    cursor: "pointer",
+                    fontSize: 13,
+                    fontWeight: selectedAgeRanges.includes(range.value) ? 600 : 500,
+                    color: selectedAgeRanges.includes(range.value) ? "#2563eb" : "#111",
+                    minHeight: 44,
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  {AGE_RANGES.map((range, idx) => (
-                    <div
-                      key={range.value}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "6px 12px",
-                        gap: 8,
-                        borderBottom: idx < AGE_RANGES.length - 1 ? "1px solid rgba(0,0,0,0.08)" : "none",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedAgeRanges.includes(range.value)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedAgeRanges([...selectedAgeRanges, range.value]);
-                          } else {
-                            setSelectedAgeRanges(selectedAgeRanges.filter((r) => r !== range.value));
-                          }
-                        }}
-                        style={{
-                          cursor: "pointer",
-                          width: 12,
-                          height: 12,
-                          minWidth: 12,
-                          accentColor: "#2563eb",
-                        }}
-                      />
-                      <span
-                        style={{
-                          fontSize: 14,
-                          cursor: "pointer",
-                          flex: 1,
-                        }}
-                        onClick={(e) => {
-                          const checkbox = (e.currentTarget.previousElementSibling as HTMLInputElement);
-                          checkbox.checked = !checkbox.checked;
-                          if (checkbox.checked) {
-                            setSelectedAgeRanges([...selectedAgeRanges, range.value]);
-                          } else {
-                            setSelectedAgeRanges(selectedAgeRanges.filter((r) => r !== range.value));
-                          }
-                        }}
-                      >
-                        {range.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+                  {range.label}
+                </button>
+              ))}
             </div>
           )}
 
@@ -1180,34 +1067,6 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                 </div>
               </div>
 
-              {/* Mobile Itinerary Button */}
-              <div style={{ padding: "0 12px" }}>
-                <button
-                  onClick={() => {
-                    if (ITINERARY_FEATURE_ENABLED) {
-                      setItineraryModalOpen(true);
-                    } else {
-                      alert('✈️ Our AI Travel Agent is coming soon! Stay tuned for personalized itinerary generation.');
-                    }
-                    setMobileMenuOpen(false);
-                  }}
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    borderRadius: 10,
-                    border: "none",
-                    background: ITINERARY_FEATURE_ENABLED ? "#2563eb" : "#f59e0b",
-                    color: "white",
-                    cursor: "pointer",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    minHeight: 44,
-                  }}
-                >
-                  ✈️ Create Itinerary{!ITINERARY_FEATURE_ENABLED && " (soon!)"}
-                </button>
-              </div>
-
               {/* Mobile filters - only show for travelers */}
               {mapType === "travelers" && (
               <div style={{ padding: "0 12px 12px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1235,54 +1094,38 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
                 ))}
               </select>
               
-              {/* Age Ranges Filter - Multiple Selection with Checkboxes */}
+              {/* Age Ranges Filter - Button Format */}
               <div style={{
-                border: "1px solid rgba(0,0,0,0.18)",
-                borderRadius: 10,
-                background: "white",
-                overflow: "hidden",
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
               }}>
-                {AGE_RANGES.map((range, idx) => (
-                  <label
+                {AGE_RANGES.map((range) => (
+                  <button
                     key={range.value}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "16px 14px",
-                      borderBottom: idx < AGE_RANGES.length - 1 ? "1px solid rgba(0,0,0,0.1)" : "none",
-                      cursor: "pointer",
-                      background: "white",
-                      transition: "background 0.15s",
-                      userSelect: "none",
+                    onClick={() => {
+                      if (selectedAgeRanges.includes(range.value)) {
+                        setSelectedAgeRanges(selectedAgeRanges.filter(r => r !== range.value));
+                      } else {
+                        setSelectedAgeRanges([...selectedAgeRanges, range.value]);
+                      }
                     }}
-                    onClick={(e) => {
-                      e.preventDefault();
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: selectedAgeRanges.includes(range.value) ? "2px solid #2563eb" : "1px solid rgba(0,0,0,0.18)",
+                      background: selectedAgeRanges.includes(range.value) ? "#eff6ff" : "white",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: selectedAgeRanges.includes(range.value) ? 600 : 500,
+                      color: selectedAgeRanges.includes(range.value) ? "#2563eb" : "#111",
+                      minHeight: 44,
+                      flex: "1 1 auto",
+                      minWidth: "calc(50% - 4px)",
                     }}
                   >
-                    <span style={{ fontSize: 14, fontWeight: 500, color: "#111" }}>
-                      {range.label}
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={selectedAgeRanges.includes(range.value)}
-                      onChange={() => {
-                        if (selectedAgeRanges.includes(range.value)) {
-                          setSelectedAgeRanges(selectedAgeRanges.filter(r => r !== range.value));
-                        } else {
-                          setSelectedAgeRanges([...selectedAgeRanges, range.value]);
-                        }
-                      }}
-                      style={{
-                        cursor: "pointer",
-                        width: 24,
-                        height: 24,
-                        accentColor: "#2563eb",
-                        marginLeft: "12px",
-                        flexShrink: 0,
-                      }}
-                    />
-                  </label>
+                    {range.label}
+                  </button>
                 ))}
               </div>
               </div>

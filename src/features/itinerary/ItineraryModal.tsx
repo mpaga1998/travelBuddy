@@ -145,15 +145,21 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             padding: isMobile ? '16px' : '20px',
             borderBottom: '1px solid rgba(0,0,0,0.08)',
             flexShrink: 0,
+            gap: 12,
           }}
         >
-          <h2 style={{ margin: 0, fontSize: isMobile ? 18 : 20, fontWeight: 700 }}>
-            ✈️ Plan Your Itinerary
-          </h2>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ margin: 0, fontSize: isMobile ? 18 : 20, fontWeight: 700 }}>
+              ✈️ Plan Your Itinerary
+            </h2>
+            <p style={{ margin: '6px 0 0 0', fontSize: isMobile ? 12 : 13, fontWeight: 600, color: '#666' }}>
+              Trip Details
+            </p>
+          </div>
           <button
             onClick={handleClose}
             style={{
@@ -163,6 +169,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
               cursor: 'pointer',
               padding: '4px 8px',
               color: '#999',
+              flexShrink: 0,
             }}
             aria-label="Close"
           >
@@ -188,11 +195,6 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                   ❌ {error}
                 </div>
               )}
-
-              {/* Page Title */}
-              <div style={{ marginBottom: 8 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 12px 0', color: '#111' }}>Trip Details</h3>
-              </div>
 
               {/* Trip Duration Section */}
               <div>
