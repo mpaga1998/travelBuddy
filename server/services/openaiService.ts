@@ -147,7 +147,48 @@ const buildUserPrompt = (input: TripInput, firstName?: string): string => {
   // IMPORTANT: Put name at the very start if available
   const greeting = firstName && firstName.trim() ? `Hey ${firstName}!` : 'Please';
   
-  return `${firstName ? `Hey ${firstName}!` : 'Please'} I need a detailed travel itinerary for a ${dayCount}-day trip.
+  // Calculate exact days for clarity
+  const dayCount = Math.max(1, Math.round((departureDate.getTime() - arrivalDate.getTime()) / (1000 * 60 * 60 * 24)));
+
+  // For short trips (<=5 days), use detailed day-by-day format
+  // For longer trips (>5 days), use regional grouping format
+  const isLongTrip = dayCount > 5;
+  
+  if (isLongTrip) {
+    return `${firstName ? `Hey ${firstName}!` : 'Please'} I need a detailed travel itinerary for a ${dayCount}-day trip across ${input.arrival.location}.
+
+**TRIP OVERVIEW**
+**Duration:** ${dayCount} days (${dayCount - 1} nights)
+**Dates:** ${startDate} to ${endDate}
+**Primary Destination:** ${input.arrival.location}
+${input.interests?.length ? `**Interests:** ${input.interests.join(', ')}` : ''}
+**Travel Pace:** ${input.travelPace || 'moderate'}
+**Budget:** ${input.budget || 'mid-range'}
+
+**Key Attractions/Places to Include:**
+${input.desiredAttractions.map((attr) => `• ${attr}`).join('\n')}
+
+${input.notes ? `**Additional Context:**\n${input.notes}\n` : ''}
+**YOUR TASK:**
+For a ${dayCount}-day trip, structure the itinerary by regions/cities/areas rather than hour-by-hour. Group consecutive days (e.g., "Days 1-2 in City A — 2 nights") and outline:
+
+• What to see and do in each area
+• Realistic time needed at each destination
+• Suggested travel routes between locations
+• Alternative options and honest logistical notes
+• Recommended pacing (how many nights in each place)
+
+${firstName ? `**Use ${firstName}'s name** in the opening and recommendations to personalize the itinerary.` : ''}
+
+**Format Examples:**
+🏘️ City/Region Name
+Dates — N night(s)
+Key attractions and overview
+Logistics and tips
+
+Be specific about why you're suggesting time in each place and mention alternative routing if applicable.`;
+  } else {
+    return `${firstName ? `Hey ${firstName}!` : 'Please'} I need a detailed travel itinerary for a ${dayCount}-day trip.
 
 **TRIP DURATION: ${dayCount} FULL DAYS**
 **From:** ${startDate}
@@ -177,6 +218,7 @@ ${firstName ? `**Address ${firstName} by name** throughout the itinerary in gree
 - Add practical details: hours, travel times, local food spots
 - Use emoji and clean Markdown formatting
 `;
+  }
 };
 
 async function getUserFirstName(userId: string): Promise<string | undefined> {
