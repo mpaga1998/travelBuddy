@@ -4,7 +4,7 @@ import { validateTripInput, normalizeTripInput } from '../server/lib/validation'
 import { buildTripContext, TripContext } from '../server/lib/tripContext';
 import { initializeOpenAI } from '../server/lib/openai';
 import { planItinerary } from '../server/lib/planner';
-import { renderItineraryMarkdown } from '../server/lib/renderer';
+import { renderItinerary } from '../server/lib/renderer';
 import { BusinessLogicIssue } from '../server/lib/planValidator';
 
 const openai = initializeOpenAI();
@@ -20,12 +20,15 @@ interface GenerationResult {
 /**
  * Generate an itinerary through two phases:
  * 1. Planning: Call planner to get a structured ItineraryPlan
- * 2. Rendering: Convert plan to markdown
+ * 2. Rendering: Convert plan to markdown with context and personalization
  * 
  * If planning fails validation, throws with detailed error info.
  * Returns both itinerary markdown and any business issues found.
  */
-async function generateItinerary(context: TripContext): Promise<GenerationResult> {
+async function generateItinerary(
+  context: TripContext,
+  travelerName?: string
+): Promise<GenerationResult> {
   // Phase 1: Planning
   const planningResult = await planItinerary(context, openai);
 
@@ -39,7 +42,11 @@ async function generateItinerary(context: TripContext): Promise<GenerationResult
   const plan = planningResult.plan;
 
   // Phase 2: Rendering
-  const markdownItinerary = renderItineraryMarkdown(plan);
+  const markdownItinerary = renderItinerary({
+    plan,
+    context,
+    travelerName,
+  });
 
   return {
     itinerary: markdownItinerary,
@@ -112,8 +119,8 @@ export default async function handler(
     // Build trip context: pre-compute all dates, durations, and categorization
     const tripContext = buildTripContext(normalizedInput);
 
-    // Generate itinerary using the computed trip context
-    const generationResult = await generateItinerary(tripContext);
+    // Generate itinerary using the computed trip context and traveler name
+    const generationResult = await generateItinerary(tripContext, tripInput.userFirstName);
 
     const response: ItineraryResponse = {
       success: true,
