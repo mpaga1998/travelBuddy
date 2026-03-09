@@ -47,7 +47,7 @@ export function validateAndNormalizeTripInput(
   }
 
   // Normalize and return
-  const normalized = normalizeInput(data as TripInput);
+  const normalized = normalizeInput(data as unknown as TripInput);
   return { valid: true, data: normalized };
 }
 

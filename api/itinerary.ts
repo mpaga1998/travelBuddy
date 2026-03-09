@@ -6,7 +6,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import dotenv from 'dotenv';
 
-import { ItineraryResponse } from './types/trip.js';
+import { ItineraryResponse, ValidationResult } from './types/trip.js';
 import { validateAndNormalizeTripInput, formatValidationErrors } from './lib/validation.js';
 import { computeTripContext } from './lib/tripContext.js';
 import { planItinerary, summarizePlan } from './lib/planner.js';
@@ -61,7 +61,8 @@ export default async function handler(
     // Step 1: Validate and normalize input
     const validationResult = validateAndNormalizeTripInput(req.body);
     
-    if (!validationResult.valid) {
+    // Type guard: check valid property explicitly to narrow types
+    if (validationResult.valid === false) {
       const errorMessage = formatValidationErrors(validationResult.errors);
       return sendErrorResponse(res, 400, errorMessage);
     }
