@@ -785,6 +785,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
             )}
           </div>
         ) : null}
+      </div>
 
       {/* Sign Out Confirmation Modal */}
       {showSignOutConfirm && (
