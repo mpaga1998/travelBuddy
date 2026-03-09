@@ -14,7 +14,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
   const [saving, setSaving] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
-  const [currentTab, setCurrentTab] = useState<"profile" | "saved">("profile"); // Tab selection
+  const [selectedSection, setSelectedSection] = useState<"menu" | "profile" | "saved">("menu"); // Menu or section selection
   const [bookmarkedPins, setBookmarkedPins] = useState<any[]>([]);
   const [loadingBookmarks, setLoadingBookmarks] = useState(false);
   const [selectedPin, setSelectedPin] = useState<any | null>(null); // Pin detail view
@@ -34,7 +34,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
   useEffect(() => {
     if (!open) {
       setLoading(true);
-      setCurrentTab("profile");
+      setSelectedSection("menu");
       setSelectedPin(null);
       // Reset all form data when modal closes
       setProfile(null);
@@ -76,9 +76,9 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
     })();
   }, [open]);
 
-  // Load bookmarked pins when Saved tab is opened
+  // Load bookmarked pins when Saved section is opened
   useEffect(() => {
-    if (!open || currentTab !== "saved") return;
+    if (!open || selectedSection !== "saved") return;
 
     setLoadingBookmarks(true);
     (async () => {
@@ -94,7 +94,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
         setLoadingBookmarks(false);
       }
     })();
-  }, [open, currentTab]);
+  }, [open, selectedSection]);
 
   if (!open) return null;
 
@@ -235,7 +235,16 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
         }}
       >
         <div style={{ padding: 16, borderBottom: "1px solid rgba(0,0,0,0.08)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexShrink: 0 }}>
-          <div style={{ fontWeight: 800, fontSize: 16 }}>Profile</div>
+          {selectedSection === "menu" ? (
+            <div style={{ fontWeight: 800, fontSize: 16 }}>Menu</div>
+          ) : (
+            <button
+              onClick={() => setSelectedSection("menu")}
+              style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: 16, fontWeight: 600, color: "#2563eb", padding: "4px 8px", display: "flex", alignItems: "center", gap: 4 }}
+            >
+              ← Back
+            </button>
+          )}
           <button
             onClick={onClose}
             style={{ border: "none", background: "transparent", fontSize: 24, cursor: "pointer", padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "unset", minWidth: "unset", color: "#111", lineHeight: "1" }}
@@ -245,45 +254,68 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
           </button>
         </div>
 
-        {/* Tab Bar */}
-        <div style={{ display: "flex", borderBottom: "1px solid rgba(0,0,0,0.08)", background: "rgba(0,0,0,0.02)", flexShrink: 0 }}>
-          <button
-            onClick={() => setCurrentTab("profile")}
-            onTouchStart={(e) => e.preventDefault()}
-            type="button"
-            style={{
-              flex: 1,
-              padding: "12px 16px",
-              border: "none",
-              background: currentTab === "profile" ? "white" : "transparent",
-              cursor: "pointer",
-              fontSize: 14,
-              fontWeight: currentTab === "profile" ? 600 : 500,
-              color: currentTab === "profile" ? "#2563eb" : "#666",
-            }}
-          >
-            👤 Profile
-          </button>
-          <button
-            onClick={() => setCurrentTab("saved")}
-            onTouchStart={(e) => e.preventDefault()}
-            type="button"
-            style={{
-              flex: 1,
-              padding: "12px 16px",
-              border: "none",
-              background: currentTab === "saved" ? "white" : "transparent",
-              cursor: "pointer",
-              fontSize: 14,
-              fontWeight: currentTab === "saved" ? 600 : 500,
-              color: currentTab === "saved" ? "#2563eb" : "#666",
-            }}
-          >
-            🔖 Saved ({bookmarkedPins.length})
-          </button>
-        </div>
+        {selectedSection === "menu" ? (
+          /* Menu Screen */
+          <div style={{ flex: 1, overflow: "auto", padding: 32, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20 }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>👤</div>
+            <button
+              onClick={() => setSelectedSection("profile")}
+              onTouchStart={(e) => e.preventDefault()}
+              type="button"
+              style={{
+                width: "100%",
+                maxWidth: 300,
+                padding: "20px 24px",
+                borderRadius: 16,
+                border: "2px solid #2563eb",
+                background: "white",
+                cursor: "pointer",
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#2563eb",
+                transition: "all 0.2s",
+                boxShadow: "0 4px 12px rgba(37, 99, 235, 0.12)",
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLElement).style.background = "rgba(37, 99, 235, 0.05)";
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLElement).style.background = "white";
+              }}
+            >
+              👤 Profile Info
+            </button>
 
-        {loading ? (
+            <div style={{ fontSize: 48, marginTop: 16, marginBottom: 16 }}>🔖</div>
+            <button
+              onClick={() => setSelectedSection("saved")}
+              onTouchStart={(e) => e.preventDefault()}
+              type="button"
+              style={{
+                width: "100%",
+                maxWidth: 300,
+                padding: "20px 24px",
+                borderRadius: 16,
+                border: "2px solid #16a34a",
+                background: "white",
+                cursor: "pointer",
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#16a34a",
+                transition: "all 0.2s",
+                boxShadow: "0 4px 12px rgba(22, 163, 74, 0.12)",
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLElement).style.background = "rgba(22, 163, 74, 0.05)";
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLElement).style.background = "white";
+              }}
+            >
+              🔖 Saved
+            </button>
+          </div>
+        ) : loading ? (
           <div style={{
             flex: 1,
             display: "flex",
@@ -311,7 +343,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
               }
             `}</style>
           </div>
-        ) : currentTab === "profile" ? (
+        ) : selectedSection === "profile" ? (
           <>
             <div style={{ flex: 1, overflow: "auto", padding: 16, display: "flex", flexDirection: "column" }}>
               {/* Avatar */}
@@ -449,8 +481,8 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
               </button>
             </div>
           </>
-        ) : (
-          /* Saved Pins Tab */
+        ) : selectedSection === "saved" ? (
+          /* Saved Pins Section */
           <div style={{ flex: 1, overflow: "auto", padding: 16, display: "flex", flexDirection: "column" }}>
             {selectedPin ? (
               /* Pin Detail View */
