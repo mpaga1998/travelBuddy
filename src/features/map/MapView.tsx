@@ -7,6 +7,7 @@ import { createPin, listPins, toggleReaction, uploadPinImage, deletePin, isBookm
 import { ItineraryModal } from "../itinerary/ItineraryModal";
 import { supabase } from "../../lib/supabaseClient";
 import { getMapsUrl } from "../../lib/mapsUtils";
+import { getLocationNameFromCoordinates } from "../../lib/mapbox";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
 
@@ -260,7 +261,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     });
 
     // click on map -> close popup first, second click opens add-pin modal
-    map.on("click", (e) => {
+    map.on("click", async (e) => {
       // If there's an open popup, close it instead of opening create-pin modal
       if (popupRef.current) {
         popupRef.current.remove();
@@ -271,10 +272,14 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       if (draftRef.current) return;
 
       const { lng, lat } = e.lngLat;
+      
+      // Get location name from coordinates
+      const locationName = await getLocationNameFromCoordinates(lng, lat);
+      
       setDraft({
         lng,
         lat,
-        title: "",
+        title: locationName,
         description: "",
         category: "other",
         tips: [],
