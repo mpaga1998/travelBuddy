@@ -13,7 +13,7 @@ dist-ssr
 *.local
 
 # Compiled JavaScript (generated from TypeScript)
-api/**/*.js
+# NOTE: api/**/*.js is bundled output and MUST be deployed to Vercel
 server/**/*.js
 
 # Editor directories and files
