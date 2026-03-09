@@ -1,5 +1,6 @@
 /**
- * Reverse geocode coordinates to get location name using Mapbox Geocoding API
+ * Reverse geocode coordinates to get location name using OpenStreetMap Nominatim
+ * Better POI coverage than Mapbox for reverse geocoding
  * @param lng Longitude
  * @param lat Latitude
  * @returns Location name (e.g., "Central Park", "Restaurant Name") or empty string if not found
@@ -9,38 +10,36 @@ export async function getLocationNameFromCoordinates(
   lat: number
 ): Promise<string> {
   try {
-    const token = import.meta.env.VITE_MAPBOX_TOKEN as string;
-    if (!token) {
-      console.warn("⚠️ VITE_MAPBOX_TOKEN not set");
-      return "";
-    }
-
-    // Mapbox Geocoding API: https://docs.mapbox.com/api/search/geocoding/
-    // types=poi: only points of interest (restaurants, shops, monuments, parks, etc.)
-    // proximity: search near these coordinates
+    // OpenStreetMap Nominatim API: https://nominatim.org/
+    // address_details=1 returns detailed address with POI info
     const response = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?types=poi&proximity=${lng},${lat}&limit=5&access_token=${token}`
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&address_details=1&zoom=18`
     );
 
     if (!response.ok) {
-      console.error("❌ Mapbox Geocoding API error:", response.statusText);
+      console.error("❌ Nominatim API error:", response.statusText);
       return "";
     }
 
     const data = await response.json();
-    
-    if (data.features && data.features.length > 0) {
-      const feature = data.features[0];
-      
-      // Try to get the most relevant name
-      // Priority: text (short name) > place_name (full name with address)
-      const name = feature.text || feature.place_name || "";
-      
-      console.log(`✅ Location found: "${name}"`);
-      return name;
+
+    if (data) {
+      // Try to get POI name first (most detailed)
+      const name =
+        data.address?.amenity ||  // restaurant, shop, museum, etc.
+        data.address?.leisure ||  // park, playground, etc.
+        data.address?.tourism ||  // attraction, monument, etc.
+        data.address?.historic || // historic building
+        data.name ||              // fallback to general name
+        "";
+
+      if (name) {
+        console.log(`✅ Location found: "${name}"`);
+        return name;
+      }
     }
 
-    console.log("⚠️ No POI found for coordinates");
+    console.log("⚠️ No location found for coordinates");
     return "";
   } catch (error) {
     console.error("❌ Error reverse geocoding:", error);
