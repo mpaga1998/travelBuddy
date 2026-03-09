@@ -782,7 +782,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
               </div>
             )}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Sign Out Confirmation Modal */}
