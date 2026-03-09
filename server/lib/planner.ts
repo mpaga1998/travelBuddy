@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { TripContext } from './tripContext';
 import { ItineraryPlan, PlanningResult } from './types/plan';
 import { buildPlanningPrompt } from './planningPrompt';
+import { buildRepairPrompt } from './repairPrompt';
 import { validatePlan, ValidatorResult, ValidationError, validatePlanLogic, BusinessLogicIssue } from './planValidator';
 
 /**
@@ -64,6 +65,65 @@ function formatBusinessIssues(issues: BusinessLogicIssue[]): string {
 }
 
 /**
+ * Attempt to repair an invalid plan by calling the model again with validation context.
+ * Includes the invalid JSON and specific errors to guide correction.
+ * Returns either a repaired valid plan or null if repair also fails.
+ * Will not retry repairs (max 1 attempt).
+ */
+async function attemptRepair(
+  invalidPlan: Record<string, unknown>,
+  validationErrors: ValidationError[],
+  context: TripContext,
+  openai: OpenAI
+): Promise<ItineraryPlan | null> {
+  try {
+    console.log(`🔧 [Planner] Repair attempt 1/1: Sending validation context to model...`);
+    const repairPrompt = buildRepairPrompt(context, invalidPlan, validationErrors);
+
+    const repairResponse = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'user',
+          content: repairPrompt,
+        },
+      ],
+      max_tokens: 2000,
+      temperature: 0.5, // Lower temperature for deterministic corrections
+    });
+
+    const repairContent = repairResponse.choices[0]?.message?.content;
+    if (!repairContent) {
+      console.error('❌ [Planner] No content in repair response from model');
+      return null;
+    }
+
+    console.log('✅ [Planner] Repair response received, extracting and validating JSON...');
+
+    // Extract and parse repaired JSON
+    const repairedJSON = extractJSON(repairContent);
+    if (!repairedJSON) {
+      console.error('❌ [Planner] Could not parse JSON from repair response');
+      return null;
+    }
+
+    // Validate the repaired plan (one attempt only—no further repairs)
+    const repairValidation: ValidatorResult = validatePlan(repairedJSON, context.totalNights);
+    if (!repairValidation.valid) {
+      const errorDetails = formatValidationErrors(repairValidation.errors);
+      console.error(`❌ [Planner] Repaired plan still invalid:\n${errorDetails}`);
+      return null;
+    }
+
+    console.log('✅ [Planner] Repaired plan validated successfully! Continuing with corrected plan...');
+    return repairValidation.plan as ItineraryPlan;
+  } catch (error) {
+    console.error('❌ [Planner] Repair attempt failed with exception:', error);
+    return null;
+  }
+}
+
+/**
  * Call the planner model to generate a structured itinerary plan.
  * Validates the response strictly before returning.
  * On validation failure, logs detailed errors and returns error result.
@@ -110,22 +170,41 @@ export async function planItinerary(context: TripContext, openai: OpenAI): Promi
 
     console.log('✅ [Planner] JSON extracted successfully, validating structure...');
 
-    // Step 2: Validate the plan structure and contents
-    const validationResult: ValidatorResult = validatePlan(parsedJSON, context.totalNights);
+    // Step 2: Validate the plan structure and contents (schema validation)
+    let validationResult: ValidatorResult = validatePlan(parsedJSON, context.totalNights);
+    let plan: ItineraryPlan;
 
     if (!validationResult.valid) {
-      const errorDetails = formatValidationErrors(validationResult.errors);
-      console.error(`❌ [Planner] Plan validation failed:\n${errorDetails}`);
-      return {
-        success: false,
-        error: `Invalid plan structure from model: ${validationResult.errors
-          .slice(0, 3)
-          .map((e) => `${e.path}: ${e.message}`)
-          .join('; ')}...`,
-      };
-    }
+      // Schema validation failed—attempt one repair with error context
+      console.log(`⚠️  [Planner] Schema validation failed (${validationResult.errors.length} error(s)). Attempting automated repair...`);
+      
+      const repairedPlan = await attemptRepair(
+        parsedJSON,
+        validationResult.errors,
+        context,
+        openai
+      );
 
-    const plan = validationResult.plan as ItineraryPlan;
+      if (repairedPlan) {
+        // Repair succeeded
+        console.log('✅ [Planner] Repair successful, using corrected plan');
+        plan = repairedPlan;
+      } else {
+        // Repair also failed—give up
+        const errorSummary = validationResult.errors
+          .slice(0, 2)
+          .map((e) => `${e.path}: ${e.message}`)
+          .join('; ');
+        console.error('❌ [Planner] Plan validation failed and repair attempt also failed');
+        return {
+          success: false,
+          error: `Invalid plan from model (repair failed): ${errorSummary}...`,
+        };
+      }
+    } else {
+      // Schema validation passed on first try
+      plan = validationResult.plan as ItineraryPlan;
+    }
 
     console.log(`✅ [Planner] Plan validated successfully. Feasible: ${plan.isFeasible}`);
     if (plan.warnings.length > 0) {
