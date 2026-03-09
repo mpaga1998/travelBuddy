@@ -476,6 +476,9 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
           <button data-bookmark style="flex:1 1 100px; padding:8px 10px; border-radius:10px; border:2px solid #16a34a; background:white; color:#111; cursor:pointer; font-weight:800; font-size:13px; outline:none; transition: all 0.2s;" data-bookmarked="false">
             ⏳ Loading...
           </button>
+          <button data-googlemaps style="flex:1 1 120px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.18); background:white; cursor:pointer; font-weight:800; color:#111; font-size:13px; outline:none;">
+            📍 Maps
+          </button>
           ${
             pin.createdById === currentUserId
               ? `<button data-delete style="padding:8px 10px; border-radius:10px; border:none; background:#dc2626; color:white; cursor:pointer; font-weight:800; outline:none;">Delete</button>`
@@ -548,6 +551,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       const dislikeBtn = container.querySelector<HTMLButtonElement>("[data-dislike]");
       const tipsBtn = container.querySelector<HTMLButtonElement>("[data-tips]");
       const bookmarkBtn = container.querySelector<HTMLButtonElement>("[data-bookmark]");
+      const googleMapsBtn = container.querySelector<HTMLButtonElement>("[data-googlemaps]");
       const deleteBtn = container.querySelector<HTMLButtonElement>("[data-delete]");
 
       likeBtn?.addEventListener("click", async (ev) => {
@@ -609,7 +613,13 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
           updateBookmarkButton(bookmarked);
         }
       });
+googleMapsBtn?.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`;
+        window.open(mapsUrl, "_blank");
+      });
 
+      
       deleteBtn?.addEventListener("click", (ev) => {
         ev.stopPropagation();
         setDeleteConfirmPinId(pin.id);
