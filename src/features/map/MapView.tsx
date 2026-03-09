@@ -614,11 +614,13 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
           updateBookmarkButton(bookmarked);
         }
       });
-googleMapsBtn?.addEventListener("click", (ev) => {
+
+      googleMapsBtn?.addEventListener("click", (ev) => {
         ev.stopPropagation();
         const mapsUrl = getMapsUrl(pin.lat, pin.lng, pin.title);
+        window.open(mapsUrl, "_blank");
+      });
 
-      
       deleteBtn?.addEventListener("click", (ev) => {
         ev.stopPropagation();
         setDeleteConfirmPinId(pin.id);
