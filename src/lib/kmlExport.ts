@@ -64,13 +64,29 @@ export function downloadKML(
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
 
-  // Show instructions after download
-  setTimeout(() => {
-    alert(
-      "📥 File downloaded!\n\nTo import into Google Maps:\n1. Go to google.com/mymaps\n2. Click 'Create a new map'\n3. Click 'Import' and select the downloaded file\n\nTo import on mobile:\n1. Open the KML file with Google Maps app\n2. Follow the import prompts"
-    );
-  }, 500);
+/**
+ * Open Google My Maps in a new tab
+ */
+export function openGoogleMyMaps(): void {
+  window.open("https://www.google.com/mymaps", "_blank");
+}
+
+/**
+ * Show detailed instructions for importing KML
+ */
+export function showImportInstructions(): void {
+  alert(
+    `📍 Your KML file has been downloaded!\n\n` +
+    `To import into Google My Maps:\n\n` +
+    `1. Click "Open Google My Maps" (new tab)\n` +
+    `2. Click "Create" → "New map"\n` +
+    `3. Click the three dots ⋮ menu\n` +
+    `4. Select "Import" → choose your downloaded KML file\n` +
+    `5. All your pins will appear on the map!\n\n` +
+    `The file is named: backpack-map-pins.kml`
+  );
 }
 
 /**
