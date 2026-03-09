@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { COUNTRIES } from "./countries";
 import { getMyProfile, sendPasswordReset, updateMyProfile, uploadMyAvatar, getMyBookmarkedPins, type Profile, calculateAge } from "./profileApi";
-import { exportPinsToKML, downloadKML, openGoogleMyMaps, showImportInstructions } from "../../lib/kmlExport";
+import { downloadKML, openGoogleMyMaps, showImportInstructions } from "../../lib/kmlExport";
 import { generateKML } from "../../lib/kmlExport";
 
 type Props = {
