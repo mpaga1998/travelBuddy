@@ -16,8 +16,9 @@ export async function getLocationNameFromCoordinates(
     }
 
     // Mapbox Geocoding API: https://docs.mapbox.com/api/search/geocoding/
+    // types=poi: only points of interest (restaurants, shops, monuments, parks, etc.)
     const response = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?types=poi,place,address&limit=1&access_token=${token}`
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?types=poi&limit=1&access_token=${token}`
     );
 
     if (!response.ok) {
