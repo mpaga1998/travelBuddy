@@ -4,9 +4,9 @@
  * Uses pre-computed TripContext to avoid re-deriving trip metrics
  */
 
-import { NormalizedTripInput } from '../types/trip';
-import { TripContext } from './tripContext';
-import { formatDate } from './date';
+import { NormalizedTripInput } from '../types/trip.js';
+import { TripContext } from './tripContext.js';
+import { formatDate } from './date.js';
 
 /**
  * ============================================================================

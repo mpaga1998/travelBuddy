@@ -4,13 +4,13 @@
  * Can be used to validate end-to-end planning behavior
  */
 
-import { runAllTripContextTests } from './tripContext.test';
-import { runAllValidationTests } from './validation.test';
+import { runAllTripContextTests } from './tripContext.test.js';
+import { runAllValidationTests } from './validation.test.js';
 import {
   formatTestSummary,
   mergeSummaries,
   TestSummary,
-} from './testUtils';
+} from './testUtils.js';
 
 /**
  * Run all unit tests (context + validation)
@@ -112,11 +112,11 @@ export const PIPELINE_TEST_CONFIG = {
  */
 export const MANUAL_PIPELINE_TEST_EXAMPLE = `
 // Step 1: Import everything needed
-import { validateAndNormalizeTripInput } from '../lib/validation';
-import { computeTripContext } from '../lib/tripContext';
-import { planItinerary } from '../lib/planner';
-import { renderItinerary } from '../lib/renderer';
-import { SAMPLE_MEDIUM_TWO_BASES } from './fixtures/sampleTrips';
+import { validateAndNormalizeTripInput } from '../lib/validation.js';
+import { computeTripContext } from '../lib/tripContext.js';
+import { planItinerary } from '../lib/planner.js';
+import { renderItinerary } from '../lib/renderer.js';
+import { SAMPLE_MEDIUM_TWO_BASES } from './fixtures/sampleTrips.js';
 
 // Step 2: Run the pipeline
 async function testFullPipeline() {
@@ -334,4 +334,4 @@ export function printTestGuidelines() {
 /**
  * Export for direct testing
  */
-export { SAMPLE_TRIPS, getSampleTrip } from './fixtures/sampleTrips';
+export { SAMPLE_TRIPS, getSampleTrip } from './fixtures/sampleTrips.js';

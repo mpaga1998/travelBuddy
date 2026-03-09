@@ -3,15 +3,15 @@
  * Generates structured ItineraryPlan before final markdown rendering
  */
 
-import { NormalizedTripInput } from '../types/trip';
-import { TripContext } from './tripContext';
-import { ItineraryPlan } from '../types/plan';
-import { buildPlanningSystemPrompt, buildPlanningUserPrompt } from './planningPrompts';
-import { parsePlanResponse, formatParseErrors, ParseResult } from './planParser';
-import { validatePlanBusinessRules, formatValidationIssues, PlanValidationResult } from './planValidator';
-import { attemptPlanRepair, formatRepairResult, RepairResult } from './planRepair';
-import { getOpenAIService } from './openaiService';
-import { getTravelHeuristics, formatHeuristicsForPrompt, summarizeHeuristics } from './travelHeuristics';
+import { NormalizedTripInput } from '../types/trip.js';
+import { TripContext } from './tripContext.js';
+import { ItineraryPlan } from '../types/plan.js';
+import { buildPlanningSystemPrompt, buildPlanningUserPrompt } from './planningPrompts.js';
+import { parsePlanResponse, formatParseErrors, ParseResult } from './planParser.js';
+import { validatePlanBusinessRules, formatValidationIssues, PlanValidationResult } from './planValidator.js';
+import { attemptPlanRepair, formatRepairResult, RepairResult } from './planRepair.js';
+import { getOpenAIService } from './openaiService.js';
+import { getTravelHeuristics, formatHeuristicsForPrompt, summarizeHeuristics } from './travelHeuristics.js';
 import {
   debugLogPlanningPromptMetadata,
   debugLogPlannerResponse,
@@ -20,7 +20,7 @@ import {
   debugLogRepairTriggered,
   debugLogRepairResult,
   debugLogPlan,
-} from './debug';
+} from './debug.js';
 
 export interface PlanningResult {
   success: boolean;

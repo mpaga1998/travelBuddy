@@ -3,8 +3,8 @@
  * Ensures GPT output is machine-readable before consuming it
  */
 
-import { ItineraryPlan, PlanStop, TransportSegment } from '../types/plan';
-import { TripContext } from './tripContext';
+import { ItineraryPlan, PlanStop, TransportSegment } from '../types/plan.js';
+import { TripContext } from './tripContext.js';
 
 export interface PlanParseError {
   type: 'extraction' | 'schema' | 'validation' | 'constraint';

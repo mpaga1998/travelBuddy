@@ -3,13 +3,13 @@
  * Attempts to fix invalid planner outputs based on validation feedback
  */
 
-import { ItineraryPlan } from '../types/plan';
-import { NormalizedTripInput } from './validation';
-import { TripContext } from './tripContext';
-import { PlanValidationIssue } from './planValidator';
-import { buildRepairSystemPrompt, buildRepairUserPrompt } from './planningPrompts';
-import { parsePlanResponse } from './planParser';
-import { getOpenAIService } from './openaiService';
+import { ItineraryPlan } from '../types/plan.js';
+import { NormalizedTripInput } from './validation.js';
+import { TripContext } from './tripContext.js';
+import { PlanValidationIssue } from './planValidator.js';
+import { buildRepairSystemPrompt, buildRepairUserPrompt } from './planningPrompts.js';
+import { parsePlanResponse } from './planParser.js';
+import { getOpenAIService } from './openaiService.js';
 
 export interface RepairResult {
   success: boolean;

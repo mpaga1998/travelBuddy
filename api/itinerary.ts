@@ -6,20 +6,20 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import dotenv from 'dotenv';
 
-import { ItineraryResponse } from './types/trip';
-import { validateAndNormalizeTripInput, formatValidationErrors } from './lib/validation';
-import { computeTripContext } from './lib/tripContext';
-import { planItinerary, summarizePlan } from './lib/planner';
-import { renderItinerary, formatRenderingResult } from './lib/renderer';
-import { generateItinerary } from './lib/openai';
-import { initializeOpenAIService } from './lib/openaiService';
+import { ItineraryResponse } from './types/trip.js';
+import { validateAndNormalizeTripInput, formatValidationErrors } from './lib/validation.js';
+import { computeTripContext } from './lib/tripContext.js';
+import { planItinerary, summarizePlan } from './lib/planner.js';
+import { renderItinerary, formatRenderingResult } from './lib/renderer.js';
+import { generateItinerary } from './lib/openai.js';
+import { initializeOpenAIService } from './lib/openaiService.js';
 import {
   initializeDebugConfig,
   debugLogNormalizedInput,
   debugLogTripContext,
   debugLogPipelineSummary,
   isDebugEnabled,
-} from './lib/debug';
+} from './lib/debug.js';
 
 // Load environment variables
 dotenv.config();

@@ -4,8 +4,8 @@
  * Ensures deterministic, type-safe trip analysis
  */
 
-import { NormalizedTripInput } from '../types/trip';
-import { parseISODate, calculateNights } from './date';
+import { NormalizedTripInput } from '../types/trip.js';
+import { parseISODate, calculateNights } from './date.js';
 
 export interface TripContext {
   // Parsed and validated dates

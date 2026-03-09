@@ -6,10 +6,10 @@
 import {
   validatePlanBusinessRules,
   PlanValidationResult,
-} from '../../lib/planValidator';
-import { computeTripContext } from '../../lib/tripContext';
-import { ItineraryPlan, PlanStop, TransportSegment } from '../../types/plan';
-import { getAllSampleTrips } from './fixtures/sampleTrips';
+} from '../../lib/planValidator.js';
+import { computeTripContext } from '../../lib/tripContext.js';
+import { ItineraryPlan, PlanStop, TransportSegment } from '../../types/plan.js';
+import { getAllSampleTrips } from './fixtures/sampleTrips.js';
 
 /**
  * Helper: Create a mock plan for testing

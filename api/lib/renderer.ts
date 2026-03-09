@@ -4,12 +4,12 @@
  * This is the second stage of two-stage generation (plan → render)
  */
 
-import { ItineraryPlan } from '../types/plan';
-import { NormalizedTripInput } from './validation';
-import { TripContext } from './tripContext';
-import { buildRenderingSystemPrompt, buildRenderingUserPrompt } from './renderingPrompts';
-import { getOpenAIService } from './openaiService';
-import { debugLogRenderingMetadata, debugLogRenderingResponse } from './debug';
+import { ItineraryPlan } from '../types/plan.js';
+import { NormalizedTripInput } from './validation.js';
+import { TripContext } from './tripContext.js';
+import { buildRenderingSystemPrompt, buildRenderingUserPrompt } from './renderingPrompts.js';
+import { getOpenAIService } from './openaiService.js';
+import { debugLogRenderingMetadata, debugLogRenderingResponse } from './debug.js';
 
 export interface RenderingResult {
   success: boolean;

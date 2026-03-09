@@ -4,10 +4,10 @@
  * Controlled by DEBUG environment variable; disabled in production by default
  */
 
-import { NormalizedTripInput } from './validation';
-import { TripContext } from './tripContext';
-import { ItineraryPlan } from '../types/plan';
-import { PlanValidationIssue } from './planValidator';
+import { NormalizedTripInput } from './validation.js';
+import { TripContext } from './tripContext.js';
+import { ItineraryPlan } from '../types/plan.js';
+import { PlanValidationIssue } from './planValidator.js';
 
 /**
  * Debug configuration

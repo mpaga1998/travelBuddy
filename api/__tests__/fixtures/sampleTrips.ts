@@ -3,7 +3,7 @@
  * Representative test cases covering different trip scenarios
  */
 
-import { NormalizedTripInput } from '../../lib/validation';
+import { NormalizedTripInput } from '../../lib/validation.js';
 
 /**
  * Scenario 1: Short city trip in same location

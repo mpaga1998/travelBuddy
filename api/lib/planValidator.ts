@@ -1,6 +1,6 @@
-import { ItineraryPlan, PlanStop, TransportSegment } from '../types/plan';
-import { NormalizedTripInput } from './validation';
-import { TripContext } from './tripContext';
+import { ItineraryPlan, PlanStop, TransportSegment } from '../types/plan.js';
+import { NormalizedTripInput } from './validation.js';
+import { TripContext } from './tripContext.js';
 
 /**
  * Severity levels for validation issues

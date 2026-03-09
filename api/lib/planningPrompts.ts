@@ -3,9 +3,9 @@
  * These prompts focus on JSON output for plan validation before markdown rendering
  */
 
-import { NormalizedTripInput } from '../types/trip';
-import { TripContext } from './tripContext';
-import { formatDate } from './date';
+import { NormalizedTripInput } from '../types/trip.js';
+import { TripContext } from './tripContext.js';
+import { formatDate } from './date.js';
 
 /**
  * System prompt for planning step

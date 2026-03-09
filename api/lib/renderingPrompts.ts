@@ -3,10 +3,10 @@
  * Converts structured ItineraryPlan into engaging, readable markdown
  */
 
-import { NormalizedTripInput } from './validation';
-import { TripContext } from './tripContext';
-import { ItineraryPlan } from '../types/plan';
-import { formatDate } from './date';
+import { NormalizedTripInput } from './validation.js';
+import { TripContext } from './tripContext.js';
+import { ItineraryPlan } from '../types/plan.js';
+import { formatDate } from './date.js';
 
 /**
  * System prompt for rendering step

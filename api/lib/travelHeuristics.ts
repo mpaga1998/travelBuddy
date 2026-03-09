@@ -4,8 +4,8 @@
  * Includes transfer times, border info, transport preferences, and scheduling rules
  */
 
-import { NormalizedTripInput } from './validation';
-import { TripContext } from './tripContext';
+import { NormalizedTripInput } from './validation.js';
+import { TripContext } from './tripContext.js';
 
 /**
  * Categories of travel heuristics

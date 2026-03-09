@@ -3,9 +3,9 @@
  */
 
 import OpenAI from 'openai';
-import { NormalizedTripInput } from '../types/trip';
-import { buildSystemPrompt, buildUserPrompt } from './prompts';
-import { computeTripContext } from './tripContext';
+import { NormalizedTripInput } from '../types/trip.js';
+import { buildSystemPrompt, buildUserPrompt } from './prompts.js';
+import { computeTripContext } from './tripContext.js';
 
 // Initialize OpenAI client
 const openai = new OpenAI({

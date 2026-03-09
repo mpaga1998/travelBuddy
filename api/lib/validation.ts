@@ -7,8 +7,8 @@ import {
   NormalizedTripInput,
   ValidationError,
   ValidationResult,
-} from '../types/trip';
-import { parseISODate } from './date';
+} from '../types/trip.js';
+import { parseISODate } from './date.js';
 
 /**
  * Validate and normalize TripInput

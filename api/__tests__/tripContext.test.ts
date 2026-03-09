@@ -3,8 +3,8 @@
  * Validates that trip math is computed correctly for various scenarios
  */
 
-import { computeTripContext } from '../../lib/tripContext';
-import { getAllSampleTrips } from './fixtures/sampleTrips';
+import { computeTripContext } from '../../lib/tripContext.js';
+import { getAllSampleTrips } from './fixtures/sampleTrips.js';
 
 /**
  * Test 1: Trip context calculation for SHORT_CITY trip
