@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { TripInput, ItineraryResponse } from '../server/lib/types/trip';
-import { validateTripInput } from '../server/lib/validation';
+import { validateTripInput, normalizeTripInput } from '../server/lib/validation';
 import { buildSystemPrompt, buildUserPrompt } from '../server/lib/prompts';
 import { initializeOpenAI } from '../server/lib/openai';
 
@@ -75,22 +75,30 @@ export default async function handler(
   }
 
   try {
-    const tripInput: TripInput = req.body;
+    const tripInput = req.body as TripInput;
 
     // Validate input
     const validation = validateTripInput(tripInput);
     if (!validation.valid) {
+      // Format error messages: "field1: message1; field2: message2"
+      const errorMessage = validation.errors
+        .map((err) => `${err.field}: ${err.message}`)
+        .join('; ');
+
       const response: ItineraryResponse = {
         success: false,
         itinerary: '',
-        error: validation.error,
+        error: errorMessage,
       };
       res.status(400).json(response);
       return;
     }
 
+    // Normalize input: trim strings, remove empty arrays, apply defaults
+    const normalizedInput = normalizeTripInput(tripInput);
+
     // Generate itinerary
-    const itinerary = await generateItinerary(tripInput);
+    const itinerary = await generateItinerary(normalizedInput);
 
     const response: ItineraryResponse = {
       success: true,
