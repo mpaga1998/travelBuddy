@@ -1,4 +1,5 @@
 import { ItineraryPlan, Stop, TransportSegment } from './types/plan';
+import { TripContext } from './tripContext';
 
 /**
  * Validation error with field path and human-readable message.
@@ -9,12 +10,29 @@ export interface ValidationError {
 }
 
 /**
+ * Business logic issue: detected logical inconsistency in the plan.
+ */
+export interface BusinessLogicIssue {
+  rule: string; // e.g., "night-sum", "departure-logic", "infeasibility-cuts"
+  severity: 'error' | 'warning';
+  message: string;
+}
+
+/**
  * Validation result: either valid with plan, or invalid with errors.
  */
 export interface ValidatorResult {
   valid: boolean;
   plan?: ItineraryPlan;
   errors: ValidationError[];
+}
+
+/**
+ * Business logic validation result.
+ */
+export interface BusinessValidationResult {
+  valid: boolean;
+  issues: BusinessLogicIssue[];
 }
 
 /**
@@ -262,5 +280,152 @@ export function validatePlan(plan: unknown, expectedTotalNights: number): Valida
     valid: true,
     plan: plan as ItineraryPlan,
     errors: [],
+  };
+}
+
+// ============================================================================
+// BUSINESS LOGIC VALIDATION
+// ============================================================================
+
+/**
+ * Validate that the plan is logically consistent and realistic.
+ * This runs AFTER JSON schema validation.
+ * Checks business rules like: is the route coherent? Is return logic sound?
+ */
+export function validatePlanLogic(plan: ItineraryPlan, context: TripContext): BusinessValidationResult {
+  const issues: BusinessLogicIssue[] = [];
+
+  // ============ RULE 1: Route must have at least one stop ============
+  if (!plan.route || plan.route.length === 0) {
+    issues.push({
+      rule: 'route-not-empty',
+      severity: 'error',
+      message: 'Route must contain at least one stop',
+    });
+    // Stop further validation if route is empty
+    return { valid: false, issues };
+  }
+
+  // ============ RULE 2: No stop with 0 or negative nights ============
+  plan.route.forEach((stop, idx) => {
+    if (stop.nights <= 0) {
+      issues.push({
+        rule: 'stop-nights-positive',
+        severity: 'error',
+        message: `Stop ${idx + 1} (${stop.location}) has ${stop.nights} nights. All stops must have at least 1 night.`,
+      });
+    }
+  });
+
+  // ============ RULE 3: Total route nights must equal backend totalNights ============
+  const totalPlanNights = plan.route.reduce((sum, stop) => sum + stop.nights, 0);
+  if (totalPlanNights !== plan.totalNights) {
+    issues.push({
+      rule: 'night-sum-match',
+      severity: 'error',
+      message: `Total nights in route (${totalPlanNights}) does not match plan totalNights (${plan.totalNights})`,
+    });
+  }
+
+  // ============ RULE 4: First stop must start on Day 1 ============
+  if (plan.route[0] && plan.route[0].startDay !== 1) {
+    issues.push({
+      rule: 'first-stop-day-1',
+      severity: 'error',
+      message: `First stop must start on day 1, got day ${plan.route[0].startDay}`,
+    });
+  }
+
+  // ============ RULE 5: Last stop must end on totalNights day ============
+  const lastStop = plan.route[plan.route.length - 1];
+  if (lastStop && lastStop.endDay !== plan.totalNights) {
+    issues.push({
+      rule: 'last-stop-end-day',
+      severity: 'error',
+      message: `Last stop must end on day ${plan.totalNights}, got day ${lastStop.endDay}. Remember: day ${plan.totalNights} is when traveler departs.`,
+    });
+  }
+
+  // ============ RULE 6: Departure location logic ============
+  // If departure location differs from final stop location, plan should address return
+  const finalStopLocation = lastStop?.location;
+  const departureLocation = context.departureLocation;
+
+  const locationsMatch =
+    finalStopLocation && departureLocation && finalStopLocation.toLowerCase() === departureLocation.toLowerCase();
+
+  if (!locationsMatch && finalStopLocation) {
+    // Plan must explain how traveler returns to departure location
+    const hasReturnTransport = plan.transportSegments.some(
+      (seg) => seg.from && seg.from.toLowerCase() === finalStopLocation.toLowerCase() && seg.to && seg.to.toLowerCase() === departureLocation.toLowerCase()
+    );
+
+    const hasReturnWarning = plan.warnings.some(
+      (w) => w.toLowerCase().includes('return') || w.toLowerCase().includes('depart')
+    );
+
+    if (!hasReturnTransport && !hasReturnWarning) {
+      issues.push({
+        rule: 'departure-logic',
+        severity: 'warning',
+        message: `Plan ends in ${finalStopLocation} but departure is from ${departureLocation}. No return transport or warning detected. Plan should explain how traveler reaches departure location.`,
+      });
+    }
+  }
+
+  // ============ RULE 7: Transport segments coherence ============
+  // Should have roughly (num_stops - 1) transport segments, or more if there are multiple transfers per stop
+  if (plan.route.length > 1 && plan.transportSegments.length === 0) {
+    issues.push({
+      rule: 'transport-coherence',
+      severity: 'warning',
+      message: `Route has ${plan.route.length} stops but no transport segments defined. Multi-stop trips should have transport segments between locations.`,
+    });
+  }
+
+  // Check that transport segments connect stops in order (basic coherence check)
+  const uniqueTransportFroms = new Set(plan.transportSegments.map((s) => s.from?.toLowerCase()));
+  const routeLocations = new Set(plan.route.map((s) => s.location.toLowerCase()));
+
+  plan.transportSegments.forEach((seg, idx) => {
+    const fromLower = seg.from?.toLowerCase();
+    const toLower = seg.to?.toLowerCase();
+
+    if (fromLower && !routeLocations.has(fromLower)) {
+      issues.push({
+        rule: 'transport-coherence',
+        severity: 'warning',
+        message: `Transport segment ${idx + 1} departs from "${seg.from}" which is not in the route. Check consistency.`,
+      });
+    }
+  });
+
+  // ============ RULE 8: Infeasibility must justify cuts/alternatives ============
+  if (!plan.isFeasible && plan.cutsOrAlternatives.length === 0) {
+    issues.push({
+      rule: 'infeasibility-cuts',
+      severity: 'error',
+      message: 'Plan is marked infeasible but provides no cutsOrAlternatives. If a trip is not feasible, suggest ways to make it work.`,
+    });
+  }
+
+  // ============ RULE 9: Feasible plans should not have zero nights allocated ============
+  if (plan.isFeasible && plan.route.length > 0) {
+    const hasZeroNightStop = plan.route.some((stop) => stop.nights === 0);
+    if (hasZeroNightStop) {
+      issues.push({
+        rule: 'feasible-positive-nights',
+        severity: 'warning',
+        message: 'Plan is marked feasible but includes stops with 0 nights. For a feasible plan, allocate at least 1 night per stop.',
+      });
+    }
+  }
+
+  // ============ RESULT ============
+  const hasErrors = issues.some((issue) => issue.severity === 'error');
+
+  return {
+    valid: !hasErrors,
+    issues,
   };
 }

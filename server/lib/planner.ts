@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { TripContext } from './tripContext';
 import { ItineraryPlan, PlanningResult } from './types/plan';
 import { buildPlanningPrompt } from './planningPrompt';
-import { validatePlan, ValidatorResult, ValidationError } from './planValidator';
+import { validatePlan, ValidatorResult, ValidationError, validatePlanLogic, BusinessLogicIssue } from './planValidator';
 
 /**
  * Attempt to extract and parse JSON from a response string.
@@ -43,6 +43,24 @@ function extractJSON(responseText: string): Record<string, unknown> | null {
  */
 function formatValidationErrors(errors: ValidationError[]): string {
   return errors.map((err) => `  ${err.path}: ${err.message}`).join('\n');
+}
+
+/**
+ * Format business logic issues for logging.
+ */
+function formatBusinessIssues(issues: BusinessLogicIssue[]): string {
+  const errors = issues.filter((i) => i.severity === 'error');
+  const warnings = issues.filter((i) => i.severity === 'warning');
+
+  let output = '';
+  if (errors.length > 0) {
+    output += 'ERRORS:\n' + errors.map((i) => `  [${i.rule}] ${i.message}`).join('\n');
+  }
+  if (warnings.length > 0) {
+    if (output) output += '\n';
+    output += 'WARNINGS:\n' + warnings.map((i) => `  [${i.rule}] ${i.message}`).join('\n');
+  }
+  return output;
 }
 
 /**
@@ -114,9 +132,34 @@ export async function planItinerary(context: TripContext, openai: OpenAI): Promi
       console.log(`⚠️  [Planner] Trip warnings: ${plan.warnings.join('; ')}`);
     }
 
+    // Step 3: Validate business logic (realistic itinerary, night allocations, departure coherence)
+    console.log('🎯 [Planner] Validating business logic rules...');
+    const businessValidation = validatePlanLogic(plan, context);
+
+    if (businessValidation.issues.length > 0) {
+      const issueDetails = formatBusinessIssues(businessValidation.issues);
+      console.log(`⚠️  [Planner] Business logic issues found:\n${issueDetails}`);
+    }
+
+    // Separate errors from warnings
+    const businessErrors = businessValidation.issues.filter((i) => i.severity === 'error');
+
+    if (businessErrors.length > 0) {
+      const errorSummary = businessErrors.map((e) => `${e.rule}: ${e.message}`).join('; ');
+      console.error(`❌ [Planner] Business validation failed: ${errorSummary}`);
+      return {
+        success: false,
+        error: `Plan violates business rules: ${errorSummary}`,
+        businessIssues: businessValidation.issues,
+      };
+    }
+
+    // Success: Return plan with any warnings included
+    console.log('✅ [Planner] All validations passed. Plan ready for rendering.');
     return {
       success: true,
       plan,
+      businessIssues: businessValidation.issues.length > 0 ? businessValidation.issues : undefined,
     };
   } catch (error) {
     console.error('❌ [Planner] Unexpected error:', error);

@@ -64,10 +64,21 @@ export interface ItineraryPlan {
 }
 
 /**
+ * Business logic issue found during plan validation.
+ */
+export interface BusinessLogicIssue {
+  rule: string;
+  message: string;
+  severity: 'error' | 'warning';
+}
+
+/**
  * Planning result: either a valid plan or an error state.
+ * May include businessIssues even on success (for warnings that don't block).
  */
 export interface PlanningResult {
   success: boolean;
   plan?: ItineraryPlan;
   error?: string;
+  businessIssues?: BusinessLogicIssue[];
 }

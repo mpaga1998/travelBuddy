@@ -21,4 +21,5 @@ export interface ItineraryResponse {
   success: boolean;
   itinerary: string;
   error?: string;
+  businessIssues?: Array<{ rule: string; message: string; severity: 'error' | 'warning' }>;
 }

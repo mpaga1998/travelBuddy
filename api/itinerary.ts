@@ -5,8 +5,17 @@ import { buildTripContext, TripContext } from '../server/lib/tripContext';
 import { initializeOpenAI } from '../server/lib/openai';
 import { planItinerary } from '../server/lib/planner';
 import { renderItineraryMarkdown } from '../server/lib/renderer';
+import { BusinessLogicIssue } from '../server/lib/planValidator';
 
 const openai = initializeOpenAI();
+
+/**
+ * Result from generation phase: markdown itinerary and any business issues encountered.
+ */
+interface GenerationResult {
+  itinerary: string;
+  businessIssues?: BusinessLogicIssue[];
+}
 
 /**
  * Generate an itinerary through two phases:
@@ -14,8 +23,9 @@ const openai = initializeOpenAI();
  * 2. Rendering: Convert plan to markdown
  * 
  * If planning fails validation, throws with detailed error info.
+ * Returns both itinerary markdown and any business issues found.
  */
-async function generateItinerary(context: TripContext): Promise<string> {
+async function generateItinerary(context: TripContext): Promise<GenerationResult> {
   // Phase 1: Planning
   const planningResult = await planItinerary(context, openai);
 
@@ -31,7 +41,10 @@ async function generateItinerary(context: TripContext): Promise<string> {
   // Phase 2: Rendering
   const markdownItinerary = renderItineraryMarkdown(plan);
 
-  return markdownItinerary;
+  return {
+    itinerary: markdownItinerary,
+    businessIssues: planningResult.businessIssues,
+  };
 }
 
 
@@ -100,12 +113,21 @@ export default async function handler(
     const tripContext = buildTripContext(normalizedInput);
 
     // Generate itinerary using the computed trip context
-    const itinerary = await generateItinerary(tripContext);
+    const generationResult = await generateItinerary(tripContext);
 
     const response: ItineraryResponse = {
       success: true,
-      itinerary,
+      itinerary: generationResult.itinerary,
     };
+
+    // Include business issues if any warnings were found during planning
+    if (generationResult.businessIssues && generationResult.businessIssues.length > 0) {
+      response.businessIssues = generationResult.businessIssues;
+      console.log(
+        `ℹ️  [Itinerary] Generated itinerary with ${generationResult.businessIssues.length} business issue(s)`
+      );
+    }
+
     res.status(200).json(response);
   } catch (error) {
     console.error('[Itinerary] Generation error:', error);
