@@ -2,38 +2,32 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { TripInput, ItineraryResponse } from '../server/lib/types/trip';
 import { validateTripInput, normalizeTripInput } from '../server/lib/validation';
 import { buildTripContext, TripContext } from '../server/lib/tripContext';
-import { buildSystemPrompt, buildUserPrompt } from '../server/lib/prompts';
 import { initializeOpenAI } from '../server/lib/openai';
+import { planItinerary } from '../server/lib/planner';
+import { renderItineraryMarkdown } from '../server/lib/renderer';
 
 const openai = initializeOpenAI();
 
 /**
- * Generate an itinerary based on trip context.
- * Calls OpenAI with system and user prompts, passing pre-computed trip math.
+ * Generate an itinerary through two phases:
+ * 1. Planning: Call planner to get a structured ItineraryPlan
+ * 2. Rendering: Convert plan to markdown
  */
 async function generateItinerary(context: TripContext): Promise<string> {
-  const response = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
-    messages: [
-      {
-        role: 'system',
-        content: buildSystemPrompt(),
-      },
-      {
-        role: 'user',
-        content: buildUserPrompt(context),
-      },
-    ],
-    max_tokens: 3000,
-    temperature: 0.7,
-  });
+  // Phase 1: Planning
+  const planningResult = await planItinerary(context, openai);
 
-  const content = response.choices[0]?.message?.content;
-  if (!content) {
-    throw new Error('No content received from OpenAI');
+  if (!planningResult.success || !planningResult.plan) {
+    // Fallback: if planning fails, throw error (will be caught by handler)
+    throw new Error(planningResult.error || 'Failed to generate plan');
   }
 
-  return content;
+  const plan = planningResult.plan;
+
+  // Phase 2: Rendering
+  const markdownItinerary = renderItineraryMarkdown(plan);
+
+  return markdownItinerary;
 }
 
 
