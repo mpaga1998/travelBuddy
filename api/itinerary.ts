@@ -1,16 +1,17 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { TripInput, ItineraryResponse } from '../server/lib/types/trip';
 import { validateTripInput, normalizeTripInput } from '../server/lib/validation';
+import { buildTripContext, TripContext } from '../server/lib/tripContext';
 import { buildSystemPrompt, buildUserPrompt } from '../server/lib/prompts';
 import { initializeOpenAI } from '../server/lib/openai';
 
 const openai = initializeOpenAI();
 
 /**
- * Generate an itinerary based on trip input.
- * Calls OpenAI with system and user prompts.
+ * Generate an itinerary based on trip context.
+ * Calls OpenAI with system and user prompts, passing pre-computed trip math.
  */
-async function generateItinerary(input: TripInput): Promise<string> {
+async function generateItinerary(context: TripContext): Promise<string> {
   const response = await openai.chat.completions.create({
     model: 'gpt-3.5-turbo',
     messages: [
@@ -20,7 +21,7 @@ async function generateItinerary(input: TripInput): Promise<string> {
       },
       {
         role: 'user',
-        content: buildUserPrompt(input),
+        content: buildUserPrompt(context),
       },
     ],
     max_tokens: 3000,
@@ -97,8 +98,11 @@ export default async function handler(
     // Normalize input: trim strings, remove empty arrays, apply defaults
     const normalizedInput = normalizeTripInput(tripInput);
 
-    // Generate itinerary
-    const itinerary = await generateItinerary(normalizedInput);
+    // Build trip context: pre-compute all dates, durations, and categorization
+    const tripContext = buildTripContext(normalizedInput);
+
+    // Generate itinerary using the computed trip context
+    const itinerary = await generateItinerary(tripContext);
 
     const response: ItineraryResponse = {
       success: true,

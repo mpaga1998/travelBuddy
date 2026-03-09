@@ -1,5 +1,5 @@
-import { TripInput } from './types/trip';
-import { parseISODate, formatDateReadable, calculateNights } from './date';
+import { TripContext } from './tripContext';
+import { formatDateReadable } from './date';
 
 /**
  * Generate the system prompt for the OpenAI model.
@@ -66,69 +66,67 @@ Never say the trip is feasible if it isn't. Suggest cuts or alternatives instead
 /**
  * Generate the user prompt for the OpenAI model.
  * This contextualizes the specific trip details and constraints.
+ * Uses pre-computed TripContext to avoid recalculating dates and durations.
  */
-export function buildUserPrompt(input: TripInput): string {
-  const arrivalDate = parseISODate(input.arrival.date);
-  const departureDate = parseISODate(input.departure.date);
-  const nights = calculateNights(arrivalDate, departureDate);
-  const firstName = input.userFirstName;
+export function buildUserPrompt(context: TripContext): string {
+  const { totalNights, tripLengthCategory, arrivalLocation, departureLocation } = context;
+  const { userFirstName, stops, travelPace, budget, desiredAttractions, notes } = context.sourceInput;
 
-  const startDate = formatDateReadable(arrivalDate);
-  const endDate = formatDateReadable(departureDate);
+  const startDate = formatDateReadable(context.arrivalDate);
+  const endDate = formatDateReadable(context.departureDate);
 
-  // For short trips (<=5 days), use detailed day-by-day format
-  // For longer trips (>5 days), use regional grouping format
-  const isLongTrip = nights > 5;
+  // Choose prompt strategy based on pre-computed category
+  const isLongTrip = tripLengthCategory === 'long' || (tripLengthCategory === 'medium' && totalNights > 5);
 
   if (isLongTrip) {
-    return `${firstName ? `Hey ${firstName}!` : 'Hello!'} Building your ${nights}-day trip...
+    return `${userFirstName ? `Hey ${userFirstName}!` : 'Hello!'} Building your ${totalNights}-night trip...
 
 **TRIP CONSTRAINTS:**
-- Arrive: ${startDate} in ${input.arrival.location}
-- Depart: ${endDate} from ${input.departure.location}
-${input.stops && input.stops.length > 0 ? `- Stops: ${input.stops.join(', ')}` : ''}
-- Total: ${nights} nights on the ground
-- Pace: ${input.travelPace === 'relaxed' ? 'Relaxed pace - time to breathe' : input.travelPace === 'active' ? 'Active pace - pack it in' : 'Balanced'}
-- Budget: ${input.budget}
+- Arrive: ${startDate} in ${arrivalLocation}
+- Depart: ${endDate} from ${departureLocation}
+${stops && stops.length > 0 ? `- Stops: ${stops.join(', ')}` : ''}
+- Total: ${totalNights} nights on the ground
+- Pace: ${travelPace === 'relaxed' ? 'Relaxed pace - time to breathe' : travelPace === 'active' ? 'Active pace - pack it in' : 'Balanced'}
+- Budget: ${budget || '(not specified)'}
 
 **WANT TO SEE:**
-${input.desiredAttractions.length > 0 ? input.desiredAttractions.map((attr) => `- ${attr}`).join('\n') : '(No specific attractions mentioned)'}
+${desiredAttractions.length > 0 ? desiredAttractions.map((attr) => `- ${attr}`).join('\n') : '(No specific attractions mentioned)'}
 
-${input.notes ? `**NOTES:** ${input.notes}` : ''}
+${notes ? `**NOTES:** ${notes}` : ''}
 
 **YOUR MISSION:**
-1. Figure out which cities/regions can realistically fit in ${nights} nights. Be honest if it's too ambitious.
+1. Figure out which cities/regions can realistically fit in ${totalNights} nights. Be honest if it's too ambitious.
 2. Allocate nights across locations (e.g., 3-3-1 split across 3 cities, not 7-7-7).
 3. Include transport times between every stop. Don't hide the travel.
-4. Remember: You must END in ${input.departure.location} on ${endDate}. Plan return logistics.
+4. Remember: You must END in ${departureLocation} on ${endDate}. Plan return logistics.
 5. For each location, show real daily breakdown with time estimates.
 6. If it's a tight squeeze, say so and suggest alternatives.
 
-Use ${firstName ? firstName + "'s" : 'the user\'s'} name throughout. Be realistic. Quality over coverage.`;
+Use ${userFirstName ? userFirstName + "'s" : 'the user\'s'} name throughout. Be realistic. Quality over coverage.`;
   } else {
-    return `${firstName ? `Hey ${firstName}!` : 'Hey there!'} Let's plan your ${nights}-day trip...
+    return `${userFirstName ? `Hey ${userFirstName}!` : 'Hey there!'} Let's plan your ${totalNights}-night trip...
 
 **TRIP CONSTRAINTS:**
-- Arrive: ${startDate} in ${input.arrival.location}
-- Depart: ${endDate} from ${input.departure.location}
-${input.stops && input.stops.length > 0 ? `- Stops: ${input.stops.join(', ')}` : ''}
-- Total: ${nights} nights on the ground
-- Pace: ${input.travelPace === 'relaxed' ? 'Relaxed pace - time to breathe' : input.travelPace === 'active' ? 'Active pace - pack it in' : 'Balanced'}
-- Budget: ${input.budget}
+- Arrive: ${startDate} in ${arrivalLocation}
+- Depart: ${endDate} from ${departureLocation}
+${stops && stops.length > 0 ? `- Stops: ${stops.join(', ')}` : ''}
+- Total: ${totalNights} nights on the ground
+- Pace: ${travelPace === 'relaxed' ? 'Relaxed pace - time to breathe' : travelPace === 'active' ? 'Active pace - pack it in' : 'Balanced'}
+- Budget: ${budget || '(not specified)'}
 
 **WANT TO SEE:**
-${input.desiredAttractions.length > 0 ? input.desiredAttractions.map((attraction) => `- ${attraction}`).join('\n') : '(No specific attractions mentioned)'}
+${desiredAttractions.length > 0 ? desiredAttractions.map((attraction) => `- ${attraction}`).join('\n') : '(No specific attractions mentioned)'}
 
-${input.notes ? `**NOTES:** ${input.notes}` : ''}
+${notes ? `**NOTES:** ${notes}` : ''}
 
 **YOUR MISSION:**
 1. Create a realistic DAY-BY-DAY breakdown.
 2. For each day show: morning, afternoon, evening, night (with TIME estimates).
 3. Include transport time to next location if applicable.
-4. Remember: You must END in ${input.departure.location} on ${endDate}. Plan the last day accordingly.
-5. If ${nights} days is tight, say so. Suggest what to cut or what needs more time.
+4. Remember: You must END in ${departureLocation} on ${endDate}. Plan the last day accordingly.
+5. If ${totalNights} nights is tight, say so. Suggest what to cut or what needs more time.
 6. Focus on experiences that actually fit and are socially engaging.
 
-Use ${firstName ? firstName + "'s" : 'the user\'s'} name throughout. Be honest. Make it doable.`;
+Use ${userFirstName ? userFirstName + "'s" : 'the user\'s'} name throughout. Be honest. Make it doable.`;
   }
 }
