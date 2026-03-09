@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { COUNTRIES } from "./countries";
 import { getMyProfile, sendPasswordReset, updateMyProfile, uploadMyAvatar, getMyBookmarkedPins, type Profile, calculateAge } from "./profileApi";
+import { exportPinsToKML } from "../../lib/kmlExport";
 
 type Props = {
   open: boolean;
@@ -673,11 +674,37 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                 </div>
               </div>
             ) : (
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
-                gap: isMobile ? 12 : 16,
-              }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
+                {/* Export Button */}
+                <button
+                  onClick={() => exportPinsToKML(bookmarkedPins)}
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(37, 99, 235, 0.3)",
+                    background: "rgba(37, 99, 235, 0.08)",
+                    color: "#2563eb",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    fontSize: 14,
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.target as HTMLElement).style.background = "rgba(37, 99, 235, 0.15)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.target as HTMLElement).style.background = "rgba(37, 99, 235, 0.08)";
+                  }}
+                >
+                  📥 Export to Maps
+                </button>
+
+                {/* Pins Grid */}
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
+                  gap: isMobile ? 12 : 16,
+                }}>
                 {bookmarkedPins.map((pin) => (
                   <div
                     key={pin.id}
@@ -779,6 +806,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                     </div>
                   </div>
                 ))}
+              </div>
               </div>
             )}
           </div>
