@@ -4,7 +4,7 @@ import { formatDateReadable } from './date';
 /**
  * Build a planning prompt for the planner model.
  * This prompt asks for a structured JSON plan, not free-text itinerary.
- * Focus: feasibility, routing, night allocation, transport clarity.
+ * Emphasis on strict JSON format and feasibility logic.
  */
 export function buildPlanningPrompt(context: TripContext): string {
   const { totalNights, tripLengthCategory, arrivalLocation, departureLocation, sameArrivalDepartureLocation } = context;
@@ -25,7 +25,7 @@ export function buildPlanningPrompt(context: TripContext): string {
     ? `Return to ${departureLocation} by evening of ${endDate} for departure.`
     : `Return to ${departureLocation} by evening of ${endDate} for departure (requires travel from final location).`;
 
-  return `You are a trip routing expert. Analyze this trip request and output a VALID JSON plan.
+  return `You are a trip routing expert. Analyze this request and output ONLY a valid JSON plan.
 
 TRIP CONSTRAINTS:
 - Traveler: ${userFirstName || 'Friend'}
@@ -43,45 +43,59 @@ ${notes ? `SPECIAL NOTES: ${notes}` : ''}
 
 ${returnLogistics}
 
-TASK: Output a JSON object (and ONLY JSON, no markdown, no explanation) matching this schema:
+---
+
+CRITICAL: Output ONLY valid JSON. No markdown, no explanation, no code blocks. Just raw JSON.
+
+Required JSON schema (exact field names and types):
 
 {
-  "isFeasible": boolean,
-  "summary": "one-line description of the planned route",
-  "totalNights": number (must equal ${totalNights}),
+  "isFeasible": true or false (boolean, required),
+  "summary": "one-line route description" (string, required, non-empty),
+  "totalNights": number (integer, required, must equal ${totalNights}),
   "route": [
     {
-      "location": "city name",
-      "startDay": number (1-indexed),
-      "endDay": number (1-indexed),
-      "nights": number,
-      "reason": "why this location / allocation justification"
+      "location": "city name" (string, required),
+      "startDay": integer (required, 1-indexed),
+      "endDay": integer (required, >= startDay),
+      "nights": integer (required, nights = endDay - startDay + 1),
+      "reason": "allocation justification" (string, required, non-empty)
     }
   ],
   "transportSegments": [
     {
-      "from": "origin city",
-      "to": "destination city",
-      "day": number (day the transfer happens),
-      "mode": "transport mode (minibus, van, flight, etc)",
-      "estimatedDuration": "e.g., '4-5 hours'",
-      "cost": "e.g., '~800 som' or '\$50'"
+      "from": "origin city" (string, required),
+      "to": "destination city" (string, required),
+      "day": integer (required, when transfer happens),
+      "mode": "minibus|van|flight|etc" (string, required),
+      "estimatedDuration": "e.g. 4-5 hours" (string, required),
+      "cost": "e.g. ~800 som or \$50" (string, required)
     }
   ],
-  "warnings": ["list of feasibility warnings if any"],
-  "cutsOrAlternatives": ["possible simplifications if trip is too ambitious"]
+  "warnings": ["warning 1", "warning 2"] (array of strings, required, can be empty),
+  "cutsOrAlternatives": ["alternative 1"] (array of strings, required, can be empty)
 }
 
-RULES FOR YOUR JSON:
-1. The first stop's startDay is always 1 (arrival day).
-2. The last stop's endDay is ${totalNights} (day before departure).
-3. nights = endDay - startDay + 1 for each stop.
-4. Sum of all nights must equal ${totalNights}.
-5. Transport segments must clearly show when transfers happen.
-6. If the route is physically impossible or too ambitious, set isFeasible=false and explain in warnings.
-7. If feasible but tight, set isFeasible=true but include warnings.
-8. Do NOT add stops beyond what is realistic for ${totalNights} nights.
-9. Be honest: if ${tripLengthCategory === 'short' ? '1-3 night trips' : tripLengthCategory === 'medium' ? '4-7 night trips' : '8+ night trips'} are too short to visit all suggested stops, recommend cuts in cutsOrAlternatives.
+STRICT VALIDATION RULES:
+1. isFeasible must be boolean (true or false).
+2. summary must be a non-empty string.
+3. totalNights must be a positive integer equal to ${totalNights}.
+4. route must be an array with at least 1 stop.
+  - First stop MUST have startDay = 1.
+  - Last stop MUST have endDay = ${totalNights}.
+  - Each stop's nights must equal (endDay - startDay + 1).
+  - Sum of stopNights must equal totalNights.
+  - No duplicate locations.
+5. transportSegments must be an array (can be empty, or one less than num stops).
+6. warnings must be an array of strings (can be empty).
+7. cutsOrAlternatives must be an array of strings (can be empty).
 
-Output ONLY valid JSON. No other text.`;
+FEASIBILITY LOGIC:
+- isFeasible = true if route is viable and respects all constraints.
+- isFeasible = false if route is impossible (e.g., too many stops, no time for travel).
+- If false, populate warnings and cutsOrAlternatives to explain why.
+
+---
+
+Output valid JSON only. Do not add any explanation or markdown.`;
 }

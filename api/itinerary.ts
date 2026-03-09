@@ -12,14 +12,18 @@ const openai = initializeOpenAI();
  * Generate an itinerary through two phases:
  * 1. Planning: Call planner to get a structured ItineraryPlan
  * 2. Rendering: Convert plan to markdown
+ * 
+ * If planning fails validation, throws with detailed error info.
  */
 async function generateItinerary(context: TripContext): Promise<string> {
   // Phase 1: Planning
   const planningResult = await planItinerary(context, openai);
 
   if (!planningResult.success || !planningResult.plan) {
-    // Fallback: if planning fails, throw error (will be caught by handler)
-    throw new Error(planningResult.error || 'Failed to generate plan');
+    // Planning failed - could be JSON parse error, validation error, or model error
+    const error = planningResult.error || 'Unknown planning error';
+    console.error(`❌ [Generation] Planning phase failed: ${error}`);
+    throw new Error(`Planning failed: ${error}`);
   }
 
   const plan = planningResult.plan;
@@ -104,13 +108,21 @@ export default async function handler(
     };
     res.status(200).json(response);
   } catch (error) {
-    console.error('Itinerary generation error:', error);
+    console.error('[Itinerary] Generation error:', error);
+
+    // Distinguish between planning errors and other generation errors
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate itinerary';
+    const isPlanningError = errorMessage.includes('Planning failed') || errorMessage.includes('plan');
+
     const response: ItineraryResponse = {
       success: false,
       itinerary: '',
-      error:
-        error instanceof Error ? error.message : 'Failed to generate itinerary',
+      error: isPlanningError
+        ? `Could not plan itinerary: ${errorMessage}`
+        : `Failed to generate itinerary: ${errorMessage}`,
     };
-    res.status(500).json(response);
+
+    const statusCode = isPlanningError ? 422 : 500;
+    res.status(statusCode).json(response);
   }
 }

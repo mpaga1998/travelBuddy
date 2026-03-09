@@ -2,53 +2,59 @@ import OpenAI from 'openai';
 import { TripContext } from './tripContext';
 import { ItineraryPlan, PlanningResult } from './types/plan';
 import { buildPlanningPrompt } from './planningPrompt';
+import { validatePlan, ValidatorResult, ValidationError } from './planValidator';
 
 /**
- * Attempt to parse a string as an ItineraryPlan JSON object.
- * Returns the parsed plan or null if parsing fails.
+ * Attempt to extract and parse JSON from a response string.
+ * Handles cases where model includes explanation text around JSON.
+ * Returns parsed JSON object or null if extraction/parsing fails.
  */
-function parsePlanJSON(jsonString: string): ItineraryPlan | null {
+function extractJSON(responseText: string): Record<string, unknown> | null {
   try {
-    // Extract JSON if the response contains other text
-    // Look for the first { and last } in case model adds explanation
-    const jsonStart = jsonString.indexOf('{');
-    const jsonEnd = jsonString.lastIndexOf('}');
+    // Look for JSON boundaries: first { to last }
+    const jsonStart = responseText.indexOf('{');
+    const jsonEnd = responseText.lastIndexOf('}');
 
     if (jsonStart === -1 || jsonEnd === -1 || jsonStart > jsonEnd) {
-      console.error('❌ [Planning] Could not find JSON boundaries in response');
+      console.error('❌ [Planner] No JSON boundaries found in response');
       return null;
     }
 
-    const jsonContent = jsonString.substring(jsonStart, jsonEnd + 1);
+    const jsonContent = responseText.substring(jsonStart, jsonEnd + 1);
     const parsed = JSON.parse(jsonContent);
 
-    // Basic shape validation
-    if (
-      typeof parsed !== 'object' ||
-      typeof parsed.isFeasible !== 'boolean' ||
-      typeof parsed.summary !== 'string' ||
-      typeof parsed.totalNights !== 'number' ||
-      !Array.isArray(parsed.route) ||
-      !Array.isArray(parsed.transportSegments)
-    ) {
-      console.error('❌ [Planning] Parsed JSON does not match ItineraryPlan schema');
+    if (typeof parsed !== 'object' || parsed === null) {
+      console.error('❌ [Planner] Parsed content is not an object');
       return null;
     }
 
-    return parsed as ItineraryPlan;
+    return parsed;
   } catch (error) {
-    console.error('❌ [Planning] JSON parse error:', error instanceof Error ? error.message : error);
+    console.error(
+      '❌ [Planner] JSON extraction/parse error:',
+      error instanceof Error ? error.message : error
+    );
     return null;
   }
 }
 
 /**
+ * Format validation errors for logging and error reporting.
+ */
+function formatValidationErrors(errors: ValidationError[]): string {
+  return errors.map((err) => `  ${err.path}: ${err.message}`).join('\n');
+}
+
+/**
  * Call the planner model to generate a structured itinerary plan.
- * Returns either a valid plan or a feasibility=false plan with error details.
+ * Validates the response strictly before returning.
+ * On validation failure, logs detailed errors and returns error result.
  */
 export async function planItinerary(context: TripContext, openai: OpenAI): Promise<PlanningResult> {
   try {
-    console.log(`🎯 [Planning] Starting plan generation for ${context.tripLengthCategory} trip (${context.totalNights} nights)`);
+    console.log(
+      `🎯 [Planner] Starting plan generation for ${context.tripLengthCategory} trip (${context.totalNights} nights)`
+    );
 
     const planningPrompt = buildPlanningPrompt(context);
 
@@ -66,37 +72,46 @@ export async function planItinerary(context: TripContext, openai: OpenAI): Promi
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
-      console.error('❌ [Planning] No content received from OpenAI');
+      console.error('❌ [Planner] No content received from OpenAI');
       return {
         success: false,
         error: 'No response from planning model',
       };
     }
 
-    console.log('✅ [Planning] Received response, attempting JSON parse...');
+    console.log('✅ [Planner] Received planner response, extracting and validating JSON...');
 
-    // Try to parse the JSON response
-    const plan = parsePlanJSON(content);
-
-    if (!plan) {
-      console.error('❌ [Planning] Failed to parse plan JSON');
+    // Step 1: Extract JSON from response
+    const parsedJSON = extractJSON(content);
+    if (!parsedJSON) {
       return {
         success: false,
-        error: 'Could not parse plan from model response',
+        error: 'Could not parse JSON from planner response (malformed JSON)',
       };
     }
 
-    // Basic validation: check total nights
-    const actualTotalNights = plan.route.reduce((sum, stop) => sum + stop.nights, 0);
-    if (actualTotalNights !== context.totalNights) {
-      console.warn(
-        `⚠️  [Planning] Night sum mismatch: expected ${context.totalNights}, got ${actualTotalNights}`
-      );
+    console.log('✅ [Planner] JSON extracted successfully, validating structure...');
+
+    // Step 2: Validate the plan structure and contents
+    const validationResult: ValidatorResult = validatePlan(parsedJSON, context.totalNights);
+
+    if (!validationResult.valid) {
+      const errorDetails = formatValidationErrors(validationResult.errors);
+      console.error(`❌ [Planner] Plan validation failed:\n${errorDetails}`);
+      return {
+        success: false,
+        error: `Invalid plan structure from model: ${validationResult.errors
+          .slice(0, 3)
+          .map((e) => `${e.path}: ${e.message}`)
+          .join('; ')}...`,
+      };
     }
 
-    console.log(`✅ [Planning] Plan generated successfully. Feasible: ${plan.isFeasible}`);
+    const plan = validationResult.plan as ItineraryPlan;
+
+    console.log(`✅ [Planner] Plan validated successfully. Feasible: ${plan.isFeasible}`);
     if (plan.warnings.length > 0) {
-      console.log(`⚠️  [Planning] Warnings: ${plan.warnings.join('; ')}`);
+      console.log(`⚠️  [Planner] Trip warnings: ${plan.warnings.join('; ')}`);
     }
 
     return {
@@ -104,7 +119,7 @@ export async function planItinerary(context: TripContext, openai: OpenAI): Promi
       plan,
     };
   } catch (error) {
-    console.error('❌ [Planning] Unexpected error:', error);
+    console.error('❌ [Planner] Unexpected error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error during planning',
