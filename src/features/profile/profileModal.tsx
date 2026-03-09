@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { COUNTRIES } from "./countries";
 import { getMyProfile, sendPasswordReset, updateMyProfile, uploadMyAvatar, getMyBookmarkedPins, type Profile, calculateAge } from "./profileApi";
-import { downloadKML, openGoogleMyMaps, showImportInstructions } from "../../lib/kmlExport";
-import { generateKML } from "../../lib/kmlExport";
 
 type Props = {
   open: boolean;
@@ -676,61 +674,6 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
-                {/* Export Actions */}
-                <div style={{ display: "flex", gap: 10, width: "100%" }}>
-                  <button
-                    onClick={() => {
-                      const kml = generateKML(bookmarkedPins);
-                      downloadKML(kml);
-                      showImportInstructions();
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: "12px 16px",
-                      borderRadius: 10,
-                      border: "1px solid rgba(37, 99, 235, 0.3)",
-                      background: "rgba(37, 99, 235, 0.08)",
-                      color: "#2563eb",
-                      cursor: "pointer",
-                      fontWeight: 700,
-                      fontSize: 14,
-                      transition: "all 0.2s",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.target as HTMLElement).style.background = "rgba(37, 99, 235, 0.15)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.target as HTMLElement).style.background = "rgba(37, 99, 235, 0.08)";
-                    }}
-                  >
-                    📥 Download KML
-                  </button>
-
-                  <button
-                    onClick={openGoogleMyMaps}
-                    style={{
-                      flex: 1,
-                      padding: "12px 16px",
-                      borderRadius: 10,
-                      border: "1px solid rgba(34, 197, 94, 0.3)",
-                      background: "rgba(34, 197, 94, 0.08)",
-                      color: "#22c55e",
-                      cursor: "pointer",
-                      fontWeight: 700,
-                      fontSize: 14,
-                      transition: "all 0.2s",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.target as HTMLElement).style.background = "rgba(34, 197, 94, 0.15)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.target as HTMLElement).style.background = "rgba(34, 197, 94, 0.08)";
-                    }}
-                  >
-                    🗺️ Open My Maps
-                  </button>
-                </div>
-
                 {/* Pins Grid */}
                 <div style={{
                   display: "grid",
@@ -838,7 +781,6 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                     </div>
                   </div>
                 ))}
-              </div>
               </div>
             )}
           </div>
