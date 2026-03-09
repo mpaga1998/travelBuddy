@@ -54,7 +54,7 @@ export function downloadKML(
   filename: string = "backpack-map-pins.kml"
 ): void {
   const blob = new Blob([kml], {
-    type: "application/vnd.google-earth.kml+xml",
+    type: "application/octet-stream",
   });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -64,6 +64,13 @@ export function downloadKML(
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+
+  // Show instructions after download
+  setTimeout(() => {
+    alert(
+      "📥 File downloaded!\n\nTo import into Google Maps:\n1. Go to google.com/mymaps\n2. Click 'Create a new map'\n3. Click 'Import' and select the downloaded file\n\nTo import on mobile:\n1. Open the KML file with Google Maps app\n2. Follow the import prompts"
+    );
+  }, 500);
 }
 
 /**
