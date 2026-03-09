@@ -6,6 +6,7 @@ import { createPin, listPins, toggleReaction, uploadPinImage, deletePin, isBookm
 
 import { ItineraryModal } from "../itinerary/ItineraryModal";
 import { supabase } from "../../lib/supabaseClient";
+import { getMapsUrl } from "../../lib/mapsUtils";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
 
@@ -615,9 +616,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       });
 googleMapsBtn?.addEventListener("click", (ev) => {
         ev.stopPropagation();
-        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`;
-        window.open(mapsUrl, "_blank");
-      });
+        const mapsUrl = getMapsUrl(pin.lat, pin.lng, pin.title);
 
       
       deleteBtn?.addEventListener("click", (ev) => {
