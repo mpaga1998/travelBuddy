@@ -1,4 +1,5 @@
 import { ItineraryPlan } from './types/plan';
+import { TripInput } from './types/trip';
 import { TripContext } from './tripContext';
 import { formatDateReadable } from './date';
 
@@ -180,16 +181,24 @@ export function renderItinerary(input: RendererInput): string {
  * Renders using plan only (no context or name).
  */
 export function renderItineraryMarkdown(plan: ItineraryPlan): string {
+  const minimalTripInput: TripInput = {
+    arrival: { date: '2026-03-09', location: 'Unknown' },
+    departure: { date: '2026-03-16', location: 'Unknown' },
+    desiredAttractions: [],
+  };
+
   const minimalContext: TripContext = {
-    arrivalDate: new Date(),
-    departureDate: new Date(),
+    arrivalDate: new Date('2026-03-09'),
+    departureDate: new Date('2026-03-16'),
     arrivalLocation: 'Unknown',
     departureLocation: 'Unknown',
     totalNights: plan.totalNights,
     totalCalendarDays: plan.totalNights + 1,
-    lastOvernightDate: new Date(),
+    lastOvernightDate: new Date('2026-03-15'),
     travelPace: 'moderate',
     tripLengthCategory: 'medium',
+    sameArrivalDepartureLocation: false,
+    sourceInput: minimalTripInput,
   };
   
   return renderItinerary({

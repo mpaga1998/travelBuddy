@@ -14,7 +14,7 @@ function buildConstraintsLayer(): string {
 
 1. **Night Budget**: The itinerary must allocate exactly the night budget assigned per location. Do not ignore or pad night counts.
 
-2. **Departure Reality**: The traveler must be in ${/* filled by user prompt */} on ${/* filled by user prompt */} ready to depart. All travel time to the departure location must complete by departure morning.
+2. **Departure Reality**: The traveler must depart from their specified location on their specified departure date. All travel time to the departure location must complete by departure morning.
 
 3. **No Same-Day Long Transfers**: Do not schedule 5+ hour transfers for the departure day. Either schedule that transfer on an earlier day, or reduce the itinerary scope.
 

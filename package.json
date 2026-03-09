@@ -8,7 +8,7 @@
     "dev:frontend": "vite",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:frontend\"",
     "dev:ngrok": "concurrently \"npm run dev\" \"npm run dev:frontend\" \"npm run ngrok:be\" \"npm run ngrok:fe\"",
-    "build": "tsc -b && vite build",
+    "build": "tsc -p tsconfig.server.json && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "ngrok:be": "npx ngrok http 3000",

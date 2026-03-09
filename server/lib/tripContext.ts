@@ -33,6 +33,9 @@ export interface TripContext {
   // Trip strategy category
   tripLengthCategory: TripLengthCategory;
 
+  // Travel pace preference (relaxed, moderate, active)
+  travelPace: 'relaxed' | 'moderate' | 'active';
+
   // Original input for reference
   sourceInput: TripInput;
 }
@@ -115,6 +118,7 @@ export function buildTripContext(input: TripInput): TripContext {
     departureLocation: input.departure.location,
     sameArrivalDepartureLocation,
     tripLengthCategory: categorizeTrip(totalNights),
+    travelPace: input.travelPace || 'moderate',
     sourceInput: input,
   };
 }

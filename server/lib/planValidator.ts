@@ -405,7 +405,7 @@ export function validatePlanLogic(plan: ItineraryPlan, context: TripContext): Bu
     issues.push({
       rule: 'infeasibility-cuts',
       severity: 'error',
-      message: 'Plan is marked infeasible but provides no cutsOrAlternatives. If a trip is not feasible, suggest ways to make it work.`,
+      message: 'Plan is marked infeasible but provides no cutsOrAlternatives. If a trip is not feasible, suggest ways to make it work.',
     });
   }
 
