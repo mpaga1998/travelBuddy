@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { COUNTRIES } from "./countries";
+import { getMapsUrl } from "../../lib/mapsUtils";
 import { getMyProfile, sendPasswordReset, updateMyProfile, uploadMyAvatar, getMyBookmarkedPins, type Profile, calculateAge } from "./profileApi";
 
 type Props = {
@@ -582,7 +583,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                       fontSize: 14,
                       color: "#666",
                     }}>
-                      <span>❤️</span>
+                      <span>🔖</span>
                       <span>{selectedPin.bookmark_count} bookmarks</span>
                     </div>
                   )}
@@ -594,11 +595,39 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                       fontSize: 14,
                       color: "#666",
                     }}>
-                      <span>👍</span>
+                      <span>❤️</span>
                       <span>{selectedPin.likes_count} likes</span>
                     </div>
                   )}
                 </div>
+
+                {/* Maps Button */}
+                {selectedPin.latitude && selectedPin.longitude && (
+                  <button
+                    onClick={() => window.open(getMapsUrl(selectedPin.latitude, selectedPin.longitude, selectedPin.title), "_blank")}
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: 10,
+                      border: "2px solid #2563eb",
+                      background: "white",
+                      cursor: "pointer",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: "#2563eb",
+                      marginBottom: 16,
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.target as HTMLElement).style.background = "rgba(37, 99, 235, 0.05)";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.target as HTMLElement).style.background = "white";
+                    }}
+                  >
+                    📍 Open in Maps
+                  </button>
+                )}
 
                 {/* Pin Tips */}
                 {selectedPin.tips && selectedPin.tips.length > 0 && (
@@ -773,7 +802,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                           color: "#666",
                           marginTop: 2,
                         }}>
-                          ❤️ {pin.bookmark_count}
+                          🔖 {pin.bookmark_count}
                         </div>
                       )}
                     </div>
