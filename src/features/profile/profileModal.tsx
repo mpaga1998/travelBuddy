@@ -602,9 +602,9 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                 </div>
 
                 {/* Maps Button */}
-                {selectedPin.latitude && selectedPin.longitude && (
+                {selectedPin.lat && selectedPin.lng && (
                   <button
-                    onClick={() => window.open(getMapsUrl(selectedPin.latitude, selectedPin.longitude, selectedPin.title), "_blank")}
+                    onClick={() => window.open(getMapsUrl(selectedPin.lat, selectedPin.lng, selectedPin.title), "_blank")}
                     style={{
                       width: "100%",
                       padding: "12px 16px",
