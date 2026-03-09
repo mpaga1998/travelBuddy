@@ -17,14 +17,20 @@ async function buildApiFunction() {
       platform: 'node',
       target: 'es2022',
       format: 'esm',
-      external: ['@vercel/node'], // Keep Vercel types as external
+      external: [], // Bundle EVERYTHING - no external dependencies
       sourcemap: false,
       minify: false,
-      logLevel: 'info',
+      logLevel: 'verbose', // Show all warnings
+      splitting: false, // Single output file
     });
 
     console.log('✅ [Build] API bundle created successfully');
     console.log('📦 [Build] Output: api/itinerary.js');
+    
+    if (result.warnings && result.warnings.length > 0) {
+      console.log('⚠️  [Build] Warnings:');
+      result.warnings.forEach(w => console.log('  ', w));
+    }
   } catch (error) {
     console.error('❌ [Build] Bundling failed:', error.message);
     process.exit(1);
