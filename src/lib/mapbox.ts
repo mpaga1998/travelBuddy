@@ -16,8 +16,8 @@ export async function getLocationNameFromCoordinates(
     }
 
     // Mapbox Geocoding API: https://docs.mapbox.com/api/search/geocoding/
-    // First try: only points of interest (restaurants, shops, monuments, parks, etc.)
-    let response = await fetch(
+    // types=poi: only points of interest (restaurants, shops, monuments, parks, etc.)
+    const response = await fetch(
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?types=poi&limit=1&access_token=${token}`
     );
 
@@ -26,23 +26,8 @@ export async function getLocationNameFromCoordinates(
       return "";
     }
 
-    let data = await response.json();
+    const data = await response.json();
     
-    // If no POI found, try with places (neighborhoods, cities, etc.)
-    if (!data.features || data.features.length === 0) {
-      console.log("⚠️ No POI found, trying with places...");
-      response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?types=place&limit=1&access_token=${token}`
-      );
-
-      if (!response.ok) {
-        console.error("❌ Mapbox Geocoding API error:", response.statusText);
-        return "";
-      }
-
-      data = await response.json();
-    }
-
     if (data.features && data.features.length > 0) {
       const feature = data.features[0];
       
@@ -54,7 +39,7 @@ export async function getLocationNameFromCoordinates(
       return name;
     }
 
-    console.log("⚠️ No location found for coordinates");
+    console.log("⚠️ No POI found for coordinates");
     return "";
   } catch (error) {
     console.error("❌ Error reverse geocoding:", error);
