@@ -35,7 +35,7 @@ export function renderToMarkdown(
     markdown += `## ${stop.location} | ${stop.totalNights} night${stop.totalNights > 1 ? 's' : ''}\n\n`;
 
     // Days within this stop
-    stop.days.forEach((day) => {
+    stop.days.forEach((day, dayIdx) => {
       markdown += `### Day ${day.dayNumber}\n`;
 
       day.activities.forEach((activity) => {
@@ -51,21 +51,23 @@ export function renderToMarkdown(
       });
 
       markdown += '\n';
+
+      // Show where you sleep after each day
+      if (day.nights > 0) {
+        markdown += `🌙 **Sleep in:** ${stop.location}\n\n`;
+      } else if (dayIdx === stop.days.length - 1 && stop.totalNights === 0) {
+        // Final day with 0 nights - you're departing
+        markdown += `✈️ **Depart from:** ${stop.location}\n\n`;
+      }
     });
 
-    // Transport to next stop
-    if (stop.transportFromPrevious) {
-      const transport = stop.transportFromPrevious;
-      markdown += `**Getting here:** ${transport.mode} (${transport.duration}) · ${transport.costEstimate}\n\n`;
-    }
-
-    // Transport to next stop (if not last)
+    // Transport to next stop (show AFTER sleep info)
     if (stopIdx < itinerary.stops.length - 1) {
       const nextStop = itinerary.stops[stopIdx + 1];
       const nextTransport = nextStop.transportFromPrevious;
 
       if (nextTransport) {
-        markdown += `**To ${nextStop.location}:** ${nextTransport.mode} (${nextTransport.duration}) · ${nextTransport.costEstimate}\n\n`;
+        markdown += `**Next morning - Travel to ${nextStop.location}:** ${nextTransport.mode} (${nextTransport.duration}) · ${nextTransport.costEstimate}\n\n`;
       }
     }
   });
