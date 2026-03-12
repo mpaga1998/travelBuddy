@@ -23,6 +23,8 @@ export function buildStructuredPlanningPrompt(
 2. Double-check that nightsAllocated matches nightsAvailable
 3. If the trip is infeasible, set "feasible": false and explain in feasibilityNotes
 4. Each stop must have complete day-by-day breakdown with activities and time estimates
+5. **IMPORTANT: Days = calendar days, Nights = sleeps. With ${nights} nights, you have ${nights + 1} calendar days (${nights} full days + 1 departure day)**
+6. **Each day's "nights" field = how many nights you sleep AFTER that day. Final day must have "nights": 0 (you leave on departure day)**
 
 **RESPONSE MUST BE VALID JSON:**
 \`\`\`json
@@ -100,6 +102,14 @@ ${input.notes ? `**ADDITIONAL NOTES:** ${input.notes}` : ''}
    - Do NOT allocate the same number of nights to each stop
    - Example GOOD splits: 3-3-1, 2-2-2-1, etc.
    - Example BAD splits: 7-7-7 (totals 21, not 8)
+
+3b. **Day/Night Structure - CRITICAL**:
+   - You have ${nights} nights to allocate
+   - BUT you have ${nights + 1} calendar days (arrival day + ${nights} full days + departure day)
+   - Example: Arrive 13/03, Depart 16/03 = 3 nights (13→14, 14→15, 15→16), 4 calendar days (13, 14, 15, 16)
+   - Each day's "nights" = sleeps AFTER that day
+   - Final day (${endDate}) should have activities + "nights": 0 (you're leaving that day/evening)
+   - Allocate days across stops so you hit ${nights} total nights and end in ${input.departure.location}
 
 4. **Work backwards from departure**:
    - Calculate REVERSE: start from ${endDate} in ${input.departure.location}, work backwards
