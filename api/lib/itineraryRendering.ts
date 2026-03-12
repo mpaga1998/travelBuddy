@@ -62,11 +62,13 @@ export function renderToMarkdown(
     });
 
     // Transport to next stop (show AFTER sleep info)
+    // BUT: Don't show if next stop is a departure stop (0 nights) - the travel is already in that day's activities
     if (stopIdx < itinerary.stops.length - 1) {
       const nextStop = itinerary.stops[stopIdx + 1];
       const nextTransport = nextStop.transportFromPrevious;
 
-      if (nextTransport) {
+      // Only show transport if the next stop has nights (not a departure-only stop)
+      if (nextTransport && nextStop.totalNights > 0) {
         markdown += `**Next morning - Travel to ${nextStop.location}:** ${nextTransport.mode} (${nextTransport.duration}) · ${nextTransport.costEstimate}\n\n`;
       }
     }
