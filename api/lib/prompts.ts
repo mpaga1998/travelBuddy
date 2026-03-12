@@ -1,5 +1,5 @@
-import { TripInput } from './types';
-import { formatDate } from './date';
+import { TripInput } from './types.js';
+import { formatDate } from './date.js';
 
 export const buildSystemPrompt = () =>
   `You are an expert backpacker trip planner. Your mission: create realistic, actually-doable itineraries that respect travel time, fatigue, and logistics.
