@@ -163,10 +163,10 @@ export function validateStructuredItinerary(
       }
 
       // Check if this is the final day - should have nights = 0
-      const isLastDay = stopIdx === itinerary.stops.length - 1 && dayIdx === stop.days.length - 1;
+      const isLastDay = idx === itinerary.stops.length - 1 && dayIdx === stop.days.length - 1;
       if (isLastDay && day.nights !== 0) {
         errors.push(
-          `Stop "${stop.location}", Final Day ${day.dayNumber}: must have "nights": 0 on departure day (you\'re leaving on ${input.departure.date})`
+          `Stop "${stop.location}", Final Day ${day.dayNumber}: must have "nights": 0 on departure day (you're leaving on ${input.departure.date})`
         );
       }
 
