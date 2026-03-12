@@ -92,6 +92,25 @@ export function validateStructuredItinerary(
     }
   }
 
+  // 1c. Return location validation - MUST end in departure location
+  if (itinerary.stops.length > 0 && itinerary.feasible) {
+    const lastStop = itinerary.stops[itinerary.stops.length - 1];
+    const lastStopLower = lastStop.location.toLowerCase().trim();
+    const departureLower = input.departure.location.toLowerCase().trim();
+    
+    // Check if last stop is the departure location (allowing fuzzy matching for city names)
+    const isLastStopDeparture = 
+      lastStopLower.includes(departureLower) || 
+      departureLower.includes(lastStopLower) ||
+      lastStopLower === departureLower;
+    
+    if (!isLastStopDeparture) {
+      errors.push(
+        `Itinerary must end in return location "${input.departure.location}" but ends in "${lastStop.location}". You must include travel back to ${input.departure.location} on the final day.`
+      );
+    }
+  }
+
   // 2. Feasibility flag consistency
   if (!itinerary.feasible && !itinerary.feasibilityNotes) {
     warnings.push(

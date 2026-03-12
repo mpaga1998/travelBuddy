@@ -88,37 +88,45 @@ ${input.notes ? `**ADDITIONAL NOTES:** ${input.notes}` : ''}
    - Do NOT add extra stops beyond what the user requested (unless feasibility is false)
    - The stops array must contain exactly the locations user specified
 
-2. **Night allocation must be EXACT**: Sum of all stop totalNights must equal ${nights}
+2. **CRITICAL: You MUST END in the departure location**:
+   - The itinerary MUST end in **${input.departure.location}** (arrival location: ${input.arrival.location})
+   - This is NON-NEGOTIABLE. If you cannot get back to ${input.departure.location} in time, mark feasible: false
+   - Plan your final stop so you can travel back to ${input.departure.location} and ARRIVE by evening on ${endDate}
+   - Include travel time in the final day's activities (e.g., "Morning: explore X, Afternoon: travel back to ${input.departure.location}")
+   - If the last stop is NOT ${input.departure.location}, the itinerary is INVALID
+
+3. **Night allocation must be EXACT**: Sum of all stop totalNights must equal ${nights}
+3. **Night allocation must be EXACT**: Sum of all stop totalNights must equal ${nights}
    - Do NOT allocate the same number of nights to each stop
    - Example GOOD splits: 3-3-1, 2-2-2-1, etc.
    - Example BAD splits: 7-7-7 (totals 21, not 8)
 
-2. **Work backwards from departure**:
-   - You must END in ${input.departure.location} by evening on ${endDate}
-   - Last stop should allow travel back on final day
-   - Calculate travel time from final destination back to ${input.departure.location}
+4. **Work backwards from departure**:
+   - Calculate REVERSE: start from ${endDate} in ${input.departure.location}, work backwards
+   - If you're in Venice 2.5 hours away, you need to leave Venice by midday on 15/03 to arrive by evening on 16/03
+   - Final stop might be a closer location than the furthest destinations
 
-3. **Reality check transport times**:
+5. **Reality check transport times**:
    - Don't use Google Maps optimistic times - add buffer
    - Include actual driving/transit speeds, not straight-line distance
    - Consider time-of-day effects (morning traffic, evening fatigue)
 
-4. **Be honest about feasibility**:
+6. **Be honest about feasibility**:
    - If ${nights} nights is too tight for the distance + attractions, say so
    - Better to suggest 1-2 fewer locations than pretend it's doable
    - If feasible: false, explain what to cut or adjust
 
-5. **Daily breakdown requirements**:
+7. **Daily breakdown requirements**:
    - Each day must have morning, afternoon, AND evening activities
    - Include realistic time estimates (e.g., "2 hours", "1.5 hours")
    - Activities should match the travel pace (${input.travelPace})
 
-6. **Transportation details**:
+8. **Transportation details**:
    - Between stops, include: mode (bus/taxi/flight), duration, and cost estimate
    - First stop: no transportFromPrevious (or mark as arrival)
-   - Last transport should arrive at ${input.departure.location} by ${endDate} evening
+   - Last stop must have travel back to ${input.departure.location} on final day
 
-${firstName ? `\n7. **Personalization**: Use ${firstName}'s name when addressing the traveler throughout the itinerary.` : ''}
+${firstName ? `\n9. **Personalization**: Use ${firstName}'s name when addressing the traveler throughout the itinerary.` : ''}
 
 ---
 
