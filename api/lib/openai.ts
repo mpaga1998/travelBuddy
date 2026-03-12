@@ -74,9 +74,7 @@ async function generateItineraryFallback(
     throw new Error('No content received from OpenAI');
   }
 
-  // Add friendly loading message at the beginning
-  const friendlyMessage = '✨ **Creating the best itinerary for you...**\n\n';
-  return friendlyMessage + content;
+  return content;
 }
 
 /**
@@ -210,12 +208,7 @@ export async function generateItinerary(
       console.log('✅ Structure validated. Rendering to markdown...');
 
       // STEP 5: Render to markdown
-      let markdown = renderToMarkdown(structuredItinerary, firstName);
-      
-      // Add friendly loading message at the beginning
-      const friendlyMessage = '✨ **Creating the best itinerary for you...**\n\n';
-      markdown = friendlyMessage + markdown;
-      
+      const markdown = renderToMarkdown(structuredItinerary, firstName);
       console.log('✅ Itinerary generated successfully (structured)');
 
       return markdown;
