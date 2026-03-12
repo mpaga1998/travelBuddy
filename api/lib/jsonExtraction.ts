@@ -77,6 +77,21 @@ export function validateStructuredItinerary(
     );
   }
 
+  // 1b. User-requested stops validation
+  if (input.stops && input.stops.length > 0) {
+    const generatedLocations = itinerary.stops.map(s => s.location.toLowerCase().trim());
+    const requestedStops = input.stops.map(s => s.toLowerCase().trim());
+    
+    for (const requestedStop of requestedStops) {
+      const found = generatedLocations.some(loc => loc.includes(requestedStop) || requestedStop.includes(loc));
+      if (!found) {
+        errors.push(
+          `Missing requested stop: "${input.stops[requestedStops.indexOf(requestedStop)]}" was not included in the itinerary`
+        );
+      }
+    }
+  }
+
   // 2. Feasibility flag consistency
   if (!itinerary.feasible && !itinerary.feasibilityNotes) {
     warnings.push(

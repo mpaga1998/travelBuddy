@@ -69,7 +69,7 @@ export function buildStructuredPlanningPrompt(
 - Arrive: ${startDate} in **${input.arrival.location}**
 - Depart: ${endDate} from **${input.departure.location}**
 - Total: **${nights} nights** available
-${input.stops && input.stops.length > 0 ? `- Suggested stops: ${input.stops.join(', ')}` : ''}
+${input.stops && input.stops.length > 0 ? `- **REQUIRED STOPS (YOU MUST VISIT ALL):** ${input.stops.join(', ')}` : '- No specific stops requested - suggest logical route'}
 - Travel pace: ${input.travelPace === 'relaxed' ? '🐢 Relaxed' : input.travelPace === 'active' ? '⚡ Active' : '⚖️ Balanced'}
 - Budget tier: ${input.budget || 'flexible'}
 
@@ -82,7 +82,13 @@ ${input.notes ? `**ADDITIONAL NOTES:** ${input.notes}` : ''}
 
 **PLANNING RULES:**
 
-1. **Night allocation must be EXACT**: Sum of all stop totalNights must equal ${nights}
+1. **MANDATORY: Include all user-requested stops**:
+   - If user specified stops (${input.stops && input.stops.length > 0 ? `${input.stops.join(', ')}` : 'any'}), EVERY stop must appear in your itinerary
+   - Do NOT substitute, skip, or replace user stops with alternatives
+   - Do NOT add extra stops beyond what the user requested (unless feasibility is false)
+   - The stops array must contain exactly the locations user specified
+
+2. **Night allocation must be EXACT**: Sum of all stop totalNights must equal ${nights}
    - Do NOT allocate the same number of nights to each stop
    - Example GOOD splits: 3-3-1, 2-2-2-1, etc.
    - Example BAD splits: 7-7-7 (totals 21, not 8)
