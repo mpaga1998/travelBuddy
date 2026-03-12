@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { TripInput, ItineraryResponse } from './lib/types.js';
 import { generateItinerary } from './lib/openai.js';
+import { generateSuggestions } from './lib/itineraryRefinement.js';
+import { calculateNights } from './lib/inputValidation.js';
 
 // Load environment variables
 dotenv.config();
@@ -73,11 +75,18 @@ export default async function handler(
     
     let statusCode = 500;
     let errorMessage = 'Failed to generate itinerary';
+    let suggestions: string[] = [];
     
     if (error instanceof Error) {
       if (error.message.includes('validation')) {
         statusCode = 400;
         errorMessage = error.message;
+        
+        // Generate helpful suggestions based on error context
+        const context = (error as any).context;
+        if (context) {
+          suggestions = generateSuggestions(tripInput, context);
+        }
       } else {
         errorMessage = error.message;
       }
@@ -87,6 +96,7 @@ export default async function handler(
       success: false,
       itinerary: '',
       error: errorMessage,
+      ...(suggestions.length > 0 && { suggestions }),
     };
     res.status(statusCode).json(response);
   }

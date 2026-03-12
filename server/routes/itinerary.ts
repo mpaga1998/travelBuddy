@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { generateItinerary, TripInput } from '../services/openaiService';
+import { generateSuggestions } from '../lib/itineraryRefinement';
 
 const router = express.Router();
 
@@ -30,11 +31,18 @@ router.post('/', async (req: Request, res: Response) => {
     // Determine appropriate status code
     let statusCode = 500;
     let errorMessage = 'Failed to generate itinerary';
+    let suggestions: string[] = [];
     
     if (error instanceof Error) {
       if (error.message.includes('validation')) {
         statusCode = 400;
         errorMessage = error.message;
+        
+        // Generate helpful suggestions based on error context
+        const context = (error as any).context;
+        if (context) {
+          suggestions = generateSuggestions(tripInput, context);
+        }
       } else if (error.message.includes('OPENAI_API_KEY')) {
         statusCode = 500;
         errorMessage = 'OpenAI API not configured';
@@ -46,6 +54,7 @@ router.post('/', async (req: Request, res: Response) => {
     res.status(statusCode).json({
       success: false,
       error: errorMessage,
+      ...(suggestions.length > 0 && { suggestions }),
       message: error instanceof Error ? error.message : 'Unknown error',
     });
   }

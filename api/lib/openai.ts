@@ -5,7 +5,7 @@
 
 import OpenAI from 'openai';
 import { TripInput } from './types.js';
-import { validateTripInput } from './inputValidation.js';
+import { validateTripInput, calculateNights } from './inputValidation.js';
 import { buildStructuredPlanningPrompt } from './structuredPrompts.js';
 import {
   extractJSON,
@@ -15,10 +15,20 @@ import {
 } from './jsonExtraction.js';
 import { renderToMarkdown } from './itineraryRendering.js';
 import { buildSystemPrompt, buildUserPrompt } from './prompts.js';
+import {
+  generateSuggestions,
+  buildRefinementPrompt,
+  GenerationContext,
+} from './itineraryRefinement.js';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+export interface GenerationResult {
+  markdown: string;
+  suggestions: string[];
+}
 
 /**
  * Get first name from request input
@@ -68,13 +78,19 @@ async function generateItineraryFallback(
 }
 
 /**
- * Structured itinerary generation with validation pipeline
- * Validates input → Requests structured JSON → Extracts & validates → Renders → Falls back if needed
+ * Structured itinerary generation with validation pipeline + retry mechanism
+ * Validates input → Requests structured JSON → Extracts & validates → Renders → Retries on failure → Falls back if needed
  */
-export async function generateItinerary(input: TripInput): Promise<string> {
+export async function generateItinerary(
+  input: TripInput,
+  options: { maxRetries?: number } = {}
+): Promise<string> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not set in environment variables');
   }
+
+  const maxRetries = options.maxRetries ?? 1;
+  const nights = calculateNights(input);
 
   console.log('📋 [Vercel] Generating itinerary for:', input.arrival.location);
 
@@ -90,97 +106,138 @@ export async function generateItinerary(input: TripInput): Promise<string> {
   const firstName = getUserFirstNameFromRequest(input);
   console.log('✅ Input validated. Planning for:', firstName || 'traveler');
 
-  try {
-    // STEP 2: Request structured JSON output
-    const prompt = buildStructuredPlanningPrompt(input, firstName);
+  let lastValidationContext: GenerationContext = {
+    nightsAvailable: nights,
+    validationErrors: [],
+    validationWarnings: [],
+    attemptNumber: 0,
+  };
 
-    console.log('🤖 Calling OpenAI with structured prompt...');
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4-turbo',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are an expert trip planner. Return ONLY valid JSON wrapped in triple backticks. No other text.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.5,
-      max_tokens: 4000,
-    });
-
-    const responseText = response.choices[0]?.message?.content;
-    if (!responseText) {
-      throw new ExtractionError('No response from OpenAI', '');
-    }
-
-    console.log('📦 Received response, extracting JSON...');
-
-    // STEP 3: Extract JSON from response
-    let structuredItinerary;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      structuredItinerary = extractJSON(responseText);
-    } catch (error) {
-      if (error instanceof ExtractionError) {
-        console.error('❌ JSON extraction failed:', error.message);
+      // STEP 2: Request structured JSON output
+      let prompt = buildStructuredPlanningPrompt(input, firstName);
+
+      if (attempt > 0) {
+        console.log(`🔄 Retry attempt ${attempt} with refinements...`);
+        prompt = buildRefinementPrompt(prompt, {
+          ...lastValidationContext,
+          attemptNumber: attempt,
+        });
+      }
+
+      console.log('🤖 Calling OpenAI with structured prompt...');
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4-turbo',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are an expert trip planner. Return ONLY valid JSON wrapped in triple backticks. No other text.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.5,
+        max_tokens: 4000,
+      });
+
+      const responseText = response.choices[0]?.message?.content;
+      if (!responseText) {
+        throw new ExtractionError('No response from OpenAI', '');
+      }
+
+      console.log('📦 Received response, extracting JSON...');
+
+      // STEP 3: Extract JSON from response
+      let structuredItinerary;
+      try {
+        structuredItinerary = extractJSON(responseText);
+      } catch (error) {
+        if (error instanceof ExtractionError) {
+          console.error('❌ JSON extraction failed:', error.message);
+          throw error;
+        }
         throw error;
       }
-      throw error;
-    }
 
-    console.log('✅ JSON extracted. Validating structure...');
+      console.log('✅ JSON extracted. Validating structure...');
 
-    // STEP 4: Validate structure against constraints
-    const validationResult = validateStructuredItinerary(
-      structuredItinerary,
-      input
-    );
-
-    if (!validationResult.valid) {
-      console.error('❌ Structure validation failed:', validationResult.errors);
-      throw new ValidationError(
-        'Itinerary structure validation failed',
-        validationResult.errors,
-        validationResult.warnings,
-        structuredItinerary
+      // STEP 4: Validate structure against constraints
+      const validationResult = validateStructuredItinerary(
+        structuredItinerary,
+        input
       );
-    }
 
-    if (validationResult.warnings.length > 0) {
-      console.warn('⚠️ Validation warnings:', validationResult.warnings);
-    }
+      lastValidationContext = {
+        nightsAvailable: nights,
+        nightsAllocated: structuredItinerary.constraints.nightsAllocated,
+        validationErrors: validationResult.errors,
+        validationWarnings: validationResult.warnings,
+        attemptNumber: attempt,
+      };
 
-    console.log('✅ Structure validated. Rendering to markdown...');
+      if (!validationResult.valid) {
+        console.error('❌ Structure validation failed:', validationResult.errors);
 
-    // STEP 5: Render to markdown
-    const markdown = renderToMarkdown(structuredItinerary, firstName);
-    console.log('✅ Itinerary generated successfully (structured)');
+        // If we have retries left, don't throw yet
+        if (attempt < maxRetries) {
+          console.log(
+            `⚠️ Validation failed but retrying (attempt ${attempt + 1}/${maxRetries})...`
+          );
+          continue;
+        }
 
-    return markdown;
-  } catch (error) {
-    // FALLBACK: If anything fails, try legacy text-based approach
-    console.error(
-      '⚠️ Structured generation failed, falling back:',
-      error instanceof Error ? error.message : error
-    );
+        // No retries left, throw error
+        const error = new ValidationError(
+          'Itinerary structure validation failed after retries',
+          validationResult.errors,
+          validationResult.warnings,
+          structuredItinerary
+        );
+        (error as any).context = lastValidationContext;
+        throw error;
+      }
 
-    if (error instanceof ExtractionError) {
-      console.error('❌ Could not extract JSON from response');
-    } else if (error instanceof ValidationError) {
-      console.error('❌ Generated itinerary failed validation');
-    }
+      if (validationResult.warnings.length > 0) {
+        console.warn('⚠️ Validation warnings:', validationResult.warnings);
+      }
 
-    try {
-      console.log('📝 Attempting fallback text generation...');
-      return await generateItineraryFallback(input, firstName);
-    } catch (fallbackError) {
-      console.error('❌ Fallback generation also failed:', fallbackError);
-      throw new Error(
-        `Failed to generate itinerary: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      console.log('✅ Structure validated. Rendering to markdown...');
+
+      // STEP 5: Render to markdown
+      const markdown = renderToMarkdown(structuredItinerary, firstName);
+      console.log('✅ Itinerary generated successfully (structured)');
+
+      return markdown;
+    } catch (error) {
+      // Only proceed to fallback on final attempt
+      if (attempt === maxRetries) {
+        console.error(
+          '⚠️ Structured generation failed after retries, falling back:',
+          error instanceof Error ? error.message : error
+        );
+
+        if (error instanceof ValidationError) {
+          try {
+            console.log('📝 Attempting fallback text generation...');
+            return await generateItineraryFallback(input, firstName);
+          } catch (fallbackError) {
+            console.error(
+              '❌ Fallback generation also failed:',
+              fallbackError
+            );
+            throw new Error(
+              `Failed to generate itinerary: ${error instanceof Error ? error.message : 'Unknown error'}`
+            );
+          }
+        }
+        throw error;
+      }
     }
   }
+
+  throw new Error('Itinerary generation failed');
 }

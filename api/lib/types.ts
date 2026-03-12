@@ -21,4 +21,6 @@ export interface ItineraryResponse {
   success: boolean;
   itinerary: string;
   error?: string;
+  warnings?: string[];
+  suggestions?: string[];
 }
