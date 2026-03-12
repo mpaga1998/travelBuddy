@@ -1,4 +1,4 @@
-import { TripInput } from './types/trip';
+import { TripInput } from './types';
 import { formatDate } from './date';
 
 export const buildSystemPrompt = () =>

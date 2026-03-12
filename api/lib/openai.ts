@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { TripInput } from './types/trip';
+import { TripInput } from './types';
 import { buildSystemPrompt, buildUserPrompt } from './prompts';
 
 const openai = new OpenAI({

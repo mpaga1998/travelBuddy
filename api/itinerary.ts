@@ -1,8 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
-import { TripInput, ItineraryResponse } from '../server/lib/types/trip';
-import { generateItinerary } from '../server/lib/openai';
+import { TripInput, ItineraryResponse } from './lib/types';
+import { generateItinerary } from './lib/openai';
 
 // Load environment variables
 dotenv.config();
