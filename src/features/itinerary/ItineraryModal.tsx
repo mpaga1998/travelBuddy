@@ -949,7 +949,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
           {step === 'loading' && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '40px 0' }}>
               <div style={{ fontSize: 32 }}>✨</div>
-              <div style={{ fontSize: 16, fontWeight: 600, textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 600, textAlign: 'center', color: '#111' }}>
                 Creating the best itinerary for you...
               </div>
               <div

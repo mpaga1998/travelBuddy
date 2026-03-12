@@ -9,24 +9,38 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || (() => {
 })();
 
 export async function generateItinerary(input: ItineraryInput): Promise<string> {
-  const response = await fetch(`${API_BASE}/itinerary`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(input),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || error.error || `Failed to generate itinerary: ${response.statusText}`);
-  }
-
-  const data: ItineraryResponse = await response.json();
+  console.log('🔗 Fetching from:', `${API_BASE}/itinerary`);
   
-  if (!data.success) {
-    throw new Error(data.error || 'Unknown error');
-  }
+  try {
+    const response = await fetch(`${API_BASE}/itinerary`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(input),
+    });
 
-  return data.itinerary;
+    console.log('📡 Response status:', response.status);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      console.error('❌ API error:', error);
+      throw new Error(error.message || error.error || `Failed to generate itinerary: ${response.statusText}`);
+    }
+
+    const data: ItineraryResponse = await response.json();
+    
+    if (!data.success) {
+      console.error('❌ Generation failed:', data.error);
+      throw new Error(data.error || 'Unknown error');
+    }
+
+    return data.itinerary;
+  } catch (err) {
+    console.error('❌ Fetch error:', err);
+    if (err instanceof Error) {
+      throw err;
+    }
+    throw new Error('Failed to fetch itinerary');
+  }
 }
