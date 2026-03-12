@@ -2,9 +2,9 @@
  * Structured planning prompts - generates JSON output instead of freetext
  */
 
-import { TripInput } from './types';
-import { formatDate } from './date';
-import { calculateNights } from './inputValidation';
+import { TripInput } from './types.js';
+import { formatDate } from './date.js';
+import { calculateNights } from './inputValidation.js';
 
 export function buildStructuredPlanningPrompt(
   input: TripInput,

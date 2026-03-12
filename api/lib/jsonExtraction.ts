@@ -2,9 +2,9 @@
  * JSON extraction from LLM responses and structured itinerary validation
  */
 
-import { StructuredItinerary } from './itinerarySchema';
-import { TripInput } from './types';
-import { calculateNights } from './inputValidation';
+import { StructuredItinerary } from './itinerarySchema.js';
+import { TripInput } from './types.js';
+import { calculateNights } from './inputValidation.js';
 
 export class ExtractionError extends Error {
   constructor(

@@ -2,7 +2,7 @@
  * Input validation for trip planning requests
  */
 
-import { TripInput } from './types';
+import { TripInput } from './types.js';
 
 export interface ValidationError {
   field: string;

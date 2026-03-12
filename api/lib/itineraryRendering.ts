@@ -2,7 +2,7 @@
  * Render structured itinerary to markdown for display
  */
 
-import { StructuredItinerary } from './itinerarySchema';
+import { StructuredItinerary } from './itinerarySchema.js';
 
 export function renderToMarkdown(
   itinerary: StructuredItinerary,

@@ -4,17 +4,17 @@
  */
 
 import OpenAI from 'openai';
-import { TripInput } from './types';
-import { validateTripInput } from './inputValidation';
-import { buildStructuredPlanningPrompt } from './structuredPrompts';
+import { TripInput } from './types.js';
+import { validateTripInput } from './inputValidation.js';
+import { buildStructuredPlanningPrompt } from './structuredPrompts.js';
 import {
   extractJSON,
   ExtractionError,
   ValidationError,
   validateStructuredItinerary,
-} from './jsonExtraction';
-import { renderToMarkdown } from './itineraryRendering';
-import { buildSystemPrompt, buildUserPrompt } from './prompts';
+} from './jsonExtraction.js';
+import { renderToMarkdown } from './itineraryRendering.js';
+import { buildSystemPrompt, buildUserPrompt } from './prompts.js';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
