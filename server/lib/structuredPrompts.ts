@@ -73,8 +73,8 @@ ${input.stops && input.stops.length > 0 ? `- Suggested stops: ${input.stops.join
 - Travel pace: ${input.travelPace === 'relaxed' ? '🐢 Relaxed' : input.travelPace === 'active' ? '⚡ Active' : '⚖️ Balanced'}
 - Budget tier: ${input.budget || 'flexible'}
 
-**ATTRACTIONS TO INCLUDE:**
-${input.desiredAttractions.map((attr) => `- ${attr}`).join('\n')}
+${input.desiredAttractions && input.desiredAttractions.length > 0 ? `**ATTRACTIONS TO INCLUDE:**
+${input.desiredAttractions.map((attr) => `- ${attr}`).join('\n')}` : '(No specific attractions specified - create a flexible itinerary)'}
 
 ${input.notes ? `**ADDITIONAL NOTES:** ${input.notes}` : ''}
 

@@ -93,14 +93,11 @@ export function validateTripInput(input: TripInput): ValidationError[] {
     });
   }
 
-  // Attractions validation
-  if (
-    !input.desiredAttractions ||
-    input.desiredAttractions.length === 0
-  ) {
+  // Attractions validation (optional)
+  if (input.desiredAttractions && !Array.isArray(input.desiredAttractions)) {
     errors.push({
       field: 'desiredAttractions',
-      message: 'At least one desired attraction is required',
+      message: 'Must be an array',
     });
   }
 

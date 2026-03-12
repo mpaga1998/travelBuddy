@@ -17,14 +17,6 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    if (!tripInput.desiredAttractions || tripInput.desiredAttractions.length === 0) {
-      res.status(400).json({
-        success: false,
-        error: 'At least one desired attraction is required',
-      });
-      return;
-    }
-
     console.log('📝 Generating itinerary for:', tripInput.arrival.location);
     const itinerary = await generateItinerary(tripInput);
     

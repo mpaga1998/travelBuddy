@@ -111,7 +111,7 @@ ${input.stops && input.stops.length > 0 ? `- Stops: ${input.stops.join(', ')}` :
 
 **WANT TO SEE:**
 ${
-  input.desiredAttractions.length > 0
+  input.desiredAttractions && input.desiredAttractions.length > 0
     ? input.desiredAttractions.map((attr) => `- ${attr}`).join('\n')
     : '(No specific attractions mentioned)'
 }
@@ -146,7 +146,7 @@ ${input.stops && input.stops.length > 0 ? `- Stops: ${input.stops.join(', ')}` :
 
 **WANT TO SEE:**
 ${
-  input.desiredAttractions.length > 0
+  input.desiredAttractions && input.desiredAttractions.length > 0
     ? input.desiredAttractions.map((attraction) => `- ${attraction}`).join('\n')
     : '(No specific attractions mentioned)'
 }
