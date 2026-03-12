@@ -110,6 +110,7 @@ ${input.notes ? `**ADDITIONAL NOTES:** ${input.notes}` : ''}
    - Each day's "nights" = sleeps AFTER that day
    - Final day (${endDate}) should have activities + "nights": 0 (you're leaving that day/evening)
    - Allocate days across stops so you hit ${nights} total nights and end in ${input.departure.location}
+   - **OPTIONAL: If the final stop is ${input.departure.location}, it CAN have totalNights: 0** (you arrive there for departure, no sleep)
 
 4. **Work backwards from departure**:
    - Calculate REVERSE: start from ${endDate} in ${input.departure.location}, work backwards

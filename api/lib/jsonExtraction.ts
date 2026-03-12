@@ -130,10 +130,18 @@ export function validateStructuredItinerary(
       errors.push(`Stop ${stopNum}: missing location name`);
     }
 
+    // Allow 0 nights on final stop if it's the departure location (departure day)
+    const isLastStop = idx === itinerary.stops.length - 1;
+    const isDepartureLocation = stop.location.toLowerCase().includes(input.departure.location.toLowerCase()) || 
+                              input.departure.location.toLowerCase().includes(stop.location.toLowerCase());
+    
     if (stop.totalNights < 1) {
-      errors.push(
-        `Stop "${stop.location}": must have at least 1 night, got ${stop.totalNights}`
-      );
+      // Exception: final stop can have 0 nights if it's the departure location
+      if (!(isLastStop && isDepartureLocation)) {
+        errors.push(
+          `Stop "${stop.location}": must have at least 1 night, got ${stop.totalNights}`
+        );
+      }
     }
 
     if (stop.days.length === 0) {
