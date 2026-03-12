@@ -54,7 +54,7 @@ async function generateItineraryFallback(
   console.warn('⚠️ Using fallback text-based generation');
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: process.env.OPENAI_FALLBACK_MODEL || 'gpt-3.5-turbo',
     messages: [
       {
         role: 'system',
@@ -74,7 +74,9 @@ async function generateItineraryFallback(
     throw new Error('No content received from OpenAI');
   }
 
-  return content;
+  // Add friendly loading message at the beginning
+  const friendlyMessage = '✨ **Creating the best itinerary for you...**\n\n';
+  return friendlyMessage + content;
 }
 
 /**
@@ -128,7 +130,7 @@ export async function generateItinerary(
 
       console.log('🤖 Calling OpenAI with structured prompt...');
       const response = await openai.chat.completions.create({
-        model: 'gpt-4-turbo',
+        model: process.env.OPENAI_PLANNING_MODEL || 'gpt-4-turbo',
         messages: [
           {
             role: 'system',
@@ -208,7 +210,12 @@ export async function generateItinerary(
       console.log('✅ Structure validated. Rendering to markdown...');
 
       // STEP 5: Render to markdown
-      const markdown = renderToMarkdown(structuredItinerary, firstName);
+      let markdown = renderToMarkdown(structuredItinerary, firstName);
+      
+      // Add friendly loading message at the beginning
+      const friendlyMessage = '✨ **Creating the best itinerary for you...**\n\n';
+      markdown = friendlyMessage + markdown;
+      
       console.log('✅ Itinerary generated successfully (structured)');
 
       return markdown;
