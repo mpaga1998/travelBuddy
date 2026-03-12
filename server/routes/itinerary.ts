@@ -34,9 +34,26 @@ router.post('/', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('❌ Error generating itinerary:', error);
-    res.status(500).json({
+    
+    // Determine appropriate status code
+    let statusCode = 500;
+    let errorMessage = 'Failed to generate itinerary';
+    
+    if (error instanceof Error) {
+      if (error.message.includes('validation')) {
+        statusCode = 400;
+        errorMessage = error.message;
+      } else if (error.message.includes('OPENAI_API_KEY')) {
+        statusCode = 500;
+        errorMessage = 'OpenAI API not configured';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
+    res.status(statusCode).json({
       success: false,
-      error: 'Failed to generate itinerary',
+      error: errorMessage,
       message: error instanceof Error ? error.message : 'Unknown error',
     });
   }

@@ -70,12 +70,24 @@ export default async function handler(
     res.status(200).json(response);
   } catch (error) {
     console.error('Itinerary generation error:', error);
+    
+    let statusCode = 500;
+    let errorMessage = 'Failed to generate itinerary';
+    
+    if (error instanceof Error) {
+      if (error.message.includes('validation')) {
+        statusCode = 400;
+        errorMessage = error.message;
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     const response: ItineraryResponse = {
       success: false,
       itinerary: '',
-      error:
-        error instanceof Error ? error.message : 'Failed to generate itinerary',
+      error: errorMessage,
     };
-    res.status(500).json(response);
+    res.status(statusCode).json(response);
   }
 }
