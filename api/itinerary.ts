@@ -84,8 +84,8 @@ export default async function handler(
         
         // Generate helpful suggestions based on error context
         const context = (error as any).context;
-        if (context) {
-          suggestions = generateSuggestions(tripInput, context);
+        if (context && req.body) {
+          suggestions = generateSuggestions(req.body as TripInput, context);
         }
       } else {
         errorMessage = error.message;
