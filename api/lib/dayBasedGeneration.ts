@@ -88,7 +88,7 @@ export async function generateItineraryDayBased(
           {
             role: 'system',
             content:
-              'You are an expert Italian trip planner. Return ONLY valid JSON wrapped in triple backticks. Every activity MUST have an explicit location. Travel is an activity. No teleportation allowed.',
+              'You are an expert Italian trip planner. Return ONLY valid JSON wrapped in triple backticks. Every activity MUST have: explicit location (city), specific venueName (real venue/attraction name), and description. Include venueName in every activity - do NOT leave it empty. Travel is an activity with isTravel=true. No teleportation allowed. Venue names will be converted to clickable Google Maps links.',
           },
           {
             role: 'user',

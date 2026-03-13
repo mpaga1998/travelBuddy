@@ -75,7 +75,7 @@ CRITICAL RULES:
 
 6. **ACTIVITY LOCATIONS** - Every activity MUST have:
    - City/area name (e.g., "Milano")
-   - SPECIFIC venue/attraction name (e.g., "Duomo di Milano", "Caffè Vergnano", "Navigli District")
+   - SPECIFIC venue/attraction name in venueName field (e.g., "Duomo di Milano", "Caffè Vergnano", "Navigli District")
    - Never generic names like "restaurant" - use REAL place names!
    - Examples: "Basilica di San Marco Venice", "Trattoria da Vinci Milano", "Uffizi Gallery Firenze"
    - If locations differ between activities, travel MUST be shown as an activity!
@@ -146,24 +146,57 @@ REQUIRED JSON FORMAT:
         {
           "time": "morning",
           "location": "Milano",
-          "description": "Visit Duomo Cathedral",
+          "venueName": "Duomo di Milano",
+          "description": "Visit iconic cathedral with stunning rooftop views",
           "durationEstimate": "1.5 hours"
         },
         {
           "time": "afternoon",
           "location": "Milano",
-          "description": "Lunch and shopping in Galleria Vittorio Emanuele II",
+          "venueName": "Galleria Vittorio Emanuele II",
+          "description": "Lunch and shopping in world's oldest shopping mall",
           "durationEstimate": "2 hours"
         },
         {
           "time": "evening",
           "location": "Milano",
-          "description": "Dinner near Navigli canal district",
+          "venueName": "Navigli District",
+          "description": "Dinner at waterfront restaurant and evening stroll",
           "durationEstimate": "1.5 hours"
         }
       ],
       "sleep": {
         "location": "Milano"
+      }
+    },
+    {
+      "dayNumber": 2,
+      "activities": [
+        {
+          "time": "morning",
+          "location": "Milano",
+          "venueName": "Brera Art Gallery",
+          "description": "Explore important art museum",
+          "durationEstimate": "2 hours"
+        },
+        {
+          "time": "afternoon",
+          "location": "Venice",
+          "isTravel": true,
+          "travelMode": "train",
+          "description": "Travel to Venice by train",
+          "durationEstimate": "2.5 hours"
+        },
+        {
+          "time": "evening",
+          "location": "Venice",
+          "venueName": "Grand Canal",
+          "description": "Romantic evening stroll along famous canal",
+          "durationEstimate": "1 hour"
+        }
+      ],
+      "sleep": {
+        "location": "Venice"
       }
     }
   ],
