@@ -10,11 +10,13 @@ export function renderDayBasedItinerary(
 ): string {
   let markdown = '';
 
-  // Header
+  // Header - use arrival location for destination
+  const destination = itinerary.constraints.arrivalLocation || 'Your Trip';
+  
   if (firstName) {
-    markdown += `# ${firstName}'s Italian Itinerary\n\n`;
+    markdown += `# ${firstName}'s ${destination} Itinerary\n\n`;
   } else {
-    markdown += `# Your Italian Itinerary\n\n`;
+    markdown += `# Your ${destination} Itinerary\n\n`;
   }
 
   // Feasibility notice

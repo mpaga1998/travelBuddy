@@ -45,8 +45,11 @@ export function buildDayBasedPlanningPrompt(
 
   const personalization = firstName ? `${firstName}'s` : 'the traveler\'s';
   const pacing = getPacingGuidance(input.travelPace);
+  
+  // Extract destination from arrival location or stops
+  const destination = input.arrival.location || (input.stops?.[0] || 'the destination');
 
-  return `You are an expert Italian trip planner. Plan ${personalization} Italian trip with ${pacing.description.toLowerCase()}.
+  return `You are an expert trip planner. Plan ${personalization} trip to ${destination} with ${pacing.description.toLowerCase()}.
 
 CRITICAL RULES:
 

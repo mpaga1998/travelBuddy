@@ -87,7 +87,7 @@ export async function generateItineraryDayBased(
           {
             role: 'system',
             content:
-              'You are an expert Italian trip planner. Return ONLY valid JSON wrapped in triple backticks. Every activity MUST have an explicit location. Travel is an activity. No teleportation allowed.',
+              'You are an expert trip planner. Return ONLY valid JSON wrapped in triple backticks. Every activity MUST have an explicit location. Travel is an activity. No teleportation allowed.',
           },
           {
             role: 'user',
