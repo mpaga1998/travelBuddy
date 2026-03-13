@@ -1,8 +1,8 @@
 /**
- * Structured itinerary schema - defines the contract between planning and rendering
- * NEW: Day-based architecture where travel is an activity, not implicit
+ * Structured itinerary schema - supports both day-based and stop-based architectures
  */
 
+// ============== DAY-BASED ARCHITECTURE (Primary) ==============
 export interface ItineraryActivity {
   time: 'morning' | 'afternoon' | 'evening';
   location: string; // Explicit location for each activity (required)
@@ -37,5 +37,37 @@ export interface StructuredItinerary {
   feasible: boolean;
   feasibilityNotes?: string; // Explains constraints, warnings, or why infeasible
   days: ItineraryDay[];
+  constraints: ItineraryConstraints;
+}
+
+// ============== STOP-BASED ARCHITECTURE (Legacy Fallback) ==============
+export interface TransportDetails {
+  mode: string; // "train", "bus", "flight", "car"
+  duration: string; // "2 hours", "1.5 hours"
+  costEstimate: string; // "$50-100", "€30-50"
+}
+
+export interface LegacyDay {
+  dayNumber: number;
+  location: string;
+  nights: number; // Nights spent after this day
+  activities: Array<{
+    time: 'morning' | 'afternoon' | 'evening';
+    description: string;
+    durationEstimate?: string;
+  }>;
+}
+
+export interface ItineraryStop {
+  location: string;
+  totalNights: number;
+  days: LegacyDay[];
+  transportFromPrevious?: TransportDetails;
+}
+
+export interface StopBasedItinerary {
+  feasible: boolean;
+  feasibilityNotes?: string;
+  stops: ItineraryStop[];
   constraints: ItineraryConstraints;
 }

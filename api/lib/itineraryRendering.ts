@@ -2,10 +2,10 @@
  * Render structured itinerary to markdown for display
  */
 
-import { StructuredItinerary } from './itinerarySchema.js';
+import { StopBasedItinerary } from './itinerarySchema.js';
 
 export function renderToMarkdown(
-  itinerary: StructuredItinerary,
+  itinerary: StopBasedItinerary,
   firstName?: string
 ): string {
   let markdown = '';

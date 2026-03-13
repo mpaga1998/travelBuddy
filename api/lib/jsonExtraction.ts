@@ -2,7 +2,7 @@
  * JSON extraction from LLM responses and structured itinerary validation
  */
 
-import { StructuredItinerary } from './itinerarySchema.js';
+import { StopBasedItinerary } from './itinerarySchema.js';
 import { TripInput } from './types.js';
 import { calculateNights } from './inputValidation.js';
 
@@ -16,28 +16,16 @@ export class ExtractionError extends Error {
   }
 }
 
-export class ValidationError extends Error {
-  constructor(
-    message: string,
-    public errors: string[],
-    public warnings: string[],
-    public itinerary?: StructuredItinerary
-  ) {
-    super(message);
-    this.name = 'ValidationError';
-  }
-}
-
 /**
- * Extract JSON from LLM response (handles markdown code blocks)
+ * Generic JSON extraction - extracts JSON structure without type assertion
+ * Used by both stop-based and day-based generation
  */
-export function extractJSON(text: string): StructuredItinerary {
+export function extractJSONStructure<T = any>(text: string): T {
   // First try: JSON in markdown code block
   const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (jsonMatch) {
     try {
-      const parsed = JSON.parse(jsonMatch[1].trim());
-      return parsed as StructuredItinerary;
+      return JSON.parse(jsonMatch[1].trim()) as T;
     } catch (e) {
       throw new ExtractionError(
         `Failed to parse JSON from code block: ${(e as Error).message}`,
@@ -48,8 +36,7 @@ export function extractJSON(text: string): StructuredItinerary {
 
   // Second try: raw JSON
   try {
-    const parsed = JSON.parse(text.trim());
-    return parsed as StructuredItinerary;
+    return JSON.parse(text.trim()) as T;
   } catch (e) {
     throw new ExtractionError(
       `Response is not valid JSON: ${(e as Error).message}`,
@@ -58,11 +45,31 @@ export function extractJSON(text: string): StructuredItinerary {
   }
 }
 
+export class ValidationError extends Error {
+  constructor(
+    message: string,
+    public errors: string[],
+    public warnings: string[],
+    public itinerary?: StopBasedItinerary
+  ) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+/**
+ * Extract JSON from LLM response (handles markdown code blocks)
+ * For stop-based itineraries
+ */
+export function extractJSON(text: string): StopBasedItinerary {
+  return extractJSONStructure<StopBasedItinerary>(text);
+}
+
 /**
  * Validate structurally extracted itinerary against constraints
  */
 export function validateStructuredItinerary(
-  itinerary: StructuredItinerary,
+  itinerary: StopBasedItinerary,
   input: TripInput
 ): { valid: boolean; errors: string[]; warnings: string[] } {
   const errors: string[] = [];

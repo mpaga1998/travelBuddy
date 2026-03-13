@@ -8,7 +8,7 @@ import { TripInput } from './types.js';
 import { validateTripInput, calculateNights } from './inputValidation.js';
 import { buildDayBasedPlanningPrompt } from './dayBasedPrompt.js';
 import {
-  extractJSON,
+  extractJSONStructure,
   ExtractionError,
 } from './jsonExtraction.js';
 import { renderDayBasedItinerary } from './dayBasedRendering.js';
@@ -111,7 +111,7 @@ export async function generateItineraryDayBased(
       // STEP 3: Extract JSON from response
       let structuredItinerary;
       try {
-        structuredItinerary = extractJSON(responseText);
+        structuredItinerary = extractJSONStructure<StructuredItinerary>(responseText);
       } catch (error) {
         if (error instanceof ExtractionError) {
           console.error('❌ JSON extraction failed:', error.message);
