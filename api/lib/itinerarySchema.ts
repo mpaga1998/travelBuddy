@@ -4,7 +4,7 @@
  */
 
 export interface ItineraryActivity {
-  time: 'morning' | 'afternoon' | 'evening';
+  time: 'morning' | 'afternoon' | 'night';
   location: string; // REQUIRED: explicit location for each activity
   venueName?: string; // Specific venue/attraction name (e.g., "Duomo di Milano")
   coordinates?: [number, number]; // [latitude, longitude] for precise Maps links
@@ -47,7 +47,7 @@ export interface TransportDetails {
 }
 
 export interface LegacyItineraryActivity {
-  time: 'morning' | 'afternoon' | 'evening';
+  time: 'morning' | 'afternoon' | 'night';
   description: string;
   durationEstimate: string; // "2 hours", "30 mins", etc.
 }

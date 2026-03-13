@@ -3,7 +3,7 @@
  */
 
 export interface ItineraryActivity {
-  time: 'morning' | 'afternoon' | 'evening';
+  time: 'morning' | 'afternoon' | 'night';
   description: string;
   durationEstimate: string;
 }

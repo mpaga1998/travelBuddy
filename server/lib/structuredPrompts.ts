@@ -21,7 +21,7 @@ export function buildStructuredPlanningPrompt(
 **CRITICAL INSTRUCTIONS:**
 1. Return ONLY valid JSON wrapped in triple backticks (no other text before/after)
 2. **EXACT NIGHT MATCHING REQUIRED**: nightsAllocated MUST equal nightsAvailable (${nights}). Count on your fingers. Verify twice.
-3. **ACTIVITY TIME MUST BE EXACTLY ONE OF**: "morning", "afternoon", or "evening" (no variations like "night", "early afternoon", "late morning", etc.)
+3. **ACTIVITY TIME MUST BE EXACTLY ONE OF**: "morning", "afternoon", or "night" (no variations like "evening", "early afternoon", "late morning", etc.)
 4. If the trip is infeasible, set "feasible": false and explain in feasibilityNotes
 5. Each stop must have complete day-by-day breakdown with activities and time estimates
 

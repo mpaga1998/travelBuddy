@@ -143,27 +143,27 @@ export function validateDayBasedItinerary(
 
   if (lastDay && input.departure.time) {
     const afternoonActivities = lastDay.activities?.filter(a => a.time === 'afternoon') || [];
-    const eveningActivities = lastDay.activities?.filter(a => a.time === 'evening') || [];
+    const nightActivities = lastDay.activities?.filter(a => a.time === 'night') || [];
     
     // Debug logging
     if (input.departure.time === 'afternoon' || input.departure.time === 'morning') {
       console.log(`⏰ Final day validation: departure="${input.departure.time}", lastDay activities:`, {
         afternoon: afternoonActivities.length,
-        evening: eveningActivities.length,
+        night: nightActivities.length,
       });
     }
     
     if (input.departure.time === 'morning') {
-      if (afternoonActivities.length > 0 || eveningActivities.length > 0) {
+      if (afternoonActivities.length > 0 || nightActivities.length > 0) {
         errors.push(
-          `Final day violation: User departs in morning but has ${afternoonActivities.length + eveningActivities.length} afternoon/evening activities. REMOVE all afternoon/evening activities.`
+          `Final day violation: User departs in morning but has ${afternoonActivities.length + nightActivities.length} afternoon/night activities. REMOVE all afternoon/night activities.`
         );
       }
     }
     
-    if (input.departure.time === 'afternoon' && eveningActivities.length > 0) {
+    if (input.departure.time === 'afternoon' && nightActivities.length > 0) {
       errors.push(
-        `Final day violation: User departs in afternoon but has ${eveningActivities.length} evening activities (${eveningActivities.map(a => `"${a.description?.substring(0, 30)}..."`).join(', ')}). REMOVE all evening activities. User must depart by afternoon.`
+        `Final day violation: User departs in afternoon but has ${nightActivities.length} night activities (${nightActivities.map(a => `"${a.description?.substring(0, 30)}..."`).join(', ')}). REMOVE all night activities. User must depart by afternoon.`
       );
     }
   }
@@ -199,7 +199,7 @@ export function validateDayBasedItinerary(
       dayLocations.add(activityLocation);
 
       // Validate time
-      if (!['morning', 'afternoon', 'evening'].includes(activity.time)) {
+      if (!['morning', 'afternoon', 'night'].includes(activity.time)) {
         errors.push(
           `Day ${day.dayNumber}: invalid time "${activity.time}"`
         );

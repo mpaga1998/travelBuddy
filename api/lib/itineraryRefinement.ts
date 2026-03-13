@@ -106,7 +106,7 @@ export function buildRefinementPrompt(
 
   // Day structure fix
   if (context.validationErrors.some((e) => e.includes('activity'))) {
-    refinement += `\n2. **DAILY STRUCTURE**: Each day MUST have morning, afternoon, AND evening activities\n`;
+    refinement += `\n2. **DAILY STRUCTURE**: Each day MUST have morning, afternoon, AND night activities\n`;
     refinement += `   - Never skip a time period\n`;
     refinement += `   - Include durationEstimate for each\n`;
   }

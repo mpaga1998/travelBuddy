@@ -185,7 +185,7 @@ export function validateStructuredItinerary(
 
       // Validate activities
       day.activities.forEach((activity, actIdx) => {
-        if (!['morning', 'afternoon', 'evening'].includes(activity.time)) {
+        if (!['morning', 'afternoon', 'night'].includes(activity.time)) {
           errors.push(
             `Stop "${stop.location}", Day ${day.dayNumber}, Activity ${actIdx + 1}: invalid time "${activity.time}"`
           );

@@ -55,7 +55,7 @@ export function renderDayBasedItinerary(
       const timeEmoji = {
         morning: '🌅',
         afternoon: '☀️',
-        evening: '🌆',
+        night: '🌆',
       }[activity.time];
 
       if (activity.isTravel) {
