@@ -43,6 +43,11 @@ export function buildDayBasedPlanningPrompt(
       ? `\n- **REQUIRED STOPS (YOU MUST VISIT ALL):**\n${input.stops.map((s) => `  - ${s}`).join('\n')}`
       : '';
 
+  const desiredAttractionsText =
+    input.desiredAttractions && input.desiredAttractions.length > 0
+      ? `\n- **OPTIONAL PLACES TO VISIT (if feasible):**\n${input.desiredAttractions.map((a) => `  - ${a}`).join('\n')}\n  → Integrate these as DAY TRIPS from the main route if possible\n  → DO NOT create multi-day detours for optional attractions\n  → If time/proximity doesn't allow, leave them out`
+      : '';
+
   const personalization = firstName ? `${firstName}'s` : 'the traveler\'s';
   const pacing = getPacingGuidance(input.travelPace);
   
@@ -57,9 +62,9 @@ export function buildDayBasedPlanningPrompt(
 
 CRITICAL RULES:
 
-1. **REQUIRED STOPS** - MUST visit ALL these locations:
+1. **PRIMARY ROUTE** - MUST visit ALL these locations (the core itinerary):
    - Start: ${input.arrival.location} (arriving ${input.arrival.date}${arrivalTimeInfo})
-   - End: ${input.departure.location} (departing ${input.departure.date}${departureTimeInfo})${userStopsText}
+   - End: ${input.departure.location} (departing ${input.departure.date}${departureTimeInfo})${userStopsText}${desiredAttractionsText}
 
 2. **MUST RETURN to ${input.departure.location}** on the departure date
 

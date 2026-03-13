@@ -270,7 +270,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
           time: departureTime ? (departureTime as 'morning' | 'afternoon' | 'night') : undefined,
         },
         stops: stops.length > 0 ? stops : undefined,
-        desiredAttractions: attractionsList,
+        desiredAttractions: attractionsList.length > 0 ? attractionsList : undefined,
         travelPace,
         interests: selectedInterests.length > 0 ? selectedInterests : undefined,
         budget,

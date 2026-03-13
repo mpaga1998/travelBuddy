@@ -12,7 +12,7 @@ export interface ItineraryInput {
     time?: 'morning' | 'afternoon' | 'night'; // Time of departure
   };
   stops?: string[]; // Intermediate stops between arrival and departure
-  desiredAttractions: string[];
+  desiredAttractions?: string[]; // Optional day trips or attractions (not primary stops)
   travelPace?: 'relaxed' | 'moderate' | 'active';
   interests?: string[];
   budget?: 'budget' | 'mid-range' | 'luxury';

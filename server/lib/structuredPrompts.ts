@@ -66,15 +66,19 @@ export function buildStructuredPlanningPrompt(
 ---
 
 **TRIP PARAMETERS:**
-- Arrive: ${startDate} in **${input.arrival.location}**
-- Depart: ${endDate} from **${input.departure.location}**
+- Arrive: ${startDate} in **${input.arrival.location}** (PRIMARY START)
+- Depart: ${endDate} from **${input.departure.location}** (PRIMARY END)
 - Total: **${nights} nights** available
-${input.stops && input.stops.length > 0 ? `- Suggested stops: ${input.stops.join(', ')}` : ''}
+${input.stops && input.stops.length > 0 ? `- **Required Stops (main route):** ${input.stops.join(', ')}` : '(No additional stops - direct route from arrival to departure)'}
 - Travel pace: ${input.travelPace === 'relaxed' ? '🐢 Relaxed' : input.travelPace === 'active' ? '⚡ Active' : '⚖️ Balanced'}
 - Budget tier: ${input.budget || 'flexible'}
 
-${input.desiredAttractions && input.desiredAttractions.length > 0 ? `**ATTRACTIONS TO INCLUDE:**
-${input.desiredAttractions.map((attr) => `- ${attr}`).join('\n')}` : '(No specific attractions specified - create a flexible itinerary)'}
+${input.desiredAttractions && input.desiredAttractions.length > 0 ? `**OPTIONAL PLACES TO VISIT (if feasible as day trips):**
+${input.desiredAttractions.map((attr) => `- ${attr}`).join('\n')}
+→ These are SECONDARY to the required route
+→ Try to integrate as day trips from main stops
+→ Only include if proximity + time allows
+→ Do NOT create multi-day detours for optional attractions` : '(No optional attractions specified)'}
 
 ${input.notes ? `**ADDITIONAL NOTES:** ${input.notes}` : ''}
 
@@ -82,32 +86,45 @@ ${input.notes ? `**ADDITIONAL NOTES:** ${input.notes}` : ''}
 
 **PLANNING RULES:**
 
-1. **Night allocation must be EXACT**: Sum of all stop totalNights must equal ${nights}
+1. **ITINERARY HIERARCHY**:
+   - **Must Include**: Arrival (${input.arrival.location}) → Stops → Departure (${input.departure.location})
+   - **Try to Include**: Optional attractions as day trips from the main route
+   - **Do NOT Include**: Optional attractions if they require multi-day detours
+   - If time is limited, ALWAYS prioritize the main route over optional attractions
+
+2. **OPTIONAL ATTRACTIONS STRATEGY**:
+   - Are they within 1-2 hours of a main stop? → Consider as day trip
+   - Would visiting them require staying extra nights? → Skip them (not feasible)
+   - Example GOOD: "From Milano, Lake Como is a 1-hour train ride → easy day trip"
+   - Example BAD: "Insert Lake Como as a 3-day stop in the middle of the route"
+   - If you can't reach it as a day trip, exclude it from the plan
+
+3. **Night allocation must be EXACT**: Sum of all stop totalNights must equal ${nights}
    - Do NOT allocate the same number of nights to each stop
    - Example GOOD splits: 3-3-1, 2-2-2-1, etc.
    - Example BAD splits: 7-7-7 (totals 21, not 8)
 
-2. **Work backwards from departure**:
+4. **Work backwards from departure**:
    - You must END in ${input.departure.location} by evening on ${endDate}
    - Last stop should allow travel back on final day
    - Calculate travel time from final destination back to ${input.departure.location}
 
-3. **Reality check transport times**:
+5. **Reality check transport times**:
    - Don't use Google Maps optimistic times - add buffer
    - Include actual driving/transit speeds, not straight-line distance
    - Consider time-of-day effects (morning traffic, evening fatigue)
 
-4. **Be honest about feasibility**:
-   - If ${nights} nights is too tight for the distance + attractions, say so
+6. **Be honest about feasibility**:
+   - If ${nights} nights is too tight for the main route, say so
    - Better to suggest 1-2 fewer locations than pretend it's doable
-   - If feasible: false, explain what to cut or adjust
+   - If feasible: false, explain what to cut or adjust (cut optional attractions first)
 
-5. **Daily breakdown requirements**:
+7. **Daily breakdown requirements**:
    - Each day must have morning, afternoon, AND evening activities
    - Include realistic time estimates (e.g., "2 hours", "1.5 hours")
    - Activities should match the travel pace (${input.travelPace})
 
-6. **Transportation details**:
+8. **Transportation details**:
    - Between stops, include: mode (bus/taxi/flight), duration, and cost estimate
    - First stop: no transportFromPrevious (or mark as arrival)
    - Last transport should arrive at ${input.departure.location} by ${endDate} evening

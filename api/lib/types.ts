@@ -11,8 +11,8 @@ export interface TripInput {
     location: string;
     time?: 'morning' | 'afternoon' | 'night'; // Time of departure
   };
-  stops?: string[];
-  desiredAttractions: string[];
+  stops?: string[]; // Intermediate stops between arrival and departure
+  desiredAttractions?: string[]; // Optional day trips or attractions
   travelPace?: 'relaxed' | 'moderate' | 'active';
   interests?: string[];
   budget?: 'budget' | 'mid-range' | 'luxury';
