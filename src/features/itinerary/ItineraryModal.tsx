@@ -48,8 +48,10 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
 
   // Form state
   const [arrivalDate, setArrivalDate] = useState('');
+  const [arrivalTime, setArrivalTime] = useState<'morning' | 'afternoon' | 'night' | ''>('');
   const [arrivalLocation, setArrivalLocation] = useState('');
   const [departureDate, setDepartureDate] = useState('');
+  const [departureTime, setDepartureTime] = useState<'morning' | 'afternoon' | 'night' | ''>('');
   const [departureLocation, setDepartureLocation] = useState('');
   const [attractions, setAttractions] = useState('');
   const [travelPace, setTravelPace] = useState<'relaxed' | 'moderate' | 'active'>('moderate');
@@ -260,10 +262,12 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
         arrival: {
           date: arrivalDate,
           location: arrivalLocation,
+          time: arrivalTime ? (arrivalTime as 'morning' | 'afternoon' | 'night') : undefined,
         },
         departure: {
           date: departureDate,
           location: departureLocation,
+          time: departureTime ? (departureTime as 'morning' | 'afternoon' | 'night') : undefined,
         },
         stops: stops.length > 0 ? stops : undefined,
         desiredAttractions: attractionsList,
@@ -288,8 +292,10 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
     setError(null);
     setItinerary('');
     setArrivalDate('');
+    setArrivalTime('');
     setArrivalLocation('');
     setDepartureDate('');
+    setDepartureTime('');
     setDepartureLocation('');
     setStops([]);
     setCurrentStop('');
@@ -418,8 +424,31 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                         backgroundColor: '#fff',
                         color: '#111',
                         colorScheme: 'light',
+                        marginBottom: 8,
                       }}
                     />
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {(['morning', 'afternoon', 'night'] as const).map((time) => (
+                        <button
+                          key={time}
+                          onClick={() => setArrivalTime(time)}
+                          style={{
+                            flex: 1,
+                            padding: '8px 4px',
+                            borderRadius: 6,
+                            border: '2px solid rgba(0,0,0,0.2)',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            backgroundColor: arrivalTime === time ? '#0066cc' : '#f5f5f5',
+                            color: arrivalTime === time ? '#fff' : '#111',
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          {time.charAt(0).toUpperCase() + time.slice(1)}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div>
                     <label style={{ fontSize: 11, fontWeight: 600, opacity: 0.9, display: 'block', marginBottom: 6, color: '#111' }}>
@@ -441,8 +470,31 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                         backgroundColor: '#fff',
                         color: '#111',
                         colorScheme: 'light',
+                        marginBottom: 8,
                       }}
                     />
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {(['morning', 'afternoon', 'night'] as const).map((time) => (
+                        <button
+                          key={time}
+                          onClick={() => setDepartureTime(time)}
+                          style={{
+                            flex: 1,
+                            padding: '8px 4px',
+                            borderRadius: 6,
+                            border: '2px solid rgba(0,0,0,0.2)',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            backgroundColor: departureTime === time ? '#0066cc' : '#f5f5f5',
+                            color: departureTime === time ? '#fff' : '#111',
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          {time.charAt(0).toUpperCase() + time.slice(1)}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>

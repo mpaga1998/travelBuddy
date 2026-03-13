@@ -4,10 +4,12 @@ export interface TripInput {
   arrival: {
     date: string; // YYYY-MM-DD
     location: string;
+    time?: 'morning' | 'afternoon' | 'night'; // Time of arrival
   };
   departure: {
     date: string; // YYYY-MM-DD
     location: string;
+    time?: 'morning' | 'afternoon' | 'night'; // Time of departure
   };
   stops?: string[];
   desiredAttractions: string[];

@@ -4,10 +4,12 @@ export interface ItineraryInput {
   arrival: {
     date: string; // YYYY-MM-DD
     location: string;
+    time?: 'morning' | 'afternoon' | 'night'; // Time of arrival
   };
   departure: {
     date: string; // YYYY-MM-DD
     location: string;
+    time?: 'morning' | 'afternoon' | 'night'; // Time of departure
   };
   stops?: string[]; // Intermediate stops between arrival and departure
   desiredAttractions: string[];

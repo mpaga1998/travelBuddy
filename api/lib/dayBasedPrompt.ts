@@ -48,27 +48,41 @@ export function buildDayBasedPlanningPrompt(
   
   // Extract destination from arrival location or stops
   const destination = input.arrival.location || (input.stops?.[0] || 'the destination');
+  
+  // Add time information to arrival/departure
+  const arrivalTimeInfo = input.arrival.time ? ` in the ${input.arrival.time}` : '';
+  const departureTimeInfo = input.departure.time ? ` in the ${input.departure.time}` : '';
 
   return `You are an expert trip planner. Plan ${personalization} trip to ${destination} with ${pacing.description.toLowerCase()}.
 
 CRITICAL RULES:
 
 1. **REQUIRED STOPS** - MUST visit ALL these locations:
-   - Start: ${input.arrival.location} (arriving ${input.arrival.date})
-   - End: ${input.departure.location} (departing ${input.departure.date})${userStopsText}
+   - Start: ${input.arrival.location} (arriving ${input.arrival.date}${arrivalTimeInfo})
+   - End: ${input.departure.location} (departing ${input.departure.date}${departureTimeInfo})${userStopsText}
 
 2. **MUST RETURN to ${input.departure.location}** on the departure date
 
-3. **DAYS vs NIGHTS**: ${nights} calendar days = ${nights - 1} nights (you sleep ${nights - 1} times)
+3. **ARRIVAL & DEPARTURE TIMING**:
+   - Arrival: ${input.arrival.time ? `The user arrives in the ${input.arrival.time}` : 'Check when the user arrives'}
+   - Departure: ${input.departure.time ? `The user departs in the ${input.departure.time}` : 'Check when the user departs'}
+   - Morning arrival: Usually has time for afternoon/evening activities (skip detailed morning plans)
+   - Afternoon arrival: Limited first day; focus on evening activities
+   - Night arrival: Preserve first day primarily for rest; start activities Day 2
+   - Morning departure: Plan final morning activities; schedule travel later
+   - Afternoon departure: Plan morning activities; depart in afternoon
+   - Night departure: Plan full day with evening departure
 
-4. **DAILY PACING - ${input.travelPace?.toUpperCase() || 'MODERATE'} PACE**:
+4. **DAYS vs NIGHTS**: ${nights} calendar days = ${nights - 1} nights (you sleep ${nights - 1} times)
+
+5. **DAILY PACING - ${input.travelPace?.toUpperCase() || 'MODERATE'} PACE**:
    - Maximum activity time: ${pacing.maxHours} hours per day
    - This includes: museums, attractions, meals, activities (EXCLUDES sleep)
    - Travel time counts toward the daily total!
    - Example: 2-hour travel + 3-hour museum = ${pacing.maxHours - 2} hours left for other activities
    - DO NOT pack more than ${pacing.maxHours} hours into one day
 
-5. **REALISTIC TRAVEL TIMES** - Use these actual Italian travel times:
+5. **REALISTIC TRAVEL TIMES** - Use these actual travel times:
    - Milano ↔ Venice (train): 2.5 hours
    - Milano ↔ Firenze (train): 2 hours
    - Venice ↔ Firenze (train): 3.5 hours
