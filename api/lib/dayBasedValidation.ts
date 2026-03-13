@@ -99,12 +99,21 @@ export function validateDayBasedItinerary(
     );
   }
 
+  // 2a. DAY COUNT VALIDATION - Must match calendar days
+  const expectedDays = expectedNights + 1; // 3 nights = 4 calendar days
+  const actualDays = itinerary.days?.length || 0;
+  if (actualDays !== expectedDays) {
+    errors.push(
+      `Day count mismatch: generated ${actualDays} days, but there are ${expectedDays} calendar days in the trip (${expectedNights} nights sleep = ${expectedDays} days)`
+    );
+  }
+
   // 2b. TIMING VALIDATION - Enforce arrival/departure time constraints
   const firstDay = itinerary.days?.[0];
   const lastDay = itinerary.days?.[itinerary.days.length - 1];
 
   if (firstDay && input.arrival.time) {
-    const morningActivities = firstDay.activities?.filter(a => a.time === 'morning') || [];
+    const morningActivities = firstDay.activities?.filter(a => a.time === 'morning' && !a.isTravel) || [];
     const afternoonActivities = firstDay.activities?.filter(a => a.time === 'afternoon') || [];
     
     if (input.arrival.time === 'afternoon' && morningActivities.length > 0) {
@@ -114,10 +123,18 @@ export function validateDayBasedItinerary(
     }
     
     if (input.arrival.time === 'night') {
-      const allActivities = firstDay.activities?.filter(a => !a.isTravel) || [];
-      if (allActivities.length > 0) {
+      // For night arrival, allow only check-in/arrival activities, reject sightseeing
+      const sightseeingActivities = firstDay.activities?.filter(a => 
+        !a.isTravel && 
+        !a.description?.toLowerCase().includes('arrive') && 
+        !a.description?.toLowerCase().includes('rest') && 
+        !a.description?.toLowerCase().includes('accommodation') && 
+        !a.description?.toLowerCase().includes('check')
+      ) || [];
+      
+      if (sightseeingActivities.length > 0) {
         errors.push(
-          `Day 1 violation: User arrives at night but has ${allActivities.length} activities planned. Day 1 should be ONLY arrival/rest, no activities. Start activities on Day 2.`
+          `Day 1 violation: User arrives at night but has ${sightseeingActivities.length} sightseeing activities (${sightseeingActivities.map(a => `"${a.description?.substring(0, 30)}..."`).join(', ')}). Day 1 should ONLY have arrival/check-in, no tourist activities. Move all sightseeing to Day 2.`
         );
       }
     }
@@ -126,6 +143,14 @@ export function validateDayBasedItinerary(
   if (lastDay && input.departure.time) {
     const afternoonActivities = lastDay.activities?.filter(a => a.time === 'afternoon') || [];
     const eveningActivities = lastDay.activities?.filter(a => a.time === 'evening') || [];
+    
+    // Debug logging
+    if (input.departure.time === 'afternoon' || input.departure.time === 'morning') {
+      console.log(`⏰ Final day validation: departure="${input.departure.time}", lastDay activities:`, {
+        afternoon: afternoonActivities.length,
+        evening: eveningActivities.length,
+      });
+    }
     
     if (input.departure.time === 'morning') {
       if (afternoonActivities.length > 0 || eveningActivities.length > 0) {
@@ -137,7 +162,7 @@ export function validateDayBasedItinerary(
     
     if (input.departure.time === 'afternoon' && eveningActivities.length > 0) {
       errors.push(
-        `Final day violation: User departs in afternoon but has ${eveningActivities.length} evening activities. REMOVE all evening activities.`
+        `Final day violation: User departs in afternoon but has ${eveningActivities.length} evening activities (${eveningActivities.map(a => `"${a.description?.substring(0, 30)}..."`).join(', ')}). REMOVE all evening activities. User must depart by afternoon.`
       );
     }
   }

@@ -37,6 +37,8 @@ export function buildDayBasedPlanningPrompt(
       new Date(input.arrival.date).getTime()) /
       (1000 * 60 * 60 * 24)
   );
+  
+  const calendarDays = nights + 1; // Night difference + 1 = total calendar days
 
   const userStopsText =
     input.stops && input.stops.length > 0
@@ -85,11 +87,11 @@ CRITICAL RULES:
      - Start main activities on Day 2
      - MANDATORY: No morning activities on Day 1` 
    : input.arrival.time === 'night' ? 
-     `- Night arrival: DO NOT plan ANY activities on Day 1
-     - Day 1 is ONLY: Travel + arrival + rest
-     - Arrival + check-in + sleep
-     - MANDATORY: No morning, NO afternoon, NO evening activities on Day 1
-     - Start all activities on Day 2 morning` 
+     `- Night arrival: Only include arrival/check-in activity on Day 1
+     - Day 1: Just one activity - "Arrive at accommodation and rest" or similar check-in
+     - NO sightseeing or tourist activities on Day 1
+     - Start all sightseeing activities on Day 2 morning
+     - MANDATORY: Only check-in/rest, no other activities` 
    : ''}
    
    **FINAL DAY ACTIVITIES (BASED ON DEPARTURE TIME)**:
@@ -98,16 +100,22 @@ CRITICAL RULES:
      - Final day: Morning activity only, then travel
      - MANDATORY: No afternoon or evening activities` 
    : input.departure.time === 'afternoon' ? 
-     `- Afternoon departure: Plan morning activities on final day
-     - Final day: Morning + lunch + depart afternoon
-     - MANDATORY: No evening activities` 
+     `- Afternoon departure: DO NOT plan evening activities on final day
+     - Final day: Morning activities + Lunch/early afternoon + Travel to airport/station
+     - Then depart in afternoon (before evening)
+     - MANDATORY: No evening activities
+     - Example: Morning museum (2h) + Lunch (1.5h) + travel to airport (1h) = done by 2-3pm` 
    : input.departure.time === 'night' ? 
      `- Night departure: Plan FULL day on final day
      - Final day: Full morning, afternoon, evening activities + depart night
      - MANDATORY: Include full day of activities` 
    : ''}
 
-4. **DAYS vs NIGHTS**: ${nights} calendar days = ${nights - 1} nights (you sleep ${nights - 1} times)
+4. **DAYS vs NIGHTS**: ${calendarDays} calendar days, ${nights} nights available
+   - CRITICAL: Generate exactly ${calendarDays} days in the itinerary (one for each calendar day from ${input.arrival.date} to ${input.departure.date})
+   - Sleep ${nights} times (nights allocated = ${nights})
+   - Each day gets dayNumber 1 through ${calendarDays}
+   - Do NOT skip any days, do NOT combine days
 
 5. **DAILY PACING - ${input.travelPace?.toUpperCase() || 'MODERATE'} PACE**:
    - Maximum activity time: ${pacing.maxHours} hours per day
