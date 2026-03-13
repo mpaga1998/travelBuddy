@@ -5,6 +5,15 @@
 
 import { TripInput } from './types.js';
 
+/**
+ * Normalize location name: "Milano, Milan, Italy" -> "Milano"
+ * Extracts only the first part (city name) before any commas
+ */
+function normalizeLocationName(location: string): string {
+  if (!location) return location;
+  return location.split(',')[0].trim();
+}
+
 function getPacingGuidance(pace?: string): { maxHours: number; description: string } {
   switch (pace) {
     case 'relaxed':
@@ -40,9 +49,14 @@ export function buildDayBasedPlanningPrompt(
   
   const calendarDays = nights + 1; // Night difference + 1 = total calendar days
 
+  // Normalize all location names: "Milano, Milan, Italy" -> "Milano"
+  const arrivalLocation = normalizeLocationName(input.arrival.location);
+  const departureLocation = normalizeLocationName(input.departure.location);
+  const normalizedStops = input.stops?.map(s => normalizeLocationName(s)) || [];
+
   const userStopsText =
-    input.stops && input.stops.length > 0
-      ? `\n- **REQUIRED STOPS (YOU MUST VISIT ALL):**\n${input.stops.map((s) => `  - ${s}`).join('\n')}`
+    normalizedStops.length > 0
+      ? `\n- **REQUIRED STOPS (YOU MUST VISIT ALL):**\n${normalizedStops.map((s) => `  - ${s}`).join('\n')}`
       : '';
 
   const desiredAttractionsText =
@@ -54,7 +68,7 @@ export function buildDayBasedPlanningPrompt(
   const pacing = getPacingGuidance(input.travelPace);
   
   // Extract destination from arrival location or stops
-  const destination = input.arrival.location || (input.stops?.[0] || 'the destination');
+  const destination = arrivalLocation || (normalizedStops?.[0] || 'the destination');
   
   // Add time information to arrival/departure
   const arrivalTimeInfo = input.arrival.time ? ` in the ${input.arrival.time}` : '';
@@ -67,10 +81,10 @@ export function buildDayBasedPlanningPrompt(
 CRITICAL RULES:
 
 1. **PRIMARY ROUTE** - MUST visit ALL these locations (the core itinerary):
-   - Start: ${input.arrival.location} (arriving ${input.arrival.date}${arrivalTimeInfo})
-   - End: ${input.departure.location} (departing ${input.departure.date}${departureTimeInfo})${userStopsText}${desiredAttractionsText}
+   - Start: ${arrivalLocation} (arriving ${input.arrival.date}${arrivalTimeInfo})
+   - End: ${departureLocation} (departing ${input.departure.date}${departureTimeInfo})${userStopsText}${desiredAttractionsText}
 
-2. **MUST RETURN to ${input.departure.location}** on the departure date
+2. **MUST RETURN to ${departureLocation}** on the departure date
 
 3. **ARRIVAL & DEPARTURE TIMING** - CRITICAL, MUST FOLLOW:
    - Arrival: ${input.arrival.time ? `The user arrives in the ${input.arrival.time}` : 'Check when the user arrives'}
@@ -80,7 +94,7 @@ CRITICAL RULES:
    ${input.arrival.time === 'morning' ? 
      `- Morning arrival: Plan full day starting morning (user has whole day)
      - Include morning, afternoon, and evening activities
-     - Travel to ${input.arrival.location} counts as morning activity` 
+     - Travel to ${arrivalLocation} counts as morning activity` 
    : input.arrival.time === 'afternoon' ? 
      `- Afternoon arrival: DO NOT plan morning activities
      - Day 1 should be: Arrival/check-in + evening activity only
@@ -228,8 +242,8 @@ REQUIRED JSON FORMAT:
   "constraints": {
     "startDate": "${input.arrival.date}",
     "endDate": "${input.departure.date}",
-    "arrivalLocation": "${input.arrival.location}",
-    "departureLocation": "${input.departure.location}",
+    "arrivalLocation": "${arrivalLocation}",
+    "departureLocation": "${departureLocation}",
     "nightsAvailable": ${nights - 1},
     "nightsAllocated": ${nights - 1}
   },

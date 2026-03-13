@@ -68,10 +68,11 @@ function getRealisticTravelTime(from: string, to: string): number | undefined {
 }
 
 /**
- * Normalize city name for comparison
+ * Normalize city name for comparison: "Milano, Milan, Italy" -> "milano"
  */
 function normalizeCity(city: string): string {
-  return city.toLowerCase().trim();
+  if (!city) return '';
+  return city.split(',')[0].trim().toLowerCase();
 }
 
 export function validateDayBasedItinerary(
