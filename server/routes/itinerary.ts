@@ -18,7 +18,12 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    console.log('📝 Generating itinerary for:', tripInput.arrival.location);
+    console.log('📝 Generating itinerary:', {
+      arrival: `${tripInput.arrival.location} on ${tripInput.arrival.date} at ${tripInput.arrival.time || 'unspecified'}`,
+      departure: `${tripInput.departure.location} on ${tripInput.departure.date} at ${tripInput.departure.time || 'unspecified'}`,
+      stops: tripInput.stops,
+      attractions: tripInput.desiredAttractions,
+    });
     const itinerary = await generateItinerary(tripInput);
     
     res.json({

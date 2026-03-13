@@ -51,6 +51,13 @@ export default async function handler(
   try {
     const tripInput: TripInput = req.body;
 
+    console.log('📝 [API] Received itinerary request:', {
+      arrival: `${tripInput.arrival?.location} on ${tripInput.arrival?.date} at ${tripInput.arrival?.time || 'unspecified'}`,
+      departure: `${tripInput.departure?.location} on ${tripInput.departure?.date} at ${tripInput.departure?.time || 'unspecified'}`,
+      stops: tripInput.stops,
+      attractions: tripInput.desiredAttractions,
+    });
+
     // Validation
     if (!tripInput.arrival?.date || !tripInput.departure?.date) {
       const response: ItineraryResponse = {

@@ -277,7 +277,12 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
         notes: notes.trim() || undefined,
       };
 
-      console.log('📤 Sending itinerary request with userId:', input.userId, 'and name:', input.userFirstName);
+      console.log('📤 Sending itinerary request:', {
+        arrival: `${input.arrival.location} on ${input.arrival.date} at ${input.arrival.time || 'unspecified'}`,
+        departure: `${input.departure.location} on ${input.departure.date} at ${input.departure.time || 'unspecified'}`,
+        stops: input.stops,
+        attractions: input.desiredAttractions,
+      });
       const result = await generateItinerary(input);
       setItinerary(result);
       setStep('result');

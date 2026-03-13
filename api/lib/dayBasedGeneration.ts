@@ -80,6 +80,13 @@ export async function generateItineraryDayBased(
         });
       }
 
+      // Debug: verify timing info is in prompt
+      if (input.arrival.time || input.departure.time) {
+        const hasArrivalTime = prompt.includes(input.arrival.time || '');
+        const hasDepartureTime = prompt.includes(input.departure.time || '');
+        console.log(`⏰ Timing in prompt: arrival="${input.arrival.time}" (${hasArrivalTime ? '✓' : '✗'}), departure="${input.departure.time}" (${hasDepartureTime ? '✓' : '✗'})`);
+      }
+
       console.log('🤖 Calling OpenAI with day-based prompt...');
       const response = await openai.chat.completions.create({
         model: process.env.OPENAI_PLANNING_MODEL || 'gpt-4-turbo',
