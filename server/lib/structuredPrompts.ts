@@ -20,9 +20,10 @@ export function buildStructuredPlanningPrompt(
 
 **CRITICAL INSTRUCTIONS:**
 1. Return ONLY valid JSON wrapped in triple backticks (no other text before/after)
-2. Double-check that nightsAllocated matches nightsAvailable
-3. If the trip is infeasible, set "feasible": false and explain in feasibilityNotes
-4. Each stop must have complete day-by-day breakdown with activities and time estimates
+2. **EXACT NIGHT MATCHING REQUIRED**: nightsAllocated MUST equal nightsAvailable (${nights}). Count on your fingers. Verify twice.
+3. **ACTIVITY TIME MUST BE EXACTLY ONE OF**: "morning", "afternoon", or "evening" (no variations like "night", "early afternoon", "late morning", etc.)
+4. If the trip is infeasible, set "feasible": false and explain in feasibilityNotes
+5. Each stop must have complete day-by-day breakdown with activities and time estimates
 
 **RESPONSE MUST BE VALID JSON:**
 \`\`\`json
@@ -99,10 +100,11 @@ ${input.notes ? `**ADDITIONAL NOTES:** ${input.notes}` : ''}
    - Example BAD: "Insert Lake Como as a 3-day stop in the middle of the route"
    - If you can't reach it as a day trip, exclude it from the plan
 
-3. **Night allocation must be EXACT**: Sum of all stop totalNights must equal ${nights}
+3. **NIGHT ALLOCATION MUST BE EXACT**: Sum of all stop totalNights must equal EXACTLY ${nights}
    - Do NOT allocate the same number of nights to each stop
-   - Example GOOD splits: 3-3-1, 2-2-2-1, etc.
-   - Example BAD splits: 7-7-7 (totals 21, not 8)
+   - Example GOOD splits for 8 nights: 3-3-2, 4-2-2, 3-3-1-1, etc.
+   - Example BAD splits: "night 1-night 2" (ambiguous), 4-3-2 (totals 9, not 8)
+   - **VERIFY**: Count on your fingers. If your itinerary spans ${nights} nights, nightsAllocated must be ${nights}
 
 4. **Work backwards from departure**:
    - You must END in ${input.departure.location} by evening on ${endDate}
@@ -121,6 +123,8 @@ ${input.notes ? `**ADDITIONAL NOTES:** ${input.notes}` : ''}
 
 7. **Daily breakdown requirements**:
    - Each day must have morning, afternoon, AND evening activities
+   - **Activity "time" field MUST be EXACTLY ONE OF**: "morning", "afternoon", "evening"
+   - DO NOT use: "night", "early afternoon", "late morning", "midday", or any variations
    - Include realistic time estimates (e.g., "2 hours", "1.5 hours")
    - Activities should match the travel pace (${input.travelPace})
 

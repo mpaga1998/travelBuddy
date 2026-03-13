@@ -20,8 +20,8 @@ export function buildStructuredPlanningPrompt(
 
 **CRITICAL INSTRUCTIONS:**
 1. Return ONLY valid JSON wrapped in triple backticks (no other text before/after)
-2. Double-check that nightsAllocated matches nightsAvailable
-3. If the trip is infeasible, set "feasible": false and explain in feasibilityNotes
+2. **EXACT NIGHT MATCHING REQUIRED**: nightsAllocated MUST equal nightsAvailable (${nights}). Count on your fingers. Verify twice.
+3. **ACTIVITY TIME MUST BE EXACTLY ONE OF**: "morning", "afternoon", or "evening" (no variations like "night", "early afternoon", "late morning", etc.)
 4. Each stop must have complete day-by-day breakdown with activities and time estimates
 5. **IMPORTANT: Days = calendar days, Nights = sleeps. With ${nights} nights, you have ${nights + 1} calendar days (${nights} full days + 1 departure day)**
 6. **Each day's "nights" field = how many nights you sleep AFTER that day. Final day must have "nights": 0 (you leave on departure day)**
@@ -129,6 +129,8 @@ ${input.notes ? `**ADDITIONAL NOTES:** ${input.notes}` : ''}
 
 7. **Daily breakdown requirements**:
    - Each day must have morning, afternoon, AND evening activities
+   - **Activity "time" field MUST be EXACTLY ONE OF**: "morning", "afternoon", "evening"
+   - DO NOT use: "night", "early afternoon", "late morning", "midday", or any variations
    - Include realistic time estimates (e.g., "2 hours", "1.5 hours")
    - Activities should match the travel pace (${input.travelPace})
 
