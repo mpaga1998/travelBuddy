@@ -5,7 +5,9 @@
 
 export interface ItineraryActivity {
   time: 'morning' | 'afternoon' | 'evening';
-  location: string; // REQUIRED: explicit location for each activity
+  location: string; // REQUIRED: explicit location for each activity (city name)
+  venueName?: string; // Specific venue/attraction name (e.g., "Duomo di Milano")
+  coordinates?: [number, number]; // [latitude, longitude] for precise Maps links
   description: string;
   durationEstimate: string; // "2 hours", "30 mins", etc.
   isTravel?: boolean; // Mark travel activities

@@ -73,11 +73,12 @@ CRITICAL RULES:
    - Lake Como boat tours: 1-2 hours
    - DO NOT suggest unrealistic times like "30 mins" or "1 hour" between distant cities
 
-6. **ACTIVITY LOCATIONS** - Every activity MUST have an explicit location:
-   - Morning activity location
-   - Afternoon activity location
-   - Evening activity location
-   - If locations differ, travel MUST be shown as an activity!
+6. **ACTIVITY LOCATIONS** - Every activity MUST have:
+   - City/area name (e.g., "Milano")
+   - SPECIFIC venue/attraction name (e.g., "Duomo di Milano", "Caffè Vergnano", "Navigli District")
+   - Never generic names like "restaurant" - use REAL place names!
+   - Examples: "Basilica di San Marco Venice", "Trattoria da Vinci Milano", "Uffizi Gallery Firenze"
+   - If locations differ between activities, travel MUST be shown as an activity!
 
 7. **TRAVEL IS AN ACTIVITY** - Not invisible:
    - Mark with "isTravel": true

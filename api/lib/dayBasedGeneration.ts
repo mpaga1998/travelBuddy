@@ -11,6 +11,7 @@ import { extractJSONStructure, ExtractionError } from './jsonExtraction.js';
 import { renderDayBasedItinerary } from './dayBasedRendering.js';
 import { validateDayBasedItinerary } from './dayBasedValidation.js';
 import { StructuredItinerary } from './itinerarySchema.js';
+import { geocodeItineraryVenues } from './itineraryGeocoding.js';
 import {
   buildRefinementPrompt,
   GenerationContext,
@@ -159,9 +160,14 @@ export async function generateItineraryDayBased(
         console.warn('⚠️ Validation warnings:', validationResult.warnings);
       }
 
-      console.log('✅ Validation passed. Rendering to markdown...');
+      console.log('✅ Validation passed. Geocoding venues...');
 
-      // STEP 5: Render to markdown
+      // STEP 5: Geocode venue names to coordinates (non-blocking)
+      await geocodeItineraryVenues(structuredItinerary);
+
+      console.log('✅ Geocoding complete. Rendering to markdown...');
+
+      // STEP 6: Render to markdown
       const markdown = renderDayBasedItinerary(structuredItinerary, firstName);
       console.log('✅ Itinerary generated successfully (day-based)');
 

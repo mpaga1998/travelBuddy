@@ -3,6 +3,7 @@
  */
 
 import { StructuredItinerary } from './itinerarySchema.js';
+import { generateGoogleMapsURL, generateAppleMapsURL } from './mapboxGeocoding.js';
 
 export function renderDayBasedItinerary(
   itinerary: StructuredItinerary,
@@ -69,9 +70,18 @@ export function renderDayBasedItinerary(
         }
       } else {
         markdown += `- ${timeEmoji} **${activity.time.charAt(0).toUpperCase() + activity.time.slice(1)}:** ${activity.description}`;
-        if (activity.location) {
+        
+        // Add venue name with Maps links if available
+        if (activity.venueName) {
+          const googleMapsUrl = generateGoogleMapsURL(activity.coordinates, activity.venueName);
+          markdown += ` • **${activity.venueName}**`;
+          if (googleMapsUrl) {
+            markdown += ` [🗺️](${googleMapsUrl})`;
+          }
+        } else if (activity.location) {
           markdown += ` (${activity.location})`;
         }
+        
         if (activity.durationEstimate) {
           markdown += ` • ~${activity.durationEstimate}`;
         }
