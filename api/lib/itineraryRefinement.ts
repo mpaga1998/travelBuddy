@@ -87,6 +87,16 @@ export function buildRefinementPrompt(
 
   refinement += `\n\n---\n\n**CRITICAL REFINEMENTS (Attempt ${context.attemptNumber + 1}):**\n`;
 
+  // TIMING VIOLATIONS - HIGHEST PRIORITY
+  const timingErrors = context.validationErrors.filter(e => e.includes('Day 1 violation') || e.includes('Final day violation'));
+  if (timingErrors.length > 0) {
+    refinement += `\n**TIMING CONSTRAINTS - ABSOLUTE AND NON-NEGOTIABLE**:\n`;
+    timingErrors.forEach(error => {
+      refinement += `- FIX: ${error}\n`;
+    });
+    refinement += `\nThese are hard rules. The user's arrival and departure times MUST be respected.\n`;
+  }
+
   // Night allocation fix
   if (context.validationErrors.some((e) => e.includes('Night count mismatch'))) {
     refinement += `\n1. **EXACT NIGHT REQUIREMENT**: nightsAllocated must be EXACTLY ${context.nightsAvailable}, not ${context.nightsAllocated || 'unknown'}\n`;
