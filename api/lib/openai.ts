@@ -20,6 +20,9 @@ import {
   buildRefinementPrompt,
   GenerationContext,
 } from './itineraryRefinement.js';
+import {
+  generateItineraryDayBased,
+} from './dayBasedGeneration.js';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -79,6 +82,7 @@ async function generateItineraryFallback(
 
 /**
  * Structured itinerary generation with validation pipeline + retry mechanism
+ * Tries day-based generation first, falls back to stop-based if it fails
  * Validates input → Requests structured JSON → Extracts & validates → Renders → Retries on failure → Falls back if needed
  */
 export async function generateItinerary(
@@ -89,10 +93,7 @@ export async function generateItinerary(
     throw new Error('OPENAI_API_KEY is not set in environment variables');
   }
 
-  const maxRetries = options.maxRetries ?? 1;
-  const nights = calculateNights(input);
-
-  console.log('📋 [Vercel] Generating itinerary for:', input.arrival.location);
+  console.log('📋 Generating itinerary for:', input.arrival.location);
 
   // STEP 1: Validate input
   const validationErrors = validateTripInput(input);
@@ -103,8 +104,45 @@ export async function generateItinerary(
     );
   }
 
+  console.log('✅ Input validated.');
+
+  // Try new day-based generation first
+  try {
+    console.log('🎯 Attempting day-based generation (NEW)...');
+    return await generateItineraryDayBased(input, options);
+  } catch (dayBasedError) {
+    console.error(
+      '⚠️ Day-based generation failed, trying fallback...:',
+      dayBasedError instanceof Error ? dayBasedError.message : dayBasedError
+    );
+
+    // Fallback to old stop-based generation
+    try {
+      console.log('📝 Falling back to stop-based generation...');
+      return await generateItineraryStopBased(input, options);
+    } catch (fallbackError) {
+      console.error(
+        '❌ Both generation methods failed:',
+        fallbackError
+      );
+      throw new Error(
+        `Itinerary generation failed. Day-based: ${dayBasedError instanceof Error ? dayBasedError.message : dayBasedError}`
+      );
+    }
+  }
+}
+
+/**
+ * Stop-based generation (legacy, used as fallback)
+ */
+async function generateItineraryStopBased(
+  input: TripInput,
+  options: { maxRetries?: number } = {}
+): Promise<string> {
+  const maxRetries = options.maxRetries ?? 1;
+  const nights = calculateNights(input);
+
   const firstName = getUserFirstNameFromRequest(input);
-  console.log('✅ Input validated. Planning for:', firstName || 'traveler');
 
   let lastValidationContext: GenerationContext = {
     nightsAvailable: nights,
@@ -115,7 +153,6 @@ export async function generateItinerary(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      // STEP 2: Request structured JSON output
       let prompt = buildStructuredPlanningPrompt(input, firstName);
 
       if (attempt > 0) {
@@ -126,7 +163,7 @@ export async function generateItinerary(
         });
       }
 
-      console.log('🤖 Calling OpenAI with structured prompt...');
+      console.log('🤖 Calling OpenAI with stop-based prompt...');
       const response = await openai.chat.completions.create({
         model: process.env.OPENAI_PLANNING_MODEL || 'gpt-4-turbo',
         messages: [
@@ -151,7 +188,6 @@ export async function generateItinerary(
 
       console.log('📦 Received response, extracting JSON...');
 
-      // STEP 3: Extract JSON from response
       let structuredItinerary;
       try {
         structuredItinerary = extractJSON(responseText);
@@ -165,7 +201,6 @@ export async function generateItinerary(
 
       console.log('✅ JSON extracted. Validating structure...');
 
-      // STEP 4: Validate structure against constraints
       const validationResult = validateStructuredItinerary(
         structuredItinerary,
         input
@@ -182,7 +217,6 @@ export async function generateItinerary(
       if (!validationResult.valid) {
         console.error('❌ Structure validation failed:', validationResult.errors);
 
-        // If we have retries left, don't throw yet
         if (attempt < maxRetries) {
           console.log(
             `⚠️ Validation failed but retrying (attempt ${attempt + 1}/${maxRetries})...`
@@ -190,7 +224,6 @@ export async function generateItinerary(
           continue;
         }
 
-        // No retries left, throw error
         const error = new ValidationError(
           'Itinerary structure validation failed after retries',
           validationResult.errors,
@@ -207,26 +240,24 @@ export async function generateItinerary(
 
       console.log('✅ Structure validated. Rendering to markdown...');
 
-      // STEP 5: Render to markdown
       const markdown = renderToMarkdown(structuredItinerary, firstName);
-      console.log('✅ Itinerary generated successfully (structured)');
+      console.log('✅ Itinerary generated successfully (stop-based fallback)');
 
       return markdown;
     } catch (error) {
-      // Only proceed to fallback on final attempt
       if (attempt === maxRetries) {
         console.error(
-          '⚠️ Structured generation failed after retries, falling back:',
+          '⚠️ Stop-based generation failed after retries, trying text fallback:',
           error instanceof Error ? error.message : error
         );
 
         if (error instanceof ValidationError) {
           try {
-            console.log('📝 Attempting fallback text generation...');
+            console.log('📝 Attempting text generation fallback...');
             return await generateItineraryFallback(input, firstName);
           } catch (fallbackError) {
             console.error(
-              '❌ Fallback generation also failed:',
+              '❌ Text fallback generation also failed:',
               fallbackError
             );
             throw new Error(
@@ -239,5 +270,5 @@ export async function generateItinerary(
     }
   }
 
-  throw new Error('Itinerary generation failed');
+  throw new Error('Stop-based itinerary generation failed');
 }

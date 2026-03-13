@@ -1,36 +1,34 @@
 /**
  * Structured itinerary schema - defines the contract between planning and rendering
+ * NEW: Day-based architecture where travel is an activity, not implicit
  */
 
 export interface ItineraryActivity {
   time: 'morning' | 'afternoon' | 'evening';
+  location: string; // Explicit location for each activity (required)
   description: string;
   durationEstimate: string; // "2 hours", "30 mins", etc.
+  isTravel?: boolean; // Mark travel activities
+  travelMode?: string; // "train", "bus", "flight" for travel activities
+  costEstimate?: string; // Cost if travel
+}
+
+export interface ItinerarySleepInfo {
+  location: string;
+  night: number; // Which night (1st, 2nd, 3rd sleep)
 }
 
 export interface ItineraryDay {
   dayNumber: number;
-  location: string;
   activities: ItineraryActivity[];
-  nights: number;
-}
-
-export interface TransportDetails {
-  mode: string; // "bus", "taxi", "flight", "walking", etc.
-  duration: string; // "3 hours", "4.5 hours"
-  costEstimate: string; // "$50-100", "~800 som", etc.
-}
-
-export interface ItineraryStop {
-  location: string;
-  totalNights: number;
-  transportFromPrevious?: TransportDetails;
-  days: ItineraryDay[];
+  sleep?: ItinerarySleepInfo; // Where you sleep after this day (if applicable)
 }
 
 export interface ItineraryConstraints {
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
+  arrivalLocation: string;
+  departureLocation: string;
   nightsAvailable: number;
   nightsAllocated: number;
 }
@@ -38,6 +36,6 @@ export interface ItineraryConstraints {
 export interface StructuredItinerary {
   feasible: boolean;
   feasibilityNotes?: string; // Explains constraints, warnings, or why infeasible
-  stops: ItineraryStop[];
+  days: ItineraryDay[];
   constraints: ItineraryConstraints;
 }
