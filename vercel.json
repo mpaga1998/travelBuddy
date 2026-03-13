@@ -1,16 +1,9 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "env": {
-    "NODE_ENV": "production"
-  },
   "functions": {
     "api/**/*.ts": {
       "runtime": "nodejs20.x"
     }
-  },
-  "ignoreCommand": "git diff --quiet HEAD~1 HEAD -- . ':!server' ':!.vscode'",
-  "git": {
-    "silent": true
   }
 }
