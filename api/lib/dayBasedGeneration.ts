@@ -43,7 +43,7 @@ export async function generateItineraryDayBased(
     throw new Error('OPENAI_API_KEY is not set in environment variables');
   }
 
-  const maxRetries = options.maxRetries ?? 2;
+  const maxRetries = options.maxRetries ?? 1;
   const nights = calculateNights(input);
 
   console.log('📋 [Day-Based] Generating itinerary for:', input.arrival.location);

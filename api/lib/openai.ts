@@ -110,25 +110,14 @@ export async function generateItinerary(
     return await generateItineraryDayBased(input, options);
   } catch (dayBasedError) {
     console.error(
-      '⚠️ Day-based generation failed, trying stop-based fallback:',
+      '⚠️ Day-based generation failed (1 initial + 1 retry), trying text-based fallback:',
       dayBasedError instanceof Error ? dayBasedError.message : dayBasedError
     );
   }
 
-  // Fall back to stop-based generation (SECONDARY)
+  // Skip stop-based, go directly to text fallback
   try {
-    console.log('📝 Attempting stop-based generation (FALLBACK 1)...');
-    return await generateItineraryStopBased(input, options);
-  } catch (stopBasedError) {
-    console.error(
-      '⚠️ Stop-based generation failed, trying text fallback:',
-      stopBasedError instanceof Error ? stopBasedError.message : stopBasedError
-    );
-  }
-
-  // Final fallback to text generation (TERTIARY)
-  try {
-    console.log('📄 Using text-based generation (FALLBACK 2)...');
+    console.log('📄 Using text-based generation (FALLBACK)...');
     return await generateItineraryFallback(input, firstName);
   } catch (textFallbackError) {
     console.error(
