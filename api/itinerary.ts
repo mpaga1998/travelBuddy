@@ -48,8 +48,10 @@ export default async function handler(
     return;
   }
 
+  let tripInput: TripInput;
+
   try {
-    const tripInput: TripInput = req.body;
+    tripInput = req.body;
 
     // Validation
     if (!tripInput.arrival?.date || !tripInput.departure?.date) {

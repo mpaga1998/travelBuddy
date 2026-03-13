@@ -1,4 +1,18 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "functions": {
+    "api/itinerary.ts": {}
+  },
+  "routes": [
+    {
+      "src": "/api/itinerary",
+      "dest": "/api/itinerary.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
