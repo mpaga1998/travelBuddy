@@ -69,9 +69,14 @@ export function renderDayBasedItinerary(
         }
       } else {
         markdown += `- ${timeEmoji} **${activity.time.charAt(0).toUpperCase() + activity.time.slice(1)}:** ${activity.description}`;
-        if (activity.location) {
+        
+        // Add venue name with data attribute for client-side geocoding
+        if (activity.venueName) {
+          markdown += ` • **${activity.venueName}** [🗺️](mapbox:${encodeURIComponent(activity.venueName)}|${activity.location})`;
+        } else if (activity.location) {
           markdown += ` (${activity.location})`;
         }
+        
         if (activity.durationEstimate) {
           markdown += ` • ~${activity.durationEstimate}`;
         }

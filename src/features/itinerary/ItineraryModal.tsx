@@ -1011,35 +1011,94 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                     return <div key={idx} style={{ height: 8 }} />;
                   }
 
-                  // Helper function to render inline markdown (bold and italic)
+                  // Helper function to render inline markdown (bold, italic, and links)
                   const renderInlineMarkdown = (text: string) => {
-                    // Split by bold first (**text**)
-                    const boldParts = text.split(/(\*\*[^*]+\*\*)/);
+                    // Split by links first [text](url)
+                    const linkParts = text.split(/(\[[^\]]+\]\([^)]+\))/);
                     
-                    return boldParts.map((part, i) => {
-                      if (part.startsWith('**') && part.endsWith('**')) {
-                        // Bold text
-                        const boldContent = part.slice(2, -2);
-                        // Now handle italics within bold
-                        const italicParts = boldContent.split(/(\*[^*]+\*)/);
+                    return linkParts.flatMap((part, i) => {
+                      // Handle markdown links [text](url)
+                      const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+                      if (linkMatch) {
+                        const [, linkText, url] = linkMatch;
+                        
+                        // Handle special mapbox: protocol for on-demand geocoding
+                        if (url.startsWith('mapbox:')) {
+                          const [, venueName, city] = url.match(/^mapbox:(.+)\|(.+)$/) || [];
+                          const decodedVenue = decodeURIComponent(venueName);
+                          
+                          return (
+                            <a
+                              key={i}
+                              href="#"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                try {
+                                  const { geocodeVenue, generateGoogleMapsURL } = await import('../../lib/venueGeocoding');
+                                  const coords = await geocodeVenue(decodedVenue, city);
+                                  const mapsUrl = generateGoogleMapsURL(coords, decodedVenue);
+                                  if (mapsUrl) {
+                                    window.open(mapsUrl, '_blank');
+                                  }
+                                } catch (error) {
+                                  console.error('Failed to geocode:', error);
+                                  // Fallback: search by name
+                                  window.open(`https://www.google.com/maps/search/${encodeURIComponent(decodedVenue)}`, '_blank');
+                                }
+                              }}
+                              style={{ color: '#0066cc', textDecoration: 'none', cursor: 'pointer' }}
+                              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                            >
+                              {linkText}
+                            </a>
+                          );
+                        }
+                        
+                        // Normal links
                         return (
-                          <strong key={i}>
-                            {italicParts.map((segment, j) => {
-                              if (segment.startsWith('*') && segment.endsWith('*') && segment.length > 2) {
-                                return <em key={j}>{segment.slice(1, -1)}</em>;
-                              }
-                              return segment;
-                            })}
-                          </strong>
+                          <a
+                            key={i}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#0066cc', textDecoration: 'none', cursor: 'pointer' }}
+                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                          >
+                            {linkText}
+                          </a>
                         );
                       }
-                      // Handle italics in non-bold text (*text*)
-                      const italicParts = part.split(/(\*[^*]+\*)/);
-                      return italicParts.map((segment, j) => {
-                        if (segment.startsWith('*') && segment.endsWith('*') && segment.length > 2) {
-                          return <em key={j}>{segment.slice(1, -1)}</em>;
+                      
+                      // Split by bold (**text**)
+                      const boldParts = part.split(/(\*\*[^*]+\*\*)/);
+                      
+                      return boldParts.map((boldPart, j) => {
+                        if (boldPart.startsWith('**') && boldPart.endsWith('**')) {
+                          // Bold text
+                          const boldContent = boldPart.slice(2, -2);
+                          // Now handle italics within bold
+                          const italicParts = boldContent.split(/(\*[^*]+\*)/);
+                          return (
+                            <strong key={`${i}-${j}`}>
+                              {italicParts.map((segment, k) => {
+                                if (segment.startsWith('*') && segment.endsWith('*') && segment.length > 2) {
+                                  return <em key={k}>{segment.slice(1, -1)}</em>;
+                                }
+                                return segment;
+                              })}
+                            </strong>
+                          );
                         }
-                        return segment;
+                        // Handle italics in non-bold text (*text*)
+                        const italicParts = boldPart.split(/(\*[^*]+\*)/);
+                        return italicParts.map((segment, k) => {
+                          if (segment.startsWith('*') && segment.endsWith('*') && segment.length > 2) {
+                            return <em key={k}>{segment.slice(1, -1)}</em>;
+                          }
+                          return segment;
+                        });
                       });
                     });
                   };
