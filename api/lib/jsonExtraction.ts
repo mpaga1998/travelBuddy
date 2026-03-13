@@ -2,7 +2,7 @@
  * JSON extraction from LLM responses and structured itinerary validation
  */
 
-import { StructuredItinerary } from './itinerarySchema.js';
+import { StopBasedItinerary } from './itinerarySchema.js';
 import { TripInput } from './types.js';
 import { calculateNights } from './inputValidation.js';
 
@@ -21,7 +21,7 @@ export class ValidationError extends Error {
     message: string,
     public errors: string[],
     public warnings: string[],
-    public itinerary?: StructuredItinerary
+    public itinerary?: StopBasedItinerary
   ) {
     super(message);
     this.name = 'ValidationError';
@@ -29,15 +29,14 @@ export class ValidationError extends Error {
 }
 
 /**
- * Extract JSON from LLM response (handles markdown code blocks)
+ * Generic JSON extraction - works with any schema
  */
-export function extractJSON(text: string): StructuredItinerary {
+export function extractJSONStructure<T = any>(text: string): T {
   // First try: JSON in markdown code block
   const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (jsonMatch) {
     try {
-      const parsed = JSON.parse(jsonMatch[1].trim());
-      return parsed as StructuredItinerary;
+      return JSON.parse(jsonMatch[1].trim()) as T;
     } catch (e) {
       throw new ExtractionError(
         `Failed to parse JSON from code block: ${(e as Error).message}`,
@@ -48,8 +47,7 @@ export function extractJSON(text: string): StructuredItinerary {
 
   // Second try: raw JSON
   try {
-    const parsed = JSON.parse(text.trim());
-    return parsed as StructuredItinerary;
+    return JSON.parse(text.trim()) as T;
   } catch (e) {
     throw new ExtractionError(
       `Response is not valid JSON: ${(e as Error).message}`,
@@ -59,10 +57,17 @@ export function extractJSON(text: string): StructuredItinerary {
 }
 
 /**
- * Validate structurally extracted itinerary against constraints
+ * Extract JSON for stop-based itinerary (legacy fallback)
+ */
+export function extractJSON(text: string): StopBasedItinerary {
+  return extractJSONStructure<StopBasedItinerary>(text);
+}
+
+/**
+ * Validate structurally extracted itinerary against constraints (stop-based)
  */
 export function validateStructuredItinerary(
-  itinerary: StructuredItinerary,
+  itinerary: StopBasedItinerary,
   input: TripInput
 ): { valid: boolean; errors: string[]; warnings: string[] } {
   const errors: string[] = [];
