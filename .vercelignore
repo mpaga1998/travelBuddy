@@ -1,0 +1,12 @@
+server/
+.vscode/
+node_modules/
+README.md
+SETUP.md
+IOS_OPTIMIZATION_GUIDE.md
+IOS_OPTIMIZATION_SUMMARY.md
+SUPABASE_MIGRATION.md
+supabase/
+.git/
+.env
+.env.example
