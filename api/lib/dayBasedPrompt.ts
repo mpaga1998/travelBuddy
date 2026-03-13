@@ -60,6 +60,8 @@ export function buildDayBasedPlanningPrompt(
 
   return `You are an expert trip planner. Plan ${personalization} trip to ${destination} with ${pacing.description.toLowerCase()}.
 
+⚠️ CRITICAL: The arrival and departure times are ABSOLUTE and NON-NEGOTIABLE. Plan Day 1 and final day strictly around them.
+
 CRITICAL RULES:
 
 1. **PRIMARY ROUTE** - MUST visit ALL these locations (the core itinerary):
@@ -68,15 +70,42 @@ CRITICAL RULES:
 
 2. **MUST RETURN to ${input.departure.location}** on the departure date
 
-3. **ARRIVAL & DEPARTURE TIMING**:
+3. **ARRIVAL & DEPARTURE TIMING** - CRITICAL, MUST FOLLOW:
    - Arrival: ${input.arrival.time ? `The user arrives in the ${input.arrival.time}` : 'Check when the user arrives'}
    - Departure: ${input.departure.time ? `The user departs in the ${input.departure.time}` : 'Check when the user departs'}
-   - Morning arrival: Usually has time for afternoon/evening activities (skip detailed morning plans)
-   - Afternoon arrival: Limited first day; focus on evening activities
-   - Night arrival: Preserve first day primarily for rest; start activities Day 2
-   - Morning departure: Plan final morning activities; schedule travel later
-   - Afternoon departure: Plan morning activities; depart in afternoon
-   - Night departure: Plan full day with evening departure
+   
+   **DAY 1 ACTIVITIES (BASED ON ARRIVAL TIME)**:
+   ${input.arrival.time === 'morning' ? 
+     `- Morning arrival: Plan full day starting morning (user has whole day)
+     - Include morning, afternoon, and evening activities
+     - Travel to ${input.arrival.location} counts as morning activity` 
+   : input.arrival.time === 'afternoon' ? 
+     `- Afternoon arrival: DO NOT plan morning activities
+     - Day 1 should be: Arrival/check-in + evening activity only
+     - Start main activities on Day 2
+     - MANDATORY: No morning activities on Day 1` 
+   : input.arrival.time === 'night' ? 
+     `- Night arrival: DO NOT plan ANY activities on Day 1
+     - Day 1 is ONLY: Travel + arrival + rest
+     - Arrival + check-in + sleep
+     - MANDATORY: No morning, NO afternoon, NO evening activities on Day 1
+     - Start all activities on Day 2 morning` 
+   : ''}
+   
+   **FINAL DAY ACTIVITIES (BASED ON DEPARTURE TIME)**:
+   ${input.departure.time === 'morning' ? 
+     `- Morning departure: DO NOT plan afternoon/evening activities on final day
+     - Final day: Morning activity only, then travel
+     - MANDATORY: No afternoon or evening activities` 
+   : input.departure.time === 'afternoon' ? 
+     `- Afternoon departure: Plan morning activities on final day
+     - Final day: Morning + lunch + depart afternoon
+     - MANDATORY: No evening activities` 
+   : input.departure.time === 'night' ? 
+     `- Night departure: Plan FULL day on final day
+     - Final day: Full morning, afternoon, evening activities + depart night
+     - MANDATORY: Include full day of activities` 
+   : ''}
 
 4. **DAYS vs NIGHTS**: ${nights} calendar days = ${nights - 1} nights (you sleep ${nights - 1} times)
 

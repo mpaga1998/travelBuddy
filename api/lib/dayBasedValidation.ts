@@ -99,6 +99,49 @@ export function validateDayBasedItinerary(
     );
   }
 
+  // 2b. TIMING VALIDATION - Enforce arrival/departure time constraints
+  const firstDay = itinerary.days?.[0];
+  const lastDay = itinerary.days?.[itinerary.days.length - 1];
+
+  if (firstDay && input.arrival.time) {
+    const morningActivities = firstDay.activities?.filter(a => a.time === 'morning') || [];
+    const afternoonActivities = firstDay.activities?.filter(a => a.time === 'afternoon') || [];
+    
+    if (input.arrival.time === 'afternoon' && morningActivities.length > 0) {
+      errors.push(
+        `Day 1 violation: User arrives in afternoon but has ${morningActivities.length} morning activities. REMOVE all morning activities.`
+      );
+    }
+    
+    if (input.arrival.time === 'night') {
+      const allActivities = firstDay.activities?.filter(a => !a.isTravel) || [];
+      if (allActivities.length > 0) {
+        errors.push(
+          `Day 1 violation: User arrives at night but has ${allActivities.length} activities planned. Day 1 should be ONLY arrival/rest, no activities. Start activities on Day 2.`
+        );
+      }
+    }
+  }
+
+  if (lastDay && input.departure.time) {
+    const afternoonActivities = lastDay.activities?.filter(a => a.time === 'afternoon') || [];
+    const eveningActivities = lastDay.activities?.filter(a => a.time === 'evening') || [];
+    
+    if (input.departure.time === 'morning') {
+      if (afternoonActivities.length > 0 || eveningActivities.length > 0) {
+        errors.push(
+          `Final day violation: User departs in morning but has ${afternoonActivities.length + eveningActivities.length} afternoon/evening activities. REMOVE all afternoon/evening activities.`
+        );
+      }
+    }
+    
+    if (input.departure.time === 'afternoon' && eveningActivities.length > 0) {
+      errors.push(
+        `Final day violation: User departs in afternoon but has ${eveningActivities.length} evening activities. REMOVE all evening activities.`
+      );
+    }
+  }
+
   // 3. Validate each day
   const visitedLocations = new Set<string>();
   let currentLocation = normalizeCity(input.arrival.location);
