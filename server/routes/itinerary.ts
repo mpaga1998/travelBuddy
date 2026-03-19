@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { generateItinerary, TripInput } from '../services/openaiService';
+import { generateAnalyticalItinerary, TripInput } from '../services/openaiService';
 import { generateSuggestions } from '../lib/itineraryRefinement';
 
 const router = express.Router();
@@ -24,7 +24,7 @@ router.post('/', async (req: Request, res: Response) => {
       stops: tripInput.stops,
       attractions: tripInput.desiredAttractions,
     });
-    const itinerary = await generateItinerary(tripInput);
+    const itinerary = await generateAnalyticalItinerary(tripInput);
     
     res.json({
       success: true,

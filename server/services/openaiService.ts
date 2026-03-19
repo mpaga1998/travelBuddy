@@ -52,6 +52,12 @@ import {
   buildRefinementPrompt,
   GenerationContext,
 } from '../lib/itineraryRefinement';
+import {
+  analyzeTripFeasibility,
+  TripFeasibilityAnalysis,
+} from '../lib/feasibilityAnalyzer';
+import { buildAnalyticalItineraryPrompt } from '../lib/analyticalPrompts';
+import { renderAnalyticalItinerary } from '../lib/analyticalRendering';
 
 // Keep legacy functions for fallback
 const buildSystemPrompt = () => `You are an expert backpacker trip planner. Your mission: create realistic, actually-doable itineraries that respect travel time, fatigue, and logistics.
@@ -420,4 +426,84 @@ export async function generateItinerary(
   }
 
   throw new Error('Itinerary generation failed');
+}
+
+/**
+ * NEW: Analytical itinerary generation with feasibility analysis
+ * Two-stage process:
+ * 1. Analyze feasibility of all locations
+ * 2. Generate multi-section itinerary considering constraints
+ */
+export async function generateAnalyticalItinerary(
+  input: TripInput
+): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not set in environment variables');
+  }
+
+  console.log('📋 [Analytical] Starting analytical itinerary generation');
+
+  // STEP 1: Validate input
+  const validationErrors = validateTripInput(input);
+  if (validationErrors.length > 0) {
+    console.error('❌ Input validation failed:', validationErrors);
+    throw new Error(
+      `Input validation failed: ${validationErrors.map((e) => `${e.field}: ${e.message}`).join('; ')}`
+    );
+  }
+
+  const firstName = getUserFirstNameFromRequest(input);
+  console.log('✅ Input validated. Analyzing for:', firstName || input.userFirstName || 'traveler');
+
+  // STEP 2: Analyze feasibility
+  console.log('📊 Stage 1: Analyzing trip feasibility...');
+  let feasibility: TripFeasibilityAnalysis;
+  try {
+    feasibility = await analyzeTripFeasibility(input);
+    console.log('✅ Feasibility analysis complete:', {
+      assessment: feasibility.overallAssessment,
+      challenges: feasibility.majorChallenges.length,
+    });
+  } catch (error) {
+    console.error('❌ Feasibility analysis failed:', error);
+    throw new Error(`Feasibility analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+
+  // STEP 3: Generate analytical itinerary with feasibility constraints
+  console.log('🤖 Stage 2: Generating analytical itinerary...');
+  try {
+    const prompt = buildAnalyticalItineraryPrompt(input, feasibility, firstName);
+
+    const response = await openai.chat.completions.create({
+      model: process.env.OPENAI_PLANNING_MODEL || 'gpt-4-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert trip planner. Create detailed, honest itineraries with realistic logistics. Output as MARKDOWN.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.6,
+      max_tokens: 4000,
+    });
+
+    const responseText = response.choices[0]?.message?.content;
+    if (!responseText) {
+      throw new Error('No response content from OpenAI');
+    }
+
+    console.log('📝 Got itinerary response, rendering...');
+
+    // STEP 4: Render with feasibility metadata
+    const markdown = renderAnalyticalItinerary(responseText, feasibility, firstName);
+
+    console.log('✅ Analytical itinerary generated successfully');
+    return markdown;
+  } catch (error) {
+    console.error('❌ Itinerary generation failed:', error);
+    throw new Error(`Itinerary generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
