@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import itineraryRoutes from './routes/itinerary';
+import redditRoutes from './routes/reddit.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,6 +23,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/itinerary', itineraryRoutes);
+app.use('/api/reddit', redditRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

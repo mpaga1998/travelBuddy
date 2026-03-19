@@ -71,10 +71,11 @@ export function buildStructuredPlanningPrompt(
 - Depart: ${endDate} from **${input.departure.location}** (PRIMARY END)
 - Total: **${nights} nights** available
 ${input.stops && input.stops.length > 0 ? `- **Required Stops (main route):** ${input.stops.join(', ')}` : '(No additional stops - direct route from arrival to departure)'}
-- Travel pace: ${input.travelPace === 'relaxed' ? '🐢 Relaxed' : input.travelPace === 'active' ? '⚡ Active' : '⚖️ Balanced'}
+- Travel pace: ${input.travelPace === 'relaxed' ? '🐢 Relaxed (2-3 activities/day)' : input.travelPace === 'active' ? '⚡ Active (4-5 activities/day)' : '⚖️ Balanced (3-4 activities/day)'}
 - Budget tier: ${input.budget || 'flexible'}
+${input.interests && input.interests.length > 0 ? `- **Interests:** ${input.interests.join(', ')}` : ''}
 
-${input.desiredAttractions && input.desiredAttractions.length > 0 ? `**OPTIONAL PLACES TO VISIT (if feasible as day trips):**
+${input.desiredAttractions && input.desiredAttractions.length > 0 ? `**OPTIONAL PLACES TO VISIT (if feasible as day trips):**`
 ${input.desiredAttractions.map((attr) => `- ${attr}`).join('\n')}
 → These are SECONDARY to the required route
 → Try to integrate as day trips from main stops
@@ -122,18 +123,45 @@ ${input.notes ? `**ADDITIONAL NOTES:** ${input.notes}` : ''}
    - If feasible: false, explain what to cut or adjust (cut optional attractions first)
 
 7. **Daily breakdown requirements**:
-   - Each day must have morning, afternoon, AND evening activities
-   - **Activity "time" field MUST be EXACTLY ONE OF**: "morning", "afternoon", "evening"
-   - DO NOT use: "night", "early afternoon", "late morning", "midday", or any variations
+   - Number of activities per day should match travel pace (see TRIP PARAMETERS)
+   - **Activity "time" field MUST be EXACTLY ONE OF**: "morning", "afternoon", "night"
+   - DO NOT use: "evening", "early afternoon", "late morning", "midday", or any variations
    - Include realistic time estimates (e.g., "2 hours", "1.5 hours")
    - Activities should match the travel pace (${input.travelPace})
+   - Adjust daily activity count based on: travel pace, transfer days, and feasibility
+   - Example: Relaxed pace = 2-3 activities, Active pace = 4-5 activities
 
 8. **Transportation details**:
    - Between stops, include: mode (bus/taxi/flight), duration, and cost estimate
    - First stop: no transportFromPrevious (or mark as arrival)
    - Last transport should arrive at ${input.departure.location} by ${endDate} evening
 
-${firstName ? `\n7. **Personalization**: Use ${firstName}'s name when addressing the traveler throughout the itinerary.` : ''}
+${firstName ? `\n**Personalization**: Use ${firstName}'s name and tailor activities to their interests.` : ''}
+
+---
+
+**ACTIVITY TYPE GUIDANCE:**
+${input.interests && input.interests.length > 0 ? `Based on ${firstName || 'your'} interests (${input.interests.join(', ')}), prioritize:
+${[
+  input.interests.includes('Architecture') ? '- **Architecture**: Museums, historic buildings, architectural tours, UNESCO sites' : '',
+  input.interests.includes('Art & Culture') ? '- **Art & Culture**: Art galleries, cultural museums, local performances, street art' : '',
+  input.interests.includes('Food & Dining') ? '- **Food & Dining**: Local restaurants, food tours, markets, cooking classes' : '',
+  input.interests.includes('Nature & Hiking') ? '- **Nature & Hiking**: Hiking trails, national parks, nature reserves, outdoor activities' : '',
+  input.interests.includes('Beach & Water') ? '- **Beach & Water**: Beach time, water sports, swimming, coastal activities' : '',
+  input.interests.includes('Nightlife') ? '- **Nightlife**: Bars, clubs, local venues, evening entertainment' : '',
+  input.interests.includes('Shopping') ? '- **Shopping**: Markets, boutiques, shopping districts, local products' : '',
+  input.interests.includes('History') ? '- **History**: Historical sites, museums, ancient ruins, heritage tours' : '',
+  input.interests.includes('Photography') ? '- **Photography**: Scenic viewpoints, photo tours, instagrammable spots' : '',
+  input.interests.includes('Adventure') ? '- **Adventure**: Adventure sports, extreme activities, thrilling experiences' : ''
+].filter(Boolean).join('\n')}` : 'Craft activities that provide a mix of cultural immersion, exploration, and rest.'}
+
+**BUDGET GUIDANCE:**
+${input.budget === 'budget' ? `- Prioritize: Free attractions, street food, local public transit, budget hostels
+- Avoid: Fine dining, paid tours when free alternatives exist, expensive activities
+- Estimate: Activities under $10-15 per person` : input.budget === 'luxury' ? `- Prioritize: Premium experiences, fine dining, private tours, upscale hotels
+- Include: Unique splurges, high-end restaurants, luxury activities
+- Estimate: Activities $50+ per person` : `- Mix of budget and mid-range options
+- Estimate: Activities $15-40 per person`}
 
 ---
 

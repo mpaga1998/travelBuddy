@@ -34,9 +34,11 @@ export function renderToMarkdown(
       markdown += `### Day ${day.dayNumber}\n`;
 
       day.activities.forEach((activity) => {
-        const timeLabel =
-          activity.time.charAt(0).toUpperCase() + activity.time.slice(1);
-        markdown += `- **${timeLabel}:** ${activity.description}`;
+        let timeLabel = '';
+        if (activity.time) {
+          timeLabel = activity.time.charAt(0).toUpperCase() + activity.time.slice(1) + ': ';
+        }
+        markdown += `- **${timeLabel}${activity.description}`;
 
         if (activity.durationEstimate?.trim()) {
           markdown += ` (~${activity.durationEstimate})`;

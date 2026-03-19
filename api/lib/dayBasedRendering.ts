@@ -52,14 +52,15 @@ export function renderDayBasedItinerary(
 
     // Render activities organized by location and time
     day.activities.forEach((activity) => {
-      const timeEmoji = {
+      const timeEmoji = activity.time ? {
         morning: '🌅',
         afternoon: '☀️',
         night: '🌆',
-      }[activity.time];
+      }[activity.time] : '⏱️';
 
       if (activity.isTravel) {
-        markdown += `- ${timeEmoji} **${activity.time.charAt(0).toUpperCase() + activity.time.slice(1)}:** 🚄 Travel to ${activity.location}`;
+        const timeLabel = activity.time ? activity.time.charAt(0).toUpperCase() + activity.time.slice(1) : 'Travel';
+        markdown += `- ${timeEmoji} **${timeLabel}:** 🚄 Travel to ${activity.location}`;
         if (activity.travelMode) {
           markdown += ` (${activity.travelMode})`;
         }
@@ -70,7 +71,8 @@ export function renderDayBasedItinerary(
           markdown += ` • ${activity.costEstimate}`;
         }
       } else {
-        markdown += `- ${timeEmoji} **${activity.time.charAt(0).toUpperCase() + activity.time.slice(1)}:** ${activity.description}`;
+        const timeLabel = activity.time ? activity.time.charAt(0).toUpperCase() + activity.time.slice(1) : '';
+        markdown += `- ${timeEmoji} **${timeLabel}${timeLabel ? ': ' : ''}${activity.description}`;
         
         // Add venue name with data attribute for client-side geocoding
         if (activity.venueName) {
