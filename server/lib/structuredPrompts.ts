@@ -18,36 +18,79 @@ export function buildStructuredPlanningPrompt(
 
   return `You are an expert backpacker trip planner. Your job: create a realistic, JSON-formatted itinerary.
 
-**CRITICAL INSTRUCTIONS:**
-1. Return ONLY valid JSON wrapped in triple backticks (no other text before/after)
-2. **EXACT NIGHT MATCHING REQUIRED**: nightsAllocated MUST equal nightsAvailable (${nights}). Count on your fingers. Verify twice.
-3. **ACTIVITY TIME MUST BE EXACTLY ONE OF**: "morning", "afternoon", or "night" (no variations like "evening", "early afternoon", "late morning", etc.)
-4. If the trip is infeasible, set "feasible": false and explain in feasibilityNotes
-5. Each stop must have complete day-by-day breakdown with activities and time estimates
+**⚠️ CRITICAL - READ CAREFULLY:**
+1. Return ONLY valid JSON wrapped in triple backticks (\`\`\`json ... \`\`\`). NO other text.
+2. **NIGHT MATCHING IS CRITICAL**: nightsAllocated must equal nightsAvailable (${nights})
+   - ${nights} nights means ${nights + 1} calendar days (e.g., 3 nights = arrival day + 3 nights + partial departure day)
+   - Sum all stop.totalNights and verify they equal ${nights}. Count on your fingers.
+   - Example: If you have 3 stops with 2 nights, 2 nights, and 1 night → total = 5 nights ✓
+3. Every activity MUST have: time (optional: "morning", "afternoon", "night"), description, durationEstimate
+4. Every day MUST have: dayNumber, location, at least 1 activity
+5. Return feasible=false with explanation if the trip is infeasible
 
-**RESPONSE MUST BE VALID JSON:**
+**🎯 JSON STRUCTURE:**
 \`\`\`json
 {
   "feasible": true,
-  "feasibilityNotes": "Optional explanation of constraints or why infeasible",
+  "feasibilityNotes": "Optional: explain constraints or feasibility concerns",
   "stops": [
     {
-      "location": "City Name",
-      "totalNights": 3,
-      "transportFromPrevious": {
-        "mode": "bus",
-        "duration": "3 hours",
-        "costEstimate": "$50-80"
-      },
+      "location": "Milan",
+      "totalNights": 2,
+      "transportFromPrevious": null,
       "days": [
         {
           "dayNumber": 1,
-          "location": "City Name",
+          "location": "Milan",
+          "nights": 1,
+          "activities": [
+            {
+              "time": "afternoon",
+              "description": "Explore Duomo Cathedral, walk around main square",
+              "durationEstimate": "2 hours"
+            },
+            {
+              "time": "evening",
+              "description": "Dinner in Brera district",
+              "durationEstimate": "2 hours"
+            }
+          ]
+        },
+        {
+          "dayNumber": 2,
+          "location": "Milan",
           "nights": 1,
           "activities": [
             {
               "time": "morning",
-              "description": "Activity description",
+              "description": "Visit Sforza Castle museum",
+              "durationEstimate": "1.5 hours"
+            },
+            {
+              "description": "Afternoon at Navigli canals",
+              "durationEstimate": "3 hours"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "location": "Como",
+      "totalNights": 1,
+      "transportFromPrevious": {
+        "mode": "train",
+        "duration": "1 hour",
+        "costEstimate": "$15-20"
+      },
+      "days": [
+        {
+          "dayNumber": 3,
+          "location": "Como",
+          "nights": 1,
+          "activities": [
+            {
+              "time": "morning",
+              "description": "Lake Como boat tour",
               "durationEstimate": "2 hours"
             }
           ]
@@ -59,10 +102,16 @@ export function buildStructuredPlanningPrompt(
     "startDate": "${input.arrival.date}",
     "endDate": "${input.departure.date}",
     "nightsAvailable": ${nights},
-    "nightsAllocated": ${nights}
+    "nightsAllocated": 3
   }
 }
 \`\`\`
+
+**IMPORTANT NOTES:**
+- nightsAllocated in example = 2 + 1 = 3 nights (matches nightsAvailable) ✓
+- activities can have optional "time" field (e.g., activity 2 on day 2 has no time specified)
+- activities must always have description and durationEstimate
+- For the trip from ${input.arrival.location} to ${input.departure.location}, nightsAllocated MUST equal ${nights}
 
 ---
 

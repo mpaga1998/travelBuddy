@@ -84,26 +84,34 @@ export function buildRefinementPrompt(
   }
 
   refinement += `\n\n---\n\n**CRITICAL REFINEMENTS (Attempt ${context.attemptNumber + 1}):**\n`;
+  refinement += `\nErrors found: ${context.validationErrors.map((e, i) => `${i + 1}. ${e}`).join('\n')}\n`;
 
   if (context.validationErrors.some((e) => e.includes('Night count mismatch'))) {
-    refinement += `\n1. **EXACT NIGHT REQUIREMENT**: nightsAllocated must be EXACTLY ${context.nightsAvailable}, not ${context.nightsAllocated || 'unknown'}\n`;
-    refinement += `   - Double-check: sum all stop.totalNights = ${context.nightsAvailable}\n`;
-    refinement += `   - Do NOT round or approximate\n`;
+    refinement += `\n**FIX 1 - EXACT NIGHT COUNT**: nightsAllocated MUST be EXACTLY ${context.nightsAvailable}\n`;
+    refinement += `   Current: ${context.nightsAllocated || '?'} | Expected: ${context.nightsAvailable}\n`;
+    refinement += `   → Verify by ADDING all stop.totalNights: they must sum to exactly ${context.nightsAvailable}\n`;
+    refinement += `   → Count carefully: ${context.nightsAvailable} nights = ${context.nightsAvailable + 1} calendar days\n`;
   }
 
   if (context.validationErrors.some((e) => e.includes('activity'))) {
-    refinement += `\n2. **DAILY STRUCTURE**: Each day MUST have morning, afternoon, AND night activities\n`;
-    refinement += `   - Never skip a time period\n`;
-    refinement += `   - Include durationEstimate for each\n`;
+    refinement += `\n**FIX 2 - ACTIVITIES**: Each activity MUST have:\n`;
+    refinement += `   - description (required, non-empty)\n`;
+    refinement += `   - durationEstimate (required, e.g., "2 hours")\n`;
+    refinement += `   - time field is OPTIONAL (can be "morning", "afternoon", or "night" if specified)\n`;
+    refinement += `   - At least 1 activity per day\n`;
   }
 
-  if (context.validationErrors.some((e) => e.includes('transport'))) {
-    refinement += `\n3. **TRANSPORT DETAILS**: Always include for transitions between stops\n`;
-    refinement += `   - First stop can skip transportFromPrevious\n`;
-    refinement += `   - Include: mode, duration (string like "3 hours"), costEstimate\n`;
+  if (context.validationErrors.some((e) => e.includes('Date'))) {
+    refinement += `\n**FIX 3 - DATES**: Use YYYY-MM-DD format exactly\n`;
+    refinement += `   - startDate: "${basePrompt.match(/startDate.*?(\d{4}-\d{2}-\d{2})/)?.[1] || 'YYYY-MM-DD'}"\n`;
+    refinement += `   - endDate: same format\n`;
   }
 
-  refinement += `\n\nRegenerate with these fixes applied.`;
+  if (context.validationErrors.some((e) => e.includes('location'))) {
+    refinement += `\n**FIX 4 - LOCATIONS**: Every day and stop must have a non-empty location field\n`;
+  }
+
+  refinement += `\n\nRegenerate the ENTIRE JSON response with these fixes. Return ONLY the corrected JSON in triple backticks.`;
 
   return refinement;
 }

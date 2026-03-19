@@ -144,13 +144,32 @@ export function validateStructuredItinerary(
     });
   });
 
-  if (itinerary.constraints.startDate !== input.arrival.date) {
+  // Lenient date parsing - GPT sometimes formats dates differently
+  const normalizeDate = (dateStr: string): string => {
+    if (!dateStr) return 'invalid';
+    // Extract YYYY-MM-DD if it exists anywhere in the string
+    const match = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (match) return match[0];
+    // Try to parse common formats
+    try {
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
+    } catch (e) {}
+    return dateStr;
+  };
+
+  const normalizedConstraintStart = normalizeDate(itinerary.constraints.startDate);
+  const normalizedConstraintEnd = normalizeDate(itinerary.constraints.endDate);
+
+  if (normalizedConstraintStart !== input.arrival.date) {
     errors.push(
       `Start date mismatch: expected ${input.arrival.date}, got ${itinerary.constraints.startDate}`
     );
   }
 
-  if (itinerary.constraints.endDate !== input.departure.date) {
+  if (normalizedConstraintEnd !== input.departure.date) {
     errors.push(
       `End date mismatch: expected ${input.departure.date}, got ${itinerary.constraints.endDate}`
     );

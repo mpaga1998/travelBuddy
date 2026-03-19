@@ -303,6 +303,8 @@ export async function generateItinerary(
       }
 
       console.log('🤖 Calling OpenAI with structured prompt...');
+      // Use lower temperature on retries for more deterministic output
+      const temperature = attempt > 0 ? 0.3 : 0.5;
       const response = await openai.chat.completions.create({
         model: process.env.OPENAI_PLANNING_MODEL || 'gpt-4-turbo',
         messages: [
@@ -316,7 +318,7 @@ export async function generateItinerary(
             content: prompt,
           },
         ],
-        temperature: 0.5,
+        temperature,
         max_tokens: 4000,
       });
 
