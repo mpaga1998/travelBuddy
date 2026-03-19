@@ -250,7 +250,7 @@ async function generateItineraryFallback(input: TripInput): Promise<string> {
     throw new Error('No response content from OpenAI');
   }
 
-  return content;
+  return `> ⚠️ **Generated with fallback text generation** (structured planning validation failed)\n\n${content}`;
 }
 
 /**
@@ -389,8 +389,9 @@ export async function generateItinerary(
       const markdown = renderToMarkdown(structuredItinerary, firstName);
       
       console.log('✅ Itinerary generated successfully (structured)');
-
-      return markdown;
+      
+      // Add metadata about generation method
+      return `> ✅ **Generated with structured planning** (validated JSON output)\n\n${markdown}`;
     } catch (error) {
       // Only proceed to fallback on final attempt
       if (attempt === maxRetries) {

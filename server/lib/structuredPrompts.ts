@@ -124,12 +124,21 @@ ${input.stops && input.stops.length > 0 ? `- **Required Stops (main route):** ${
 - Budget tier: ${input.budget || 'flexible'}
 ${input.interests && input.interests.length > 0 ? `- **Interests:** ${input.interests.join(', ')}` : ''}
 
-${input.desiredAttractions && input.desiredAttractions.length > 0 ? `**OPTIONAL PLACES TO VISIT (if feasible as day trips):**`
-${input.desiredAttractions.map((attr) => `- ${attr}`).join('\n')}
-→ These are SECONDARY to the required route
-→ Try to integrate as day trips from main stops
-→ Only include if proximity + time allows
-→ Do NOT create multi-day detours for optional attractions` : '(No optional attractions specified)'}
+${
+  input.arrival.location.toLowerCase() === input.departure.location.toLowerCase()
+    ? `\n**🏠 HUB-AND-SPOKE TRIP** (arrival and departure are the same city: ${input.arrival.location})\n${
+        input.notes && (input.notes.toLowerCase().includes("don't visit") || input.notes.toLowerCase().includes("no ") + input.arrival.location.toLowerCase())
+          ? `→ Per your notes, prioritize DAY TRIPS to ${input.desiredAttractions?.join(', ') || 'optional places'}\n→ Minimize or skip ${input.arrival.location} visits - focus on exploring nearby regions\n→ Sleep in ${input.arrival.location} only due to logistics (arrival/departure days)`
+          : `→ Stay in ${input.arrival.location} as your base (sleep here most nights)\n→ Make day trips from there to ${input.desiredAttractions?.join(', ') || 'nearby attractions'}\n→ Return to ${input.arrival.location} hotel each night for convenience`
+      }\n`
+    : ''
+}
+
+${input.desiredAttractions && input.desiredAttractions.length > 0 ? `**OPTIONAL PLACES TO VISIT:**\n${input.desiredAttractions.map((attr) => `- ${attr}`).join('\n')}\n${
+  input.arrival.location.toLowerCase() === input.departure.location.toLowerCase()
+    ? '→ These are reachable as same-day or overnight excursions from ' + input.arrival.location
+    : '→ These are SECONDARY to the required route\n→ Try to integrate as day trips from main stops\n→ Only include if proximity + time allows\n→ Do NOT create multi-day detours for these'
+}` : '(No optional attractions specified)'}
 
 ${input.notes ? `**ADDITIONAL NOTES:** ${input.notes}` : ''}
 
