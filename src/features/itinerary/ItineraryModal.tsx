@@ -282,6 +282,10 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
         departure: `${input.departure.location} on ${input.departure.date} at ${input.departure.time || 'unspecified'}`,
         stops: input.stops,
         attractions: input.desiredAttractions,
+        travelPace: input.travelPace,
+        budget: input.budget,
+        interests: input.interests,
+        notes: input.notes,
       });
       const result = await generateItinerary(input);
       setItinerary(result);
