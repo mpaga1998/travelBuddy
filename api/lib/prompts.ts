@@ -371,4 +371,4 @@ ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 
 Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be practical, encouraging, and incredibly specific. Make it feel like a best friend giving insider tips.`;
   }
-};
+}; 
