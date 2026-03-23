@@ -25,6 +25,21 @@ The arrival date, arrival time, departure date, and departure time are LOCKED IN
 4. **Concrete food recommendations** - Mention specific dishes (risotto alla milanese, lake fish/perch)
 5. **Why each activity** - Brief reasoning: "Varenna is more relaxed, backpacker aesthetic" or "go early to avoid sunset crowds"
 
+**DAY TRIP & BASE LOGIC (CRITICAL):**
+
+When arrival and departure are in the SAME CITY (e.g., Milano → Milano):
+- This is a home-base itinerary. The traveler sleeps in the base (Milan) every night.
+- Day trips to nearby destinations (Lake Como, etc.) MUST return to base by evening.
+- Structure: Leave base in morning → explore destination → return for dinner/sleep at base.
+- Example: "9:00 AM — Depart Milano Centrale for Como" ... "7:30 PM — Return to Milano Centrale" ... "8:00 PM — Dinner in Milan"
+
+**MULTI-ATTRACTION ALLOCATION:**
+
+- If user lists multiple attractions (e.g., Castello Sforzesco, Lake Como), SPREAD them across different full days.
+- BAD: Day 1 and Day 2 both try to cram Castello + Lake Como into same day
+- GOOD: Day 1 = Castello Sforzesco exploration in Milan, Day 2 = Day trip to Lake Como
+- For 3-day trips with 2 attractions: Option 1 (Day 1: arrival, Day 2: Attraction A, Day 3: Attraction B + depart) OR Option 2 (Day 1: arrival + Attraction A, Day 2: Attraction B, Day 3: recover/depart)
+
 **SMART TOUCHES:**
 
 1. **Offer choices when relevant** - "Option A (Como) vs Option B (Varenna)" with pros/cons
@@ -115,6 +130,36 @@ export const buildUserPrompt = (
   // For longer trips (>5 days), use regional grouping format
   const isLongTrip = fullDays > 5;
 
+  // Detect if this is a home-base trip (context-aware)
+  // Home-base = arriving and departing from same city AND (short trip OR attractions are nearby)
+  // Multi-base = longer trip with distant attractions that warrant overnight stays
+  const isSameCityTrip = input.arrival.location.toLowerCase() === input.departure.location.toLowerCase();
+  
+  // If there are explicit stops (input.stops), the user wants to visit multiple bases overnight
+  const hasMultipleStops = input.stops && input.stops.length > 0;
+  
+  // Determine if this should be home-base or multi-base
+  // Home-base: Same city + (short trip OR few/no distant attractions)
+  // Multi-base: Longer trips or explicit stops (which imply staying overnight in different places)
+  const isHomeBase = isSameCityTrip && fullDays <= 3 && !hasMultipleStops;
+  
+  const homeBaseInfo = isHomeBase 
+    ? `\n**HOME BASE MODEL:** You're arriving and departing from ${input.arrival.location}. All nights are spent in ${input.arrival.location}. Day trips to other destinations MUST return by evening.`
+    : isSameCityTrip && fullDays > 3 
+      ? `\n**MULTI-BASE MODEL:** While you're departing from ${input.arrival.location}, with ${fullDays} days and multiple attractions, consider splitting time across different bases. Overnight stays in other cities (e.g., Venice, Como) are recommended for a less rushed experience.`
+      : '';
+
+  // Guidance for allocating multiple attractions
+  const attractionAllocationGuidance = 
+    input.desiredAttractions && input.desiredAttractions.length > 1
+      ? `\n**ATTRACTION ALLOCATION:** With ${input.desiredAttractions.length} attractions across ${fullDays} days:${
+          isHomeBase 
+            ? `\n   - Day 1: Arrival (${input.arrival.time || 'variable'}) + settle in or light exploration\n   - Day ${Math.floor(fullDays / 2)}: Main comprehensive exploration of one major attraction\n   - Day ${fullDays}: Second attraction as day trip (return by evening), then depart (${input.departure.time || 'variable'})\n   - Goal: No day feels rushed. Each attraction gets dedicated time.`
+            : `\n   - Spread attractions across different bases/days to avoid exhausting travel\n   - Consider overnight stays in different cities for major attractions\n   - Example: Day 1-2 in ${input.arrival.location}, Day 3-4 in ${input.desiredAttractions[1] || 'second destination'}, Day ${fullDays}: return or depart from original base\n   - Goal: Each attraction gets proper exploration time without rushing.`
+        }`
+      : '';
+
+
   if (isLongTrip) {
     return `${firstName ? `Hey ${firstName}!` : 'Hello!'} Building your ${fullDays}-day trip...
 
@@ -122,6 +167,8 @@ export const buildUserPrompt = (
 - **ARRIVAL:** ${startDate} in ${input.arrival.location}${arrivalTimeConstraint}
 - **DEPARTURE:** ${endDate} from ${input.departure.location}${departureTimeConstraint}
 - These dates are locked in. Work within them.
+${homeBaseInfo}
+${attractionAllocationGuidance}
 
 **TRIP CONSTRAINTS:**
 - Total: ${nights} nights on the ground
@@ -154,7 +201,7 @@ ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 7. Add a "Smart Tips" section covering: potential problems, contingency plans, optimization notes
 8. Suggest 1-2 optional upgrades for travelers who want to push it
 9. Acknowledge your travel pace and offer flexibility
-10. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**
+${isHomeBase ? '10. Return all day trips to the home base (' + input.arrival.location + ') by evening for accommodation.\n11. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**' : '10. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**'}
 
 Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be practical, encouraging, and specific. Make every traveler feel like this itinerary was custom-built just for them.`;
   } else {
@@ -164,6 +211,8 @@ Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be pract
 - **ARRIVAL:** ${startDate} in ${input.arrival.location}${arrivalTimeConstraint}
 - **DEPARTURE:** ${endDate} from ${input.departure.location}${departureTimeConstraint}
 - These dates are locked in. Work within them.
+${homeBaseInfo}
+${attractionAllocationGuidance}
 
 **TRIP CONSTRAINTS:**
 - Total: ${nights} nights on the ground
@@ -196,7 +245,7 @@ ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 7. Add a "Smart Tips" section covering: what to prioritize, contingency plans, local hacks
 8. Suggest 1-2 optional upgrades for travelers who want more
 9. Break down each day with: Morning → Late Morning → Afternoon → Evening → Night (if applicable)
-10. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**
+${isHomeBase ? '10. Return all day trips to the home base (' + input.arrival.location + ') by evening for accommodation.\n11. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**' : '10. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**'}
 
 Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be practical, encouraging, and incredibly specific. Make it feel like a best friend giving insider tips.`;
   }
