@@ -47,20 +47,48 @@ ONLY for actual meals (breakfast, lunch, dinner) — not snacks or every time bl
 When arrival and departure are in the SAME CITY (e.g., Milano → Milano):
 - This is a home-base itinerary. The traveler sleeps in the base (Milan) every night.
 - Day trips to nearby destinations (Lake Como, etc.) MUST return to base by evening.
+- **For every day trip, include BOTH departure and return times:**
+  - Bad: "Take train to Como at 1 PM to explore" (no return time, traveler stuck overnight or rushing to catch last train)
+  - Good: "Depart 9:00 AM by train to Como (40 min) → explore 3 hours → Return 3:00 PM train (40 min) → Back by 4:30 PM"
+  - Calculate total: Departure time + transit time + exploration time + return transit time = back by early evening
 - **AVOID DAY TRIPS ON TRAVEL DAYS**: 
   - Arrival day: Keep it light (just arrival, check-in, maybe light local exploration) — NO long day trips
   - Departure day: Keep it light (recover, last-minute shopping, local area) — NO long day trips requiring 8+ hours away
   - Exception ONLY: If departure is at night AND trip is very short (2 nights), a morning/afternoon day trip returning 1-2 hours before departure is acceptable
   - Best practice: Schedule main day trips for full middle days only
-- Structure for full day trips: Leave base early morning → explore destination → return by early evening for dinner at base.
-- Example: "9:00 AM — Depart Milano Centrale for Como" ... "5:00 PM — Return to Milano Centrale" ... "7:30 PM — Dinner in Milan"
+- Structure for full day trips: Leave base early morning (8-9 AM) → explore destination 2-3 hours → return route scheduled for early evening arrival (4-6 PM) → dinner at base.
+- Example: "9:00 AM — Depart Milano Centrale for Como (train, 40 min)" ... "2:00 PM–3:00 PM — Explore Como old town" ... "3:30 PM — Depart Como S. Giovanni for Milano (train, 40 min)" ... "5:00 PM — Arrive Milano Centrale, freshen up" ... "7:30 PM — Dinner in Milan"
+
+**TRAVEL PACE & ACTIVITY ALLOCATION (CRITICAL):**
+
+Travel pace DIRECTLY affects how many activities to suggest per day:
+
+- **Relaxed pace** = 1-2 main activities per day MAX, with generous breaks, slow exploration, meal time, recovery time
+  - Example for 3-day trip: Day 1 (arrival + settling), Day 2 (ONE main attraction explored deeply), Day 3 (light local exploration or recovery before departure)
+  - For multiple attractions: Suggest focusing on 1-2 of the most interesting, skip the others OR advise re-scheduling to longer trip
+  - Activities should have large gaps between them (no rushing, no "1 PM train, 5 PM activity, 8 PM return")
+  
+- **Balanced pace** = 2-3 activities per day with some breathing room
+  - Good mix of exploration, meal time, and relaxation
+  - Can include one day trip with return scheduled realistically
+  
+- **Active pace** = 3-4 activities per day, tightly scheduled
+  - Minimal downtime, full optimization
+  - Multiple activities per day, potentially stacked with transit
+
+**CRITICALLY IMPORTANT FOR TODAY'S REQUEST**: If pace is "relaxed" and trip is only 3 days with 3+ attractions, you MUST make a choice:
+- Option 1: Deep-dive into 1-2 attractions and skip the others
+- Option 2: Acknowledge that fitting 3 attractions into 3 days conflicts with relaxed pace and explain the trade-off
+- NEVER suggest a packed day like "Castello 9 AM → lunch → Como 1 PM → explore → return → dinner" with relaxed pace. That's active pace.
 
 **MULTI-ATTRACTION ALLOCATION:**
 
 - If user lists multiple attractions (e.g., Castello Sforzesco, Lake Como), SPREAD them across different full days.
-- BAD: Day 1 (arrival) and Day 2 both try to cram Castello + Lake Como into same day; Day 3 (departure) has a long day trip
-- GOOD: Day 1 = arrival + light local exploration, Day 2 = Main attraction (Castello) or day trip (Lake Como), Day 3 = remaining attraction or light recovery before departure
-- For 3-day trips with 3+ attractions: Day 1 (arrival, light), Day 2 (deep exploration of one attraction or nearby day trip), Day 3 (light activity or recovery, then depart)
+- For HOME-BASE trips with DAY TRIPS: Schedule main day trip on a full middle day (not arrival/departure day)
+  - Day trip structure: Depart base 8-9 AM → explore destination 2-3 hours → return to base by 5-6 PM → dinner at base
+  - Calculate total time including travel: Como trip = 40 min each way + exploring time + margins = minimum 5-6 hours away
+- For relaxed pace: ONE day trip maximum. Do NOT suggest Castello in morning + Lake Como as afternoon day trip on same day.
+- For 3-day trips with 3+ attractions and relaxed pace: Day 1 (arrival, light), Day 2 (ONE main attraction OR ONE day trip), Day 3 (light recovery before departure or second lighter attraction)
 
 **CRITICAL BUDGET CONSTRAINTS (READ BEFORE SUGGESTING RESTAURANTS/ACTIVITIES):**
 
@@ -229,7 +257,9 @@ export const buildUserPrompt = (
   const attractionAllocationGuidance = 
     input.desiredAttractions && input.desiredAttractions.length > 1
       ? `\n**ATTRACTION ALLOCATION:** With ${input.desiredAttractions.length} attractions across ${fullDays} days:${
-          isHomeBase 
+          input.travelPace === 'relaxed' && fullDays <= 4 
+            ? `\n   ⚠️ PACING CONFLICT: ${fullDays} days is tight for ${input.desiredAttractions.length} attractions at a relaxed pace.\n   - Recommendation: Pick 1-2 attractions to explore deeply (no rushing), lightly visit or skip the others\n   - Or suggest revisiting idea of 3-day trip for all ${input.desiredAttractions.length} attractions (active pace would be crowded)\n   - Day 1 (Arrival): Settle in, maybe light local walk\n   - Day 2 (Full day): Main exploration (ONE major attraction or ONE day trip, return by evening)\n   - Day ${fullDays} (Departure): Light recovery before departure\n   - Goal: Quality over quantity. Main attractions get deep exploration, not rushed surface visits.`
+            : isHomeBase 
             ? `\n   - Day 1 (Arrival): Keep light — check-in, settle, maybe local walking (${input.arrival.time || 'variable'} arrival, so avoid lengthy day trips)\n   - Day ${Math.floor(fullDays / 2)} (Full day): Main comprehensive exploration of one major attraction or nearby day trip (return by evening)\n   - Day ${fullDays} (Departure): Keep light since departing at ${input.departure.time || 'variable'} — recover, last-minute local exploration, prepare to leave\n   - Goal: No day feels rushed. Main attractions get proper attention on middle full days, not on travel days.`
             : `\n   - Day 1 (Arrival): Keep light — just settling in, local area (${ input.arrival.time || 'variable'} arrival)\n   - Days 2-${fullDays - 1} (Full days): Spread attractions across these middle days with overnight stays where appropriate\n   - Day ${fullDays} (Departure): Keep light depending on departure time — either a morning activity or just recovery\n   - Goal: Main attractions explored on dedicated full days, not squeezed into travel days. Each attraction gets proper exploration time.`
         }`
@@ -250,11 +280,12 @@ ${attractionAllocationGuidance}
 - Total: ${nights} nights on the ground
 - Pace: ${
       input.travelPace === 'relaxed'
-        ? 'Relaxed pace - time to breathe'
+        ? 'Relaxed pace - time to breathe, 1-2 activities per day MAX, generous meal/break time'
         : input.travelPace === 'active'
-          ? 'Active pace - pack it in'
-          : 'Balanced'
+          ? 'Active pace - pack it in, 3-4 activities per day, tightly scheduled'
+          : 'Balanced - 2-3 activities per day with breathing room'
     }
+${input.travelPace === 'relaxed' && fullDays <= 4 && input.desiredAttractions && input.desiredAttractions.length > 2 ? `⚠️ **PACING NOTE:** With ${fullDays} days, relaxed pace, and ${input.desiredAttractions.length} attractions, cannot visit all thoroughly without rushing. Focus on 1-2 main attractions, lightly handle or skip others.` : ''}
 - ⚠️ **Budget: ${input.budget === 'budget' ? '🟨 BUDGET TIER' : input.budget === 'luxury' ? '🟦 LUXURY TIER' : '🟩 MID-RANGE TIER'}** — This is a HARD CONSTRAINT. Every meal, restaurant, and activity must align with this tier's price range (see budget constraints in system prompt). Do NOT suggest expensive restaurants for budget travelers.
 ${input.stops && input.stops.length > 0 ? `- Must visit: ${input.stops.join(', ')}` : ''}
 
@@ -300,11 +331,12 @@ ${attractionAllocationGuidance}
 - Total: ${nights} nights on the ground
 - Pace: ${
       input.travelPace === 'relaxed'
-        ? 'Relaxed pace - time to breathe'
+        ? 'Relaxed pace - time to breathe, 1-2 activities per day MAX, generous meal/break time'
         : input.travelPace === 'active'
-          ? 'Active pace - pack it in'
-          : 'Balanced'
+          ? 'Active pace - pack it in, 3-4 activities per day, tightly scheduled'
+          : 'Balanced - 2-3 activities per day with breathing room'
     }
+${input.travelPace === 'relaxed' && fullDays <= 4 && input.desiredAttractions && input.desiredAttractions.length > 2 ? `⚠️ **PACING NOTE:** With ${fullDays} days, relaxed pace, and ${input.desiredAttractions.length} attractions, cannot fit all thoroughly without rushing. Recommend: Focus deeply on ${Math.max(1, Math.ceil(input.desiredAttractions.length / 2))}-${Math.ceil(input.desiredAttractions.length * 0.66)} attractions, lightly handle or skip others.` : ''}
 - ⚠️ **Budget: ${input.budget === 'budget' ? '🟨 BUDGET TIER' : input.budget === 'luxury' ? '🟦 LUXURY TIER' : '🟩 MID-RANGE TIER'}** — This is a HARD CONSTRAINT. Every meal, restaurant, and activity must align with this tier's price range (see budget constraints in system prompt). Do NOT suggest expensive restaurants for budget travelers.
 ${input.stops && input.stops.length > 0 ? `- Must visit: ${input.stops.join(', ')}` : ''}
 
