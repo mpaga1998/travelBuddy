@@ -93,7 +93,7 @@ export const buildUserPrompt = (
   const endDate = formatDate(departureDate);
 
   // Calculate days and nights correctly
-  // If arriving April 7 and departing April 9: 2 nights (7-8 and 8-9)
+  // If arriving April 7 and departing April 9: 2 nights (7-8 and 8-9), but 3 calendar days
   const nights = Math.max(
     1,
     Math.round(
@@ -101,7 +101,7 @@ export const buildUserPrompt = (
         (1000 * 60 * 60 * 24)
     )
   );
-  const fullDays = nights; // Same number of full travel days
+  const fullDays = nights + 1; // Calendar days (arrival day + nights = total calendar days)
 
   // Add arrival/departure time info if provided
   const arrivalTimeConstraint = input.arrival.time 

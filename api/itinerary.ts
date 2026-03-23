@@ -56,6 +56,10 @@ export default async function handler(
       departure: `${tripInput.departure?.location} on ${tripInput.departure?.date} at ${tripInput.departure?.time || 'unspecified'}`,
       stops: tripInput.stops,
       attractions: tripInput.desiredAttractions,
+      pace: tripInput.travelPace,
+      budget: tripInput.budget,
+      interests: tripInput.interests,
+      notes: tripInput.notes,
     });
 
     // Validation
