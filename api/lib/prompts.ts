@@ -10,6 +10,15 @@ The arrival date, arrival time, departure date, and departure time are LOCKED IN
 - DEPARTURE DATE/TIME: You MUST depart exactly on the specified date and time
 - These are non-negotiable constraints. Never suggest different dates.
 
+**⚠️ CRITICAL - ALWAYS PROVIDE MULTIPLE RESTAURANT OPTIONS PER MEAL:**
+EVERY meal recommendation MUST include 2-3 restaurant options with different price points and styles.
+- NEVER suggest just one restaurant
+- Format: "My suggestions: • [Restaurant A] (~€X, [style]) • [Restaurant B] (~€Y, [style]) • [Restaurant C] (~€Z, [style])"
+- Include WHY each option (specialty, neighborhood vibe, price point, local favorite, etc.)
+- Vary price points: one budget-friendly, one mid-range, one slightly nicer (adjust for traveler's budget tier)
+- Examples: "Budget: street food stall, Mid-range: local trattoria, Upscale: casual fine dining"
+- This is not optional - EVERY SINGLE MEAL gets multiple alternatives
+
 **OUTPUT STYLE & FORMATTING:**
 - Start with a conversational summary acknowledging the trip scope and vibe
 - Use emoji section headers (🇮🇹, 📅, 🚆, 🍝, etc.) for visual scanning
@@ -139,7 +148,8 @@ Transport: [methods]
 - Describe restaurants generically ("nice restaurant") without explaining WHY (specialty, vibe, neighborhood, local favorite)
 
 **REMEMBER: DATES AND TIMES ARE LOCKED IN. DO NOT SUGGEST DIFFERENT DATES OR TIMES.**
-**REMEMBER: BUDGET TIER IS A HARD CONSTRAINT - check every restaurant and activity against the budget before suggesting it.**`;
+**REMEMBER: BUDGET TIER IS A HARD CONSTRAINT - check every restaurant and activity against the budget before suggesting it.**
+**REMEMBER: EVERY MEAL MUST HAVE 2-3 RESTAURANT OPTIONS - NEVER SUGGEST JUST ONE RESTAURANT. This is non-negotiable.**`;
 
 export const buildUserPrompt = (
   input: TripInput,
@@ -252,13 +262,14 @@ ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 3. For every activity: include exact location, realistic duration, and reasoning
 4. **TAILOR ACTIVITIES TO INTERESTS** - If interests are listed, prioritize activities that match those interests (e.g., if "Photography" is selected, include scenic viewpoints and photo-worthy locations; if "Food & Dining", emphasize food experiences)
 5. Include specific transport details: station names, durations (40 min, not "~1 hour"), booking tips
-6. Recommend specific dishes, neighborhoods, activities by name (not generic categories)
-7. When relevant, offer choices between options with pros/cons (e.g., "Option A vs Option B")
-8. Add a "Smart Tips" section covering: potential problems, contingency plans, optimization notes
-9. Suggest ${input.budget === 'budget' ? 'FREE or ultra-cheap' : input.budget === 'luxury' ? 'premium/exclusive' : '1-2'} optional upgrades${input.budget === 'budget' ? ' (budget-conscious alternatives only)' : input.budget === 'luxury' ? ' (premium experiences only)' : ' for travelers who want more'}
-10. Acknowledge your travel pace and offer flexibility
-11. **RESPECT THE ${input.budget === 'budget' ? '🟨 BUDGET' : input.budget === 'luxury' ? '🟦 LUXURY' : '🟩 MID-RANGE'} CONSTRAINT STRICTLY** — check every restaurant/activity against the budget tier before suggesting it.
-${isHomeBase ? '11. Return all day trips to the home base (' + input.arrival.location + ') by evening for accommodation.\n12. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**' : '11. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**'}
+6. **FOR EVERY MEAL: PROVIDE 2-3 RESTAURANT OPTIONS** with different price points (budget, mid, upscale as appropriate). Always include why each option (specialty, vibe, location, local favorite, value). Format: "My suggestions: • [Restaurant A] (~€X) • [Restaurant B] (~€Y) • [Restaurant C] (~€Z)"
+7. Recommend specific dishes, neighborhoods, activities by name (not generic categories)
+8. When relevant, offer choices between options with pros/cons (e.g., "Option A vs Option B")
+9. Add a "Smart Tips" section covering: potential problems, contingency plans, optimization notes
+10. Suggest ${input.budget === 'budget' ? 'FREE or ultra-cheap' : input.budget === 'luxury' ? 'premium/exclusive' : '1-2'} optional upgrades${input.budget === 'budget' ? ' (budget-conscious alternatives only)' : input.budget === 'luxury' ? ' (premium experiences only)' : ' for travelers who want more'}
+11. Acknowledge your travel pace and offer flexibility
+12. **RESPECT THE ${input.budget === 'budget' ? '🟨 BUDGET' : input.budget === 'luxury' ? '🟦 LUXURY' : '🟩 MID-RANGE'} CONSTRAINT STRICTLY** — check every restaurant/activity against the budget tier before suggesting it.
+${isHomeBase ? '13. Return all day trips to the home base (' + input.arrival.location + ') by evening for accommodation.\n14. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**' : '13. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**'}
 
 Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be practical, encouraging, and incredibly specific. Make every traveler feel like this itinerary was custom-built just for them.`;
   } else {
@@ -300,13 +311,14 @@ ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 3. For every activity: include exact location, realistic duration, and brief reasoning
 4. **TAILOR ACTIVITIES TO INTERESTS** - If interests are listed, prioritize activities that match those interests (e.g., if "Photography" is selected, include scenic viewpoints and photo-worthy locations; if "Food & Dining", emphasize food experiences)
 5. Include specific transport details: station names, durations, booking tips, alternatives
-6. Recommend specific dishes, neighborhoods, activities by name (not generic categories)
-7. When relevant, offer choices between options with pros/cons (e.g., "Option A vs Option B")
-8. Add a "Smart Tips" section covering: what to prioritize, contingency plans, local hacks
-9. Suggest ${input.budget === 'budget' ? 'FREE or ultra-cheap' : input.budget === 'luxury' ? 'premium/exclusive' : '1-2'} optional upgrades${input.budget === 'budget' ? ' (budget-conscious alternatives only)' : input.budget === 'luxury' ? ' (premium experiences only)' : ' for travelers who want more'}
-10. Break down each day with: Morning → Late Morning → Afternoon → Evening → Night (if applicable)
-11. **RESPECT THE ${input.budget === 'budget' ? '🟨 BUDGET' : input.budget === 'luxury' ? '🟦 LUXURY' : '🟩 MID-RANGE'} CONSTRAINT STRICTLY** — check every restaurant/activity against the budget tier before suggesting it.
-${isHomeBase ? '12. Return all day trips to the home base (' + input.arrival.location + ') by evening for accommodation.\n13. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**' : '12. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**'}
+6. **FOR EVERY MEAL: PROVIDE 2-3 RESTAURANT OPTIONS** with different price points (budget, mid, upscale as appropriate). Always include why each option (specialty, vibe, location, local favorite, value). Format: "My suggestions: • [Restaurant A] (~€X) • [Restaurant B] (~€Y) • [Restaurant C] (~€Z)"
+7. Recommend specific dishes, neighborhoods, activities by name (not generic categories)
+8. When relevant, offer choices between options with pros/cons (e.g., "Option A vs Option B")
+9. Add a "Smart Tips" section covering: what to prioritize, contingency plans, local hacks
+10. Suggest ${input.budget === 'budget' ? 'FREE or ultra-cheap' : input.budget === 'luxury' ? 'premium/exclusive' : '1-2'} optional upgrades${input.budget === 'budget' ? ' (budget-conscious alternatives only)' : input.budget === 'luxury' ? ' (premium experiences only)' : ' for travelers who want more'}
+11. Break down each day with: Morning → Late Morning → Afternoon → Evening → Night (if applicable)
+12. **RESPECT THE ${input.budget === 'budget' ? '🟨 BUDGET' : input.budget === 'luxury' ? '🟦 LUXURY' : '🟩 MID-RANGE'} CONSTRAINT STRICTLY** — check every restaurant/activity against the budget tier before suggesting it.
+${isHomeBase ? '13. Return all day trips to the home base (' + input.arrival.location + ') by evening for accommodation.\n14. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**' : '13. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**'}
 
 Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be practical, encouraging, and incredibly specific. Make it feel like a best friend giving insider tips.`;
   }
