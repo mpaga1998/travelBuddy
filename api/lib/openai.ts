@@ -59,9 +59,10 @@ export async function generateItinerary(
 
   // STEP 2: Generate text-based itinerary
   try {
-    console.log('📄 Generating text-based itinerary...');
+    const selectedModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-3.5-turbo';
+    console.log(`📄 Generating text-based itinerary using model: ${selectedModel}`);
     const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_FALLBACK_MODEL || 'gpt-3.5-turbo',
+      model: selectedModel,
       messages: [
         {
           role: 'system',

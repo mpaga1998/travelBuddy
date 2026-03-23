@@ -51,11 +51,12 @@ When arrival and departure are in the SAME CITY (e.g., Milano → Milano):
   - Bad: "Take train to Como at 1 PM to explore" (no return time, traveler stuck overnight or rushing to catch last train)
   - Good: "Depart 9:00 AM by train to Como (40 min) → explore 3 hours → Return 3:00 PM train (40 min) → Back by 4:30 PM"
   - Calculate total: Departure time + transit time + exploration time + return transit time = back by early evening
-- **AVOID DAY TRIPS ON TRAVEL DAYS**: 
+- **AVOID DAY TRIPS ON TRAVEL DAYS (STRONGLY DISCOURAGED)**:
   - Arrival day: Keep it light (just arrival, check-in, maybe light local exploration) — NO long day trips
-  - Departure day: Keep it light (recover, last-minute shopping, local area) — NO long day trips requiring 8+ hours away
-  - Exception ONLY: If departure is at night AND trip is very short (2 nights), a morning/afternoon day trip returning 1-2 hours before departure is acceptable
-  - Best practice: Schedule main day trips for full middle days only
+  - Departure day: **HEAVILY DISCOURAGE** day trips, especially for relaxed pace. Travelers need time to pack, tidy up, rest, and prepare mentally. Even "short" day trips create rushing and stress.
+    - Exception (ONLY for active/balanced pace AND night departure AND <3 hours away): Early morning activity returning by noon, then full rest afternoon before departure
+    - For relaxed pace: **AVOID DAY TRIPS ON DEPARTURE DAY ENTIRELY** — suggest light local recovery instead
+  - Best practice: Schedule ALL main day trips for full middle days only
 - Structure for full day trips: Leave base early morning (8-9 AM) → explore destination 2-3 hours → return route scheduled for early evening arrival (4-6 PM) → dinner at base.
 - Example: "9:00 AM — Depart Milano Centrale for Como (train, 40 min)" ... "2:00 PM–3:00 PM — Explore Como old town" ... "3:30 PM — Depart Como S. Giovanni for Milano (train, 40 min)" ... "5:00 PM — Arrive Milano Centrale, freshen up" ... "7:30 PM — Dinner in Milan"
 
@@ -184,13 +185,15 @@ Transport: [methods]
 - Recommend only ONE restaurant without alternatives (always provide 2-3 options with different styles/prices)
 - Describe restaurants generically ("nice restaurant") without explaining WHY (specialty, vibe, neighborhood, local favorite)
 - Add meal suggestions for every activity or time block (only breakfast, lunch, dinner = 3 meals max per day)
-- Schedule long day trips on arrival or departure travel days (these days should be light/local only)
+- Schedule long day trips on arrival travel days (these days should be light/local only)
+- Schedule ANY day trips on departure days for relaxed pace — they create rushing and stress. For relaxed travelers, departure days = recovery
 - Add "Food & Dining" activities as extra meals—instead, add them as ACTIVITIES: cooking classes, food tours, market visits, etc.
 
 **REMEMBER: DATES AND TIMES ARE LOCKED IN. DO NOT SUGGEST DIFFERENT DATES OR TIMES.**
 **REMEMBER: BUDGET TIER IS A HARD CONSTRAINT - check every restaurant and activity against the budget before suggesting it.**
 **REMEMBER: EVERY MEAL (breakfast, lunch, dinner) MUST HAVE 2-3 RESTAURANT OPTIONS. Only 3 meals per day maximum.**
-**REMEMBER: AVOID DAY TRIPS ON ARRIVAL/DEPARTURE DAYS - schedule them for full middle days only.**`;
+**REMEMBER: FOR RELAXED PACE, AVOID DAY TRIPS ON DEPARTURE DAY ENTIRELY. Suggest light local recovery instead (walking, local cafes, packing time).**
+**REMEMBER: Main day trips (like Lake Como) should ONLY appear on full middle days, return by 5-6 PM for dinner at base.**`;
 
 export const buildUserPrompt = (
   input: TripInput,
@@ -307,7 +310,7 @@ ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 4. **TAILOR ACTIVITIES TO INTERESTS** - If interests are listed, prioritize activities that match those interests. For "Food & Dining", add food-related ACTIVITIES (cooking classes, food tours, markets) not extra meals.
 5. Include specific transport details: station names, durations (40 min, not "~1 hour"), booking tips
 6. **FOR EVERY MEAL (breakfast, lunch, dinner only): PROVIDE 2-3 RESTAURANT OPTIONS** with different price points. On arrival/departure travel days, keep meals simple/nearby (not elaborate searches). Format: "My suggestions: • [Restaurant A] (~€X) • [Restaurant B] (~€Y) • [Restaurant C] (~€Z)"
-7. **KEEP TRAVEL DAYS LIGHT** - Arrival (${input.arrival.time}) and Departure (${input.departure.time}) days should be light/local only. NO long day trips requiring 8+ hours of travel. Full day trips only on middle days with full daylight.
+7. **KEEP TRAVEL DAYS LIGHT** - Arrival (${input.arrival.time}) and Departure (${input.departure.time}) days should be light/local only. NO long day trips requiring 8+ hours of travel. ${input.travelPace === 'relaxed' ? 'For relaxed pace, especially AVOID any day trips on departure day—suggest light local recovery, packing time, and mental preparation instead.' : 'Full day trips only on middle days with full daylight.'}
 8. Recommend specific dishes, neighborhoods, activities by name (not generic categories)
 9. When relevant, offer choices between options with pros/cons (e.g., "Option A vs Option B")
 10. Add a "Smart Tips" section covering: potential problems, contingency plans, optimization notes
