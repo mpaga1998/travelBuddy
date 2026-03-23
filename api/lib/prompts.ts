@@ -11,13 +11,14 @@ The arrival date, arrival time, departure date, and departure time are LOCKED IN
 - These are non-negotiable constraints. Never suggest different dates.
 
 **⚠️ CRITICAL - ALWAYS PROVIDE MULTIPLE RESTAURANT OPTIONS PER MEAL:**
-EVERY meal recommendation MUST include 2-3 restaurant options with different price points and styles.
+ONLY for actual meals (breakfast, lunch, dinner) — not snacks or every time block.
+- Each meal gets 2-3 restaurant options with different price points
 - NEVER suggest just one restaurant
 - Format: "My suggestions: • [Restaurant A] (~€X, [style]) • [Restaurant B] (~€Y, [style]) • [Restaurant C] (~€Z, [style])"
 - Include WHY each option (specialty, neighborhood vibe, price point, local favorite, etc.)
-- Vary price points: one budget-friendly, one mid-range, one slightly nicer (adjust for traveler's budget tier)
-- Examples: "Budget: street food stall, Mid-range: local trattoria, Upscale: casual fine dining"
-- This is not optional - EVERY SINGLE MEAL gets multiple alternatives
+- On arrival/departure days: Keep meals light/simple (not elaborate multi-course experiences)
+- If "Food & Dining" is an interest: Can add specialized food experiences (food tours, cooking classes, markets) as ACTIVITIES, not extra meals
+- This is not optional for the 3 main meals per day, but don't create meals where they don't naturally fit
 
 **OUTPUT STYLE & FORMATTING:**
 - Start with a conversational summary acknowledging the trip scope and vibe
@@ -46,15 +47,20 @@ EVERY meal recommendation MUST include 2-3 restaurant options with different pri
 When arrival and departure are in the SAME CITY (e.g., Milano → Milano):
 - This is a home-base itinerary. The traveler sleeps in the base (Milan) every night.
 - Day trips to nearby destinations (Lake Como, etc.) MUST return to base by evening.
-- Structure: Leave base in morning → explore destination → return for dinner/sleep at base.
-- Example: "9:00 AM — Depart Milano Centrale for Como" ... "7:30 PM — Return to Milano Centrale" ... "8:00 PM — Dinner in Milan"
+- **AVOID DAY TRIPS ON TRAVEL DAYS**: 
+  - Arrival day: Keep it light (just arrival, check-in, maybe light local exploration) — NO long day trips
+  - Departure day: Keep it light (recover, last-minute shopping, local area) — NO long day trips requiring 8+ hours away
+  - Exception ONLY: If departure is at night AND trip is very short (2 nights), a morning/afternoon day trip returning 1-2 hours before departure is acceptable
+  - Best practice: Schedule main day trips for full middle days only
+- Structure for full day trips: Leave base early morning → explore destination → return by early evening for dinner at base.
+- Example: "9:00 AM — Depart Milano Centrale for Como" ... "5:00 PM — Return to Milano Centrale" ... "7:30 PM — Dinner in Milan"
 
 **MULTI-ATTRACTION ALLOCATION:**
 
 - If user lists multiple attractions (e.g., Castello Sforzesco, Lake Como), SPREAD them across different full days.
-- BAD: Day 1 and Day 2 both try to cram Castello + Lake Como into same day
-- GOOD: Day 1 = Castello Sforzesco exploration in Milan, Day 2 = Day trip to Lake Como
-- For 3-day trips with 2 attractions: Option 1 (Day 1: arrival, Day 2: Attraction A, Day 3: Attraction B + depart) OR Option 2 (Day 1: arrival + Attraction A, Day 2: Attraction B, Day 3: recover/depart)
+- BAD: Day 1 (arrival) and Day 2 both try to cram Castello + Lake Como into same day; Day 3 (departure) has a long day trip
+- GOOD: Day 1 = arrival + light local exploration, Day 2 = Main attraction (Castello) or day trip (Lake Como), Day 3 = remaining attraction or light recovery before departure
+- For 3-day trips with 3+ attractions: Day 1 (arrival, light), Day 2 (deep exploration of one attraction or nearby day trip), Day 3 (light activity or recovery, then depart)
 
 **CRITICAL BUDGET CONSTRAINTS (READ BEFORE SUGGESTING RESTAURANTS/ACTIVITIES):**
 
@@ -108,9 +114,12 @@ You MUST check the traveler's budget tier and follow these rules STRICTLY:
 1. **Real travel times** - Account for station access, waiting, security, transfers
    - Milano to Como: 40 min train + time to station (plan 1h total buffer)
    - Lake ferry: check schedules, plan 15-20 min wind-down before each leg
-2. **Pacing wisdom** - Acknowledge fatigue: "light reset, don't overpack the day"
-3. **Activity sequencing** - Group by geography, avoid zigzagging ("try Como + Bellagio + Varenna in one day = rushed and worse experience")
-4. **Local knowledge** - Reference specific neighborhoods, station names, neighborhood vibes
+2. **Meal structure** - Standard 3 meals per day: breakfast, lunch, dinner (ONLY these, not snacks or extra meals)
+   - For each meal, provide 2-3 restaurant options with different price points
+   - On arrival/departure travel days: Keep meals simple and nearby (no long restaurant searches)
+3. **Pacing wisdom** - Acknowledge fatigue: "light reset, don't overpack the day"
+4. **Activity sequencing** - Group by geography, avoid zigzagging ("try Como + Bellagio + Varenna in one day = rushed and worse experience")
+5. **Local knowledge** - Reference specific neighborhoods, station names, neighborhood vibes
 
 **FORMATTING TEMPLATE:**
 
@@ -146,10 +155,14 @@ Transport: [methods]
 - State meals/activities without indicating their price point or relevance to the budget tier
 - Recommend only ONE restaurant without alternatives (always provide 2-3 options with different styles/prices)
 - Describe restaurants generically ("nice restaurant") without explaining WHY (specialty, vibe, neighborhood, local favorite)
+- Add meal suggestions for every activity or time block (only breakfast, lunch, dinner = 3 meals max per day)
+- Schedule long day trips on arrival or departure travel days (these days should be light/local only)
+- Add "Food & Dining" activities as extra meals—instead, add them as ACTIVITIES: cooking classes, food tours, market visits, etc.
 
 **REMEMBER: DATES AND TIMES ARE LOCKED IN. DO NOT SUGGEST DIFFERENT DATES OR TIMES.**
 **REMEMBER: BUDGET TIER IS A HARD CONSTRAINT - check every restaurant and activity against the budget before suggesting it.**
-**REMEMBER: EVERY MEAL MUST HAVE 2-3 RESTAURANT OPTIONS - NEVER SUGGEST JUST ONE RESTAURANT. This is non-negotiable.**`;
+**REMEMBER: EVERY MEAL (breakfast, lunch, dinner) MUST HAVE 2-3 RESTAURANT OPTIONS. Only 3 meals per day maximum.**
+**REMEMBER: AVOID DAY TRIPS ON ARRIVAL/DEPARTURE DAYS - schedule them for full middle days only.**`;
 
 export const buildUserPrompt = (
   input: TripInput,
@@ -217,8 +230,8 @@ export const buildUserPrompt = (
     input.desiredAttractions && input.desiredAttractions.length > 1
       ? `\n**ATTRACTION ALLOCATION:** With ${input.desiredAttractions.length} attractions across ${fullDays} days:${
           isHomeBase 
-            ? `\n   - Day 1: Arrival (${input.arrival.time || 'variable'}) + settle in or light exploration\n   - Day ${Math.floor(fullDays / 2)}: Main comprehensive exploration of one major attraction\n   - Day ${fullDays}: Second attraction as day trip (return by evening), then depart (${input.departure.time || 'variable'})\n   - Goal: No day feels rushed. Each attraction gets dedicated time.`
-            : `\n   - Spread attractions across different bases/days to avoid exhausting travel\n   - Consider overnight stays in different cities for major attractions\n   - Example: Day 1-2 in ${input.arrival.location}, Day 3-4 in ${input.desiredAttractions[1] || 'second destination'}, Day ${fullDays}: return or depart from original base\n   - Goal: Each attraction gets proper exploration time without rushing.`
+            ? `\n   - Day 1 (Arrival): Keep light — check-in, settle, maybe local walking (${input.arrival.time || 'variable'} arrival, so avoid lengthy day trips)\n   - Day ${Math.floor(fullDays / 2)} (Full day): Main comprehensive exploration of one major attraction or nearby day trip (return by evening)\n   - Day ${fullDays} (Departure): Keep light since departing at ${input.departure.time || 'variable'} — recover, last-minute local exploration, prepare to leave\n   - Goal: No day feels rushed. Main attractions get proper attention on middle full days, not on travel days.`
+            : `\n   - Day 1 (Arrival): Keep light — just settling in, local area (${ input.arrival.time || 'variable'} arrival)\n   - Days 2-${fullDays - 1} (Full days): Spread attractions across these middle days with overnight stays where appropriate\n   - Day ${fullDays} (Departure): Keep light depending on departure time — either a morning activity or just recovery\n   - Goal: Main attractions explored on dedicated full days, not squeezed into travel days. Each attraction gets proper exploration time.`
         }`
       : '';
 
@@ -260,16 +273,17 @@ ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 1. Start with a conversational summary: acknowledge the trip scope, length, vibe, and why it works
 2. Create a detailed day-by-day breakdown with specific times, not vague periods
 3. For every activity: include exact location, realistic duration, and reasoning
-4. **TAILOR ACTIVITIES TO INTERESTS** - If interests are listed, prioritize activities that match those interests (e.g., if "Photography" is selected, include scenic viewpoints and photo-worthy locations; if "Food & Dining", emphasize food experiences)
+4. **TAILOR ACTIVITIES TO INTERESTS** - If interests are listed, prioritize activities that match those interests. For "Food & Dining", add food-related ACTIVITIES (cooking classes, food tours, markets) not extra meals.
 5. Include specific transport details: station names, durations (40 min, not "~1 hour"), booking tips
-6. **FOR EVERY MEAL: PROVIDE 2-3 RESTAURANT OPTIONS** with different price points (budget, mid, upscale as appropriate). Always include why each option (specialty, vibe, location, local favorite, value). Format: "My suggestions: • [Restaurant A] (~€X) • [Restaurant B] (~€Y) • [Restaurant C] (~€Z)"
-7. Recommend specific dishes, neighborhoods, activities by name (not generic categories)
-8. When relevant, offer choices between options with pros/cons (e.g., "Option A vs Option B")
-9. Add a "Smart Tips" section covering: potential problems, contingency plans, optimization notes
-10. Suggest ${input.budget === 'budget' ? 'FREE or ultra-cheap' : input.budget === 'luxury' ? 'premium/exclusive' : '1-2'} optional upgrades${input.budget === 'budget' ? ' (budget-conscious alternatives only)' : input.budget === 'luxury' ? ' (premium experiences only)' : ' for travelers who want more'}
-11. Acknowledge your travel pace and offer flexibility
-12. **RESPECT THE ${input.budget === 'budget' ? '🟨 BUDGET' : input.budget === 'luxury' ? '🟦 LUXURY' : '🟩 MID-RANGE'} CONSTRAINT STRICTLY** — check every restaurant/activity against the budget tier before suggesting it.
-${isHomeBase ? '13. Return all day trips to the home base (' + input.arrival.location + ') by evening for accommodation.\n14. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**' : '13. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**'}
+6. **FOR EVERY MEAL (breakfast, lunch, dinner only): PROVIDE 2-3 RESTAURANT OPTIONS** with different price points. On arrival/departure travel days, keep meals simple/nearby (not elaborate searches). Format: "My suggestions: • [Restaurant A] (~€X) • [Restaurant B] (~€Y) • [Restaurant C] (~€Z)"
+7. **KEEP TRAVEL DAYS LIGHT** - Arrival (${input.arrival.time}) and Departure (${input.departure.time}) days should be light/local only. NO long day trips requiring 8+ hours of travel. Full day trips only on middle days with full daylight.
+8. Recommend specific dishes, neighborhoods, activities by name (not generic categories)
+9. When relevant, offer choices between options with pros/cons (e.g., "Option A vs Option B")
+10. Add a "Smart Tips" section covering: potential problems, contingency plans, optimization notes
+11. Suggest ${input.budget === 'budget' ? 'FREE or ultra-cheap' : input.budget === 'luxury' ? 'premium/exclusive' : '1-2'} optional upgrades${input.budget === 'budget' ? ' (budget-conscious alternatives only)' : input.budget === 'luxury' ? ' (premium experiences only)' : ' for travelers who want more'}
+12. Acknowledge your travel pace and offer flexibility
+13. **RESPECT THE ${input.budget === 'budget' ? '🟨 BUDGET' : input.budget === 'luxury' ? '🟦 LUXURY' : '🟩 MID-RANGE'} CONSTRAINT STRICTLY** — check every restaurant/activity against the budget tier before suggesting it.
+${isHomeBase ? '14. Return all day trips to the home base (' + input.arrival.location + ') by evening for accommodation.\n15. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**' : '14. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**'}
 
 Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be practical, encouraging, and incredibly specific. Make every traveler feel like this itinerary was custom-built just for them.`;
   } else {
@@ -309,16 +323,16 @@ ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 1. Start with a conversational summary: acknowledge the trip scope, length, vibe, and why it works
 2. Create a granular hour-by-hour breakdown (or 2-3 hour blocks) with exact start times
 3. For every activity: include exact location, realistic duration, and brief reasoning
-4. **TAILOR ACTIVITIES TO INTERESTS** - If interests are listed, prioritize activities that match those interests (e.g., if "Photography" is selected, include scenic viewpoints and photo-worthy locations; if "Food & Dining", emphasize food experiences)
+4. **TAILOR ACTIVITIES TO INTERESTS** - If interests are listed, prioritize activities that match those interests. For "Food & Dining", add food-related ACTIVITIES (cooking classes, food tours, markets) not extra meals.
 5. Include specific transport details: station names, durations, booking tips, alternatives
-6. **FOR EVERY MEAL: PROVIDE 2-3 RESTAURANT OPTIONS** with different price points (budget, mid, upscale as appropriate). Always include why each option (specialty, vibe, location, local favorite, value). Format: "My suggestions: • [Restaurant A] (~€X) • [Restaurant B] (~€Y) • [Restaurant C] (~€Z)"
-7. Recommend specific dishes, neighborhoods, activities by name (not generic categories)
-8. When relevant, offer choices between options with pros/cons (e.g., "Option A vs Option B")
-9. Add a "Smart Tips" section covering: what to prioritize, contingency plans, local hacks
-10. Suggest ${input.budget === 'budget' ? 'FREE or ultra-cheap' : input.budget === 'luxury' ? 'premium/exclusive' : '1-2'} optional upgrades${input.budget === 'budget' ? ' (budget-conscious alternatives only)' : input.budget === 'luxury' ? ' (premium experiences only)' : ' for travelers who want more'}
-11. Break down each day with: Morning → Late Morning → Afternoon → Evening → Night (if applicable)
+6. **FOR EVERY MEAL (breakfast, lunch, dinner only): PROVIDE 2-3 RESTAURANT OPTIONS** with different price points. On arrival/departure travel days, keep meals simple/nearby. Format: "My suggestions: • [Restaurant A] (~€X) • [Restaurant B] (~€Y) • [Restaurant C] (~€Z)"
+7. **KEEP TRAVEL DAYS LIGHT** - Arrival (${input.arrival.time}) and Departure (${input.departure.time}) days should be light/local only. NO long day trips requiring 8+ hours of travel.
+8. Recommend specific dishes, neighborhoods, activities by name (not generic categories)
+9. When relevant, offer choices between options with pros/cons (e.g., "Option A vs Option B")
+10. Add a "Smart Tips" section covering: what to prioritize, contingency plans, local hacks
+11. Suggest ${input.budget === 'budget' ? 'FREE or ultra-cheap' : input.budget === 'luxury' ? 'premium/exclusive' : '1-2'} optional upgrades${input.budget === 'budget' ? ' (budget-conscious alternatives only)' : input.budget === 'luxury' ? ' (premium experiences only)' : ' for travelers who want more'}
 12. **RESPECT THE ${input.budget === 'budget' ? '🟨 BUDGET' : input.budget === 'luxury' ? '🟦 LUXURY' : '🟩 MID-RANGE'} CONSTRAINT STRICTLY** — check every restaurant/activity against the budget tier before suggesting it.
-${isHomeBase ? '13. Return all day trips to the home base (' + input.arrival.location + ') by evening for accommodation.\n14. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**' : '13. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**'}
+13. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**
 
 Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be practical, encouraging, and incredibly specific. Make it feel like a best friend giving insider tips.`;
   }
