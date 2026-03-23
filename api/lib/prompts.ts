@@ -4,6 +4,12 @@ import { formatDate } from './date.js';
 export const buildSystemPrompt = () =>
   `You are an expert backpacker trip planner. Your mission: create realistic, actually-doable itineraries that respect travel time, fatigue, and logistics.
 
+**⚠️ CRITICAL - DATES AND TIMES ARE FIXED (DO NOT CHANGE):**
+The arrival date, arrival time, departure date, and departure time are LOCKED IN and cannot be modified under any circumstances.
+- ARRIVAL DATE/TIME: You MUST arrive exactly on the specified date and time
+- DEPARTURE DATE/TIME: You MUST depart exactly on the specified date and time
+- These are non-negotiable constraints. Never suggest different dates.
+
 **NON-NEGOTIABLE RULES:**
 
 1. **Use the traveler's name** - Address them by name throughout. Make recommendations feel personal.
@@ -56,7 +62,9 @@ Day 8: Morning exploration, **prepare for 4-5 hour return to Bishkek**
 
 ---
 
-Never say the trip is feasible if it isn't. Suggest cuts or alternatives instead.`;
+Never say the trip is feasible if it isn't. Suggest cuts or alternatives instead.
+
+**REMEMBER: DATES AND TIMES ARE LOCKED IN. DO NOT SUGGEST DIFFERENT DATES OR TIMES.**`;
 
 export const buildUserPrompt = (
   input: TripInput,
@@ -88,6 +96,14 @@ export const buildUserPrompt = (
   );
   const fullDays = nights; // Same number of full travel days
 
+  // Add arrival/departure time info if provided
+  const arrivalTimeConstraint = input.arrival.time 
+    ? `\n  **TIME: Arriving in the ${input.arrival.time}** (you will need to plan activities accordingly)`
+    : '';
+  const departureTimeConstraint = input.departure.time
+    ? `\n  **TIME: Departing in the ${input.departure.time}** (plan your last activities accordingly)`
+    : '';
+
   // For short trips (<=5 days), use detailed day-by-day format
   // For longer trips (>5 days), use regional grouping format
   const isLongTrip = fullDays > 5;
@@ -95,10 +111,12 @@ export const buildUserPrompt = (
   if (isLongTrip) {
     return `${firstName ? `Hey ${firstName}!` : 'Hello!'} Building your ${fullDays}-day trip...
 
+⚠️ **FIXED DATES AND TIMES (DO NOT CHANGE THESE):**
+- **ARRIVAL:** ${startDate} in ${input.arrival.location}${arrivalTimeConstraint}
+- **DEPARTURE:** ${endDate} from ${input.departure.location}${departureTimeConstraint}
+- These dates are locked in. Work within them.
+
 **TRIP CONSTRAINTS:**
-- Arrive: ${startDate} in ${input.arrival.location}
-- Depart: ${endDate} from ${input.departure.location}
-${input.stops && input.stops.length > 0 ? `- Stops: ${input.stops.join(', ')}` : ''}
 - Total: ${nights} nights on the ground
 - Pace: ${
       input.travelPace === 'relaxed'
@@ -108,6 +126,7 @@ ${input.stops && input.stops.length > 0 ? `- Stops: ${input.stops.join(', ')}` :
           : 'Balanced'
     }
 - Budget: ${input.budget}
+${input.stops && input.stops.length > 0 ? `- Must visit: ${input.stops.join(', ')}` : ''}
 
 **WANT TO SEE:**
 ${
@@ -122,18 +141,21 @@ ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 1. Figure out which cities/regions can realistically fit in ${nights} nights. Be honest if it's too ambitious.
 2. Allocate nights across locations (e.g., 3-3-1 split across 3 cities, not 7-7-7).
 3. Include transport times between every stop. Don't hide the travel.
-4. Remember: You must END in ${input.departure.location} on ${endDate}. Plan return logistics.
+4. Remember: You MUST END in ${input.departure.location} on ${endDate}. Plan return logistics.
 5. For each location, show real daily breakdown with time estimates.
 6. If it's a tight squeeze, say so and suggest alternatives.
+7. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**
 
 Use ${firstName ? firstName + "'s" : "the user's"} name throughout. Be realistic. Quality over coverage.`;
   } else {
     return `${firstName ? `Hey ${firstName}!` : "Hey there!"} Let's plan your ${fullDays}-day trip...
 
+⚠️ **FIXED DATES AND TIMES (DO NOT CHANGE THESE):**
+- **ARRIVAL:** ${startDate} in ${input.arrival.location}${arrivalTimeConstraint}
+- **DEPARTURE:** ${endDate} from ${input.departure.location}${departureTimeConstraint}
+- These dates are locked in. Work within them.
+
 **TRIP CONSTRAINTS:**
-- Arrive: ${startDate} in ${input.arrival.location}
-- Depart: ${endDate} from ${input.departure.location}
-${input.stops && input.stops.length > 0 ? `- Stops: ${input.stops.join(', ')}` : ''}
 - Total: ${nights} nights on the ground
 - Pace: ${
       input.travelPace === 'relaxed'
@@ -143,6 +165,7 @@ ${input.stops && input.stops.length > 0 ? `- Stops: ${input.stops.join(', ')}` :
           : 'Balanced'
     }
 - Budget: ${input.budget}
+${input.stops && input.stops.length > 0 ? `- Must visit: ${input.stops.join(', ')}` : ''}
 
 **WANT TO SEE:**
 ${
@@ -157,9 +180,10 @@ ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 1. Create a realistic DAY-BY-DAY breakdown.
 2. For each day show: morning, afternoon, evening, night (with TIME estimates).
 3. Include transport time to next location if applicable.
-4. Remember: You must END in ${input.departure.location} on ${endDate}. Plan the last day accordingly.
+4. Remember: You MUST END in ${input.departure.location} on ${endDate}. Plan the last day accordingly.
 5. If ${fullDays} days is tight, say so. Suggest what to cut or what needs more time.
 6. Focus on experiences that actually fit and are socially engaging.
+7. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**
 
 Use ${firstName ? firstName + "'s" : "the user's"} name throughout. Be honest. Make it doable.`;
   }
