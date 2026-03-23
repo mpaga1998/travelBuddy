@@ -242,19 +242,22 @@ ${
     : '(No specific attractions mentioned)'
 }
 
+${input.interests && input.interests.length > 0 ? `**INTERESTS (TAILOR ACTIVITIES TO THESE):**\n${input.interests.map((interest) => `- ${interest}`).join('\n')}\n` : ''}
+
 ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 
 **YOUR MISSION:**
 1. Start with a conversational summary: acknowledge the trip scope, length, vibe, and why it works
 2. Create a detailed day-by-day breakdown with specific times, not vague periods
 3. For every activity: include exact location, realistic duration, and reasoning
-4. Include specific transport details: station names, durations (40 min, not "~1 hour"), booking tips
-5. Recommend specific dishes, neighborhoods, activities by name (not generic categories)
-6. When relevant, offer choices between options with pros/cons (e.g., "Option A vs Option B")
-7. Add a "Smart Tips" section covering: potential problems, contingency plans, optimization notes
-8. Suggest ${input.budget === 'budget' ? 'FREE or ultra-cheap' : input.budget === 'luxury' ? 'premium/exclusive' : '1-2'} optional upgrades${input.budget === 'budget' ? ' (budget-conscious alternatives only)' : input.budget === 'luxury' ? ' (premium experiences only)' : ' for travelers who want more'}
-9. Acknowledge your travel pace and offer flexibility
-10. **RESPECT THE ${input.budget === 'budget' ? '🟨 BUDGET' : input.budget === 'luxury' ? '🟦 LUXURY' : '🟩 MID-RANGE'} CONSTRAINT STRICTLY** — check every restaurant/activity against the budget tier before suggesting it.
+4. **TAILOR ACTIVITIES TO INTERESTS** - If interests are listed, prioritize activities that match those interests (e.g., if "Photography" is selected, include scenic viewpoints and photo-worthy locations; if "Food & Dining", emphasize food experiences)
+5. Include specific transport details: station names, durations (40 min, not "~1 hour"), booking tips
+6. Recommend specific dishes, neighborhoods, activities by name (not generic categories)
+7. When relevant, offer choices between options with pros/cons (e.g., "Option A vs Option B")
+8. Add a "Smart Tips" section covering: potential problems, contingency plans, optimization notes
+9. Suggest ${input.budget === 'budget' ? 'FREE or ultra-cheap' : input.budget === 'luxury' ? 'premium/exclusive' : '1-2'} optional upgrades${input.budget === 'budget' ? ' (budget-conscious alternatives only)' : input.budget === 'luxury' ? ' (premium experiences only)' : ' for travelers who want more'}
+10. Acknowledge your travel pace and offer flexibility
+11. **RESPECT THE ${input.budget === 'budget' ? '🟨 BUDGET' : input.budget === 'luxury' ? '🟦 LUXURY' : '🟩 MID-RANGE'} CONSTRAINT STRICTLY** — check every restaurant/activity against the budget tier before suggesting it.
 ${isHomeBase ? '11. Return all day trips to the home base (' + input.arrival.location + ') by evening for accommodation.\n12. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**' : '11. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**'}
 
 Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be practical, encouraging, and incredibly specific. Make every traveler feel like this itinerary was custom-built just for them.`;
@@ -287,20 +290,23 @@ ${
     : '(No specific attractions mentioned)'
 }
 
+${input.interests && input.interests.length > 0 ? `**INTERESTS (TAILOR ACTIVITIES TO THESE):**\n${input.interests.map((interest) => `- ${interest}`).join('\n')}\n` : ''}
+
 ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 
 **YOUR MISSION:**
 1. Start with a conversational summary: acknowledge the trip scope, length, vibe, and why it works
 2. Create a granular hour-by-hour breakdown (or 2-3 hour blocks) with exact start times
 3. For every activity: include exact location, realistic duration, and brief reasoning
-4. Include specific transport details: station names, durations, booking tips, alternatives
-5. Recommend specific dishes, neighborhoods, activities by name (not generic categories)
-6. When relevant, offer choices between options with pros/cons (e.g., "Option A vs Option B")
-7. Add a "Smart Tips" section covering: what to prioritize, contingency plans, local hacks
-8. Suggest ${input.budget === 'budget' ? 'FREE or ultra-cheap' : input.budget === 'luxury' ? 'premium/exclusive' : '1-2'} optional upgrades${input.budget === 'budget' ? ' (budget-conscious alternatives only)' : input.budget === 'luxury' ? ' (premium experiences only)' : ' for travelers who want more'}
-9. Break down each day with: Morning → Late Morning → Afternoon → Evening → Night (if applicable)
-10. **RESPECT THE ${input.budget === 'budget' ? '🟨 BUDGET' : input.budget === 'luxury' ? '🟦 LUXURY' : '🟩 MID-RANGE'} CONSTRAINT STRICTLY** — check every restaurant/activity against the budget tier before suggesting it.
-${isHomeBase ? '11. Return all day trips to the home base (' + input.arrival.location + ') by evening for accommodation.\n12. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**' : '11. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**'}
+4. **TAILOR ACTIVITIES TO INTERESTS** - If interests are listed, prioritize activities that match those interests (e.g., if "Photography" is selected, include scenic viewpoints and photo-worthy locations; if "Food & Dining", emphasize food experiences)
+5. Include specific transport details: station names, durations, booking tips, alternatives
+6. Recommend specific dishes, neighborhoods, activities by name (not generic categories)
+7. When relevant, offer choices between options with pros/cons (e.g., "Option A vs Option B")
+8. Add a "Smart Tips" section covering: what to prioritize, contingency plans, local hacks
+9. Suggest ${input.budget === 'budget' ? 'FREE or ultra-cheap' : input.budget === 'luxury' ? 'premium/exclusive' : '1-2'} optional upgrades${input.budget === 'budget' ? ' (budget-conscious alternatives only)' : input.budget === 'luxury' ? ' (premium experiences only)' : ' for travelers who want more'}
+10. Break down each day with: Morning → Late Morning → Afternoon → Evening → Night (if applicable)
+11. **RESPECT THE ${input.budget === 'budget' ? '🟨 BUDGET' : input.budget === 'luxury' ? '🟦 LUXURY' : '🟩 MID-RANGE'} CONSTRAINT STRICTLY** — check every restaurant/activity against the budget tier before suggesting it.
+${isHomeBase ? '12. Return all day trips to the home base (' + input.arrival.location + ') by evening for accommodation.\n13. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**' : '12. **DO NOT SUGGEST DIFFERENT DATES - they are locked in.**'}
 
 Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be practical, encouraging, and incredibly specific. Make it feel like a best friend giving insider tips.`;
   }
