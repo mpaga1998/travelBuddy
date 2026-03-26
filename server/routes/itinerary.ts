@@ -7,6 +7,9 @@ const router = express.Router();
 // POST /api/itinerary - generate itinerary
 router.post('/', async (req: Request, res: Response) => {
   try {
+    // ⏱️ TIMING: Start endpoint timer
+    const routeStartTime = Date.now();
+    
     const tripInput: TripInput = req.body;
 
     // Basic validation
@@ -28,7 +31,11 @@ router.post('/', async (req: Request, res: Response) => {
       interests: tripInput.interests,
       notes: tripInput.notes,
     });
+    
+    console.log('⏱️ [TIMING] Starting itinerary generation...');
     const itinerary = await generateItinerary(tripInput);
+    const routeTime = Date.now() - routeStartTime;
+    console.log(`⏱️ [TIMING] SERVER ROUTE TOTAL TIME: ${routeTime}ms (${(routeTime / 1000).toFixed(2)}s)`);
     
     res.json({
       success: true,

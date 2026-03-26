@@ -225,6 +225,9 @@ export async function generateItinerary(
     throw new Error('OPENAI_API_KEY is not set in environment variables');
   }
 
+  // ⏱️ TIMING: Start total generation timer
+  const totalStartTime = Date.now();
+  console.log('⏱️ [TIMING] Generation started');
   console.log('📋 [Express] Generating text-based itinerary for:', input.arrival.location);
 
   // STEP 1: Validate input
@@ -238,11 +241,14 @@ export async function generateItinerary(
 
   const firstName = getUserFirstNameFromRequest(input);
   console.log('✅ Input validated. Planning for:', firstName || 'traveler');
+  const inputValidationTime = Date.now() - totalStartTime;
+  console.log(`⏱️ [TIMING] Input validation: ${inputValidationTime}ms`);
 
   // STEP 2: Generate text-based itinerary
   try {
     const selectedModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-3.5-turbo';
     console.log(`📄 Generating text-based itinerary using model: ${selectedModel}`);
+    const openaiStartTime = Date.now();
     const response = await openai.chat.completions.create({
       model: selectedModel,
       messages: [
@@ -258,13 +264,17 @@ export async function generateItinerary(
       max_tokens: 3000,
       temperature: 0.7,
     });
+    const openaiTime = Date.now() - openaiStartTime;
+    console.log(`⏱️ [TIMING] OpenAI API call: ${openaiTime}ms`);
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
       throw new Error('No content received from OpenAI');
     }
 
+    const totalTime = Date.now() - totalStartTime;
     console.log('✅ Itinerary generated successfully');
+    console.log(`⏱️ [TIMING] TOTAL GENERATION TIME: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
     return content;
   } catch (error) {
     console.error(

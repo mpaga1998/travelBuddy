@@ -50,6 +50,9 @@ export default async function handler(
 
   try {
     const tripInput: TripInput = req.body;
+    
+    // ⏱️ TIMING: Start API endpoint timer
+    const apiStartTime = Date.now();
 
     console.log('📝 [API] Received itinerary request:', {
       arrival: `${tripInput.arrival?.location} on ${tripInput.arrival?.date} at ${tripInput.arrival?.time || 'unspecified'}`,
@@ -74,7 +77,11 @@ export default async function handler(
     }
 
     // Generate itinerary
+    console.log('⏱️ [TIMING] Starting itinerary generation...');
     const itinerary = await generateItinerary(tripInput);
+    const generationTime = Date.now() - apiStartTime;
+
+    console.log(`⏱️ [TIMING] API TOTAL TIME: ${generationTime}ms (${(generationTime / 1000).toFixed(2)}s)`);
 
     const response: ItineraryResponse = {
       success: true,

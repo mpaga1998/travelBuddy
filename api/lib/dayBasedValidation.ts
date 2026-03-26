@@ -114,57 +114,60 @@ export function validateDayBasedItinerary(
   const lastDay = itinerary.days?.[itinerary.days.length - 1];
 
   if (firstDay && input.arrival.time) {
-    const morningActivities = firstDay.activities?.filter(a => a.time === 'morning' && !a.isTravel) || [];
+    const morningActivities = firstDay.activities?.filter(a => a.time === 'morning') || [];
     const afternoonActivities = firstDay.activities?.filter(a => a.time === 'afternoon') || [];
+    const nightActivities = firstDay.activities?.filter(a => a.time === 'night') || [];
     
-    if (input.arrival.time === 'afternoon' && morningActivities.length > 0) {
-      errors.push(
-        `Day 1 violation: User arrives in afternoon but has ${morningActivities.length} morning activities. REMOVE all morning activities.`
-      );
-    }
-    
-    if (input.arrival.time === 'night') {
-      // For night arrival, allow only check-in/arrival activities, reject sightseeing
-      const sightseeingActivities = firstDay.activities?.filter(a => 
-        !a.isTravel && 
-        !a.description?.toLowerCase().includes('arrive') && 
-        !a.description?.toLowerCase().includes('rest') && 
-        !a.description?.toLowerCase().includes('accommodation') && 
-        !a.description?.toLowerCase().includes('check')
+    if (input.arrival.time === 'morning') {
+      // Morning arrival: afternoon + night allowed (NOT morning)
+      if (morningActivities.length > 0) {
+        errors.push(`Day 1 violation: User arrives in MORNING but has ${morningActivities.length} morning activities. Morning is used for arrival/travel. REMOVE all morning activities. Allow only afternoon + night.`);
+      }
+    } else if (input.arrival.time === 'afternoon') {
+      // Afternoon arrival: night only (NOT morning, NOT afternoon)
+      if (morningActivities.length > 0 || afternoonActivities.length > 0) {
+        errors.push(`Day 1 violation: User arrives in AFTERNOON but has ${morningActivities.length} morning + ${afternoonActivities.length} afternoon activities. User needs afternoon to settle in. REMOVE all morning & afternoon activities. Allow NIGHT ONLY.`);
+      }
+    } else if (input.arrival.time === 'night') {
+      // Night arrival: check-in only (NOT morning, NOT afternoon, ONLY check-in at night)
+      if (morningActivities.length > 0 || afternoonActivities.length > 0) {
+        errors.push(`Day 1 violation: User arrives at NIGHT but has ${morningActivities.length} morning + ${afternoonActivities.length} afternoon activities. REMOVE all daytime activities. Allow ONLY check-in/rest activity (1 night activity).`);
+      }
+      // Check that night activities are only check-in related
+      const sightseeingAtNight = nightActivities.filter(a =>
+        !a.description?.toLowerCase().includes('arrive') &&
+        !a.description?.toLowerCase().includes('check') &&
+        !a.description?.toLowerCase().includes('rest') &&
+        !a.description?.toLowerCase().includes('accommodation') &&
+        !a.description?.toLowerCase().includes('hotel') &&
+        !a.description?.toLowerCase().includes('settle')
       ) || [];
-      
-      if (sightseeingActivities.length > 0) {
-        errors.push(
-          `Day 1 violation: User arrives at night but has ${sightseeingActivities.length} sightseeing activities (${sightseeingActivities.map(a => `"${a.description?.substring(0, 30)}..."`).join(', ')}). Day 1 should ONLY have arrival/check-in, no tourist activities. Move all sightseeing to Day 2.`
-        );
+      if (sightseeingAtNight.length > 0) {
+        errors.push(`Day 1 violation: User arrives at night but has ${sightseeingAtNight.length} sightseeing activities. Night arrival = check-in only. Remove: ${sightseeingAtNight.map(a => `"${a.description?.substring(0, 25)}..."`).join(', ')}`);
       }
     }
   }
 
   if (lastDay && input.departure.time) {
+    const morningActivities = lastDay.activities?.filter(a => a.time === 'morning') || [];
     const afternoonActivities = lastDay.activities?.filter(a => a.time === 'afternoon') || [];
-    const nightActivities = lastDay.activities?.filter(a => a.time === 'night') || [];
-    
-    // Debug logging
-    if (input.departure.time === 'afternoon' || input.departure.time === 'morning') {
-      console.log(`⏰ Final day validation: departure="${input.departure.time}", lastDay activities:`, {
-        afternoon: afternoonActivities.length,
-        night: nightActivities.length,
-      });
-    }
+    const nightActivities = lastDay.activities?.filter(a => a.time === 'night' && !a.description?.toLowerCase().includes('depart')) || [];
     
     if (input.departure.time === 'morning') {
-      if (afternoonActivities.length > 0 || nightActivities.length > 0) {
-        errors.push(
-          `Final day violation: User departs in morning but has ${afternoonActivities.length + nightActivities.length} afternoon/night activities. REMOVE all afternoon/night activities.`
-        );
+      // Morning departure: NO activities (just depart)
+      if (morningActivities.length > 0 || afternoonActivities.length > 0 || nightActivities.length > 0) {
+        errors.push(`Final day violation: User departs in MORNING but has ${morningActivities.length} morning + ${afternoonActivities.length} afternoon + ${nightActivities.length} night activities. NO time for activities. Final day must ONLY be departure/travel to station. REMOVE all activities.`);
       }
-    }
-    
-    if (input.departure.time === 'afternoon' && nightActivities.length > 0) {
-      errors.push(
-        `Final day violation: User departs in afternoon but has ${nightActivities.length} night activities (${nightActivities.map(a => `"${a.description?.substring(0, 30)}..."`).join(', ')}). REMOVE all night activities. User must depart by afternoon.`
-      );
+    } else if (input.departure.time === 'afternoon') {
+      // Afternoon departure: morning only (NOT afternoon, NOT night)
+      if (afternoonActivities.length > 0 || nightActivities.length > 0) {
+        errors.push(`Final day violation: User departs in AFTERNOON but has ${afternoonActivities.length} afternoon + ${nightActivities.length} night activities. Afternoon is reserved for travel/departure. Allow MORNING ONLY, then travel. REMOVE all afternoon/night activities.`);
+      }
+    } else if (input.departure.time === 'night') {
+      // Night departure: morning + afternoon allowed (NOT night except departure)
+      if (nightActivities.length > 0) {
+        errors.push(`Final day violation: User departs at NIGHT but has ${nightActivities.length} night activities. Night is reserved for travel/departure. Allow MORNING + AFTERNOON only. REMOVE all night activities (except final departure).`);
+      }
     }
   }
 

@@ -99,29 +99,37 @@ export function buildDayBasedPlanningPrompt(
 
 4. **MUST END IN ${departureLocation}** on departure date - this is verified. Missing it = REJECTED.
 
-5. **ARRIVAL & DEPARTURE TIMING - TIME-BASED CONSTRAINTS:**
+5. **ARRIVAL & DEPARTURE TIMING - CLEAR TIME WINDOW LOGIC:**
+
+   **GOLDEN RULE:** Activities can ONLY occur in time periods AFTER arrival or BEFORE departure.
    
-   **DAY 1 (${input.arrival.date}) - Based on arrival time "${input.arrival.time}"**:
+   **DAY 1 (${input.arrival.date}) - User arrives in the "${input.arrival.time}"**:
    ${input.arrival.time === 'morning' ? 
-     `✅ MUST include: morning activity, afternoon activity, night activity (full day)` 
+     `✅ Activities allowed: AFTERNOON + NIGHT (user has free time after morning arrival)
+     Example: AFTERNOON - reach city center & accommodation | NIGHT - activity or rest` 
    : input.arrival.time === 'afternoon' ? 
-     `✅ MUST: Skip morning | Include afternoon + night
+     `✅ Activities allowed: NIGHT ONLY (user arrives afternoon, rest after)
+     Example: AFTERNOON - accommodation & settle in | NIGHT - light activity or rest
      ❌ DO NOT: Include any "morning" activities on Day 1` 
    : input.arrival.time === 'night' ? 
-     `✅ MUST: Only check-in/rest activity (1 activity, time="night")
-     ❌ DO NOT: Include "morning" or "afternoon" activities on Day 1` 
-   : `✅ MUST include: morning, afternoon, night activities`}
+     `✅ Activities: CHECK-IN/ARRIVAL ONLY (1 activity with time="night")
+     ❌ DO NOT: Include any planning/sightseeing activities on Day 1 (user sleeps after late arrival)
+     Example: NIGHT - check-in accommodation & rest` 
+   : `✅ Activities allowed: morning, afternoon, night (full day)`}
    
-   **FINAL DAY (${input.departure.date}) - Based on departure time "${input.departure.time}"**:
+   **FINAL DAY (${input.departure.date}) - User departs in the "${input.departure.time}"**:
    ${input.departure.time === 'morning' ? 
-     `✅ MUST: Only morning activity (then depart)
-     ❌ DO NOT: Include "afternoon" or "night" activities on final day` 
+     `✅ Activities: DEPARTURE ONLY (user leaves in morning, no time for activities)
+     ❌ DO NOT: Include any "morning", "afternoon", or "night" activities
+     Example: MORNING - travel to airport/station | DEPART` 
    : input.departure.time === 'afternoon' ? 
-     `✅ MUST: Morning activities + travel/departure
-     ❌ DO NOT: Include "night" activities on final day` 
+     `✅ Activities allowed: MORNING ONLY (activities before afternoon departure)
+     ❌ DO NOT: Include "afternoon" or "night" activities on final day
+     Example: MORNING - Activity Y | AFTERNOON - travel to departure point` 
    : input.departure.time === 'night' ? 
-     `✅ MUST: Full day with morning, afternoon, night + depart night` 
-   : `✅ MUST include: morning, afternoon, night activities`}
+     `✅ Activities allowed: MORNING + AFTERNOON (full day before night departure)
+     Example: MORNING - Activity A | AFTERNOON - Activity B | EVENING - travel to station | NIGHT - DEPART` 
+   : `✅ Activities allowed: morning, afternoon, night (full day)`}
 
 6. **CALENDAR DAYS REQUIREMENT:**
    - Generate exactly ${calendarDays} days (dayNumber 1 through ${calendarDays})
