@@ -971,10 +971,35 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                       {interest}
                     </button>
                   ))}
+                  {/* Custom Interests Display */}
+                  {selectedInterests.filter(i => !INTEREST_OPTIONS.includes(i)).map((interest) => (
+                    <button
+                      key={interest}
+                      type="button"
+                      onClick={() => handleRemoveInterest(interest)}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 20,
+                        border: '2px solid #2563eb',
+                        background: '#dbeafe',
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: '#2563eb',
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      {interest}
+                      <span style={{ fontSize: 14, fontWeight: 700, marginLeft: 2 }}>×</span>
+                    </button>
+                  ))}
                 </div>
 
                 {/* Custom Interest Input */}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
                   <input
                     type="text"
                     value={customInterestInput}
@@ -1013,45 +1038,6 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                     Add
                   </button>
                 </div>
-
-                {/* Display Custom Interests */}
-                {selectedInterests.length > 0 && (
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 0 }}>
-                    {selectedInterests.map((interest) => (
-                      <div
-                        key={interest}
-                        style={{
-                          padding: '8px 12px',
-                          borderRadius: 20,
-                          background: '#e0e7ff',
-                          border: '1px solid #c7d2fe',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          fontSize: 12,
-                          color: '#4c1d95',
-                        }}
-                      >
-                        {interest}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveInterest(interest)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: 0,
-                            fontSize: 16,
-                            lineHeight: 1,
-                            color: '#4c1d95',
-                          }}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Notes */}
