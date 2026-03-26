@@ -211,7 +211,12 @@ ${[
   input.interests.includes('History') ? '- **History**: Historical sites, museums, ancient ruins, heritage tours' : '',
   input.interests.includes('Photography') ? '- **Photography**: Scenic viewpoints, photo tours, instagrammable spots' : '',
   input.interests.includes('Adventure') ? '- **Adventure**: Adventure sports, extreme activities, thrilling experiences' : ''
-].filter(Boolean).join('\n')}` : 'Craft activities that provide a mix of cultural immersion, exploration, and rest.'}
+].filter(Boolean).join('\n')}
+${
+  input.interests.some(interest => !['Architecture', 'Art & Culture', 'Food & Dining', 'Nature & Hiking', 'Beach & Water', 'Nightlife', 'Shopping', 'History', 'Photography', 'Adventure'].includes(interest))
+    ? `\n- **Custom Interests**: For custom interests mentioned (${input.interests.filter(i => !['Architecture', 'Art & Culture', 'Food & Dining', 'Nature & Hiking', 'Beach & Water', 'Nightlife', 'Shopping', 'History', 'Photography', 'Adventure'].includes(i)).join(', ')}), incorporate relevant activities and experiences naturally into the itinerary.`
+    : ''
+}` : 'Craft activities that provide a mix of cultural immersion, exploration, and rest.'}
 
 **BUDGET GUIDANCE:**
 ${input.budget === 'budget' ? `- Prioritize: Free attractions, street food, local public transit, budget hostels

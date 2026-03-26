@@ -56,6 +56,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const [attractions, setAttractions] = useState('');
   const [travelPace, setTravelPace] = useState<'relaxed' | 'moderate' | 'active'>('moderate');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [customInterestInput, setCustomInterestInput] = useState('');
   const [budget, setBudget] = useState<'budget' | 'mid-range' | 'luxury'>('mid-range');
   const [notes, setNotes] = useState('');
 
@@ -311,8 +312,21 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
     setAttractions('');
     setTravelPace('moderate');
     setSelectedInterests([]);
+    setCustomInterestInput('');
     setBudget('mid-range');
     setNotes('');
+  };
+
+  const handleRemoveInterest = (interest: string) => {
+    setSelectedInterests(selectedInterests.filter(i => i !== interest));
+  };
+
+  const handleAddCustomInterest = () => {
+    const trimmedInterest = customInterestInput.trim();
+    if (trimmedInterest && !selectedInterests.includes(trimmedInterest)) {
+      setSelectedInterests([...selectedInterests, trimmedInterest]);
+      setCustomInterestInput('');
+    }
   };
 
   const handleClose = () => {
@@ -930,7 +944,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                 <label style={{ fontSize: 13, fontWeight: 700, opacity: 1, display: 'block', marginBottom: 12, color: '#111' }}>
                   ❤️ Interests (optional)
                 </label>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
                   {INTEREST_OPTIONS.map((interest) => (
                     <button
                       key={interest}
@@ -958,6 +972,86 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                     </button>
                   ))}
                 </div>
+
+                {/* Custom Interest Input */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                  <input
+                    type="text"
+                    value={customInterestInput}
+                    onChange={(e) => setCustomInterestInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCustomInterest();
+                      }
+                    }}
+                    placeholder="Add other interests..."
+                    style={{
+                      flex: 1,
+                      padding: '10px 12px',
+                      borderRadius: 10,
+                      border: '1px solid rgba(0,0,0,0.18)',
+                      fontSize: 13,
+                      fontFamily: 'inherit',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomInterest}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: 10,
+                      border: '1px solid rgba(0,0,0,0.18)',
+                      background: '#f3f4f6',
+                      cursor: 'pointer',
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: '#111',
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+
+                {/* Display Custom Interests */}
+                {selectedInterests.length > 0 && (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 0 }}>
+                    {selectedInterests.map((interest) => (
+                      <div
+                        key={interest}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 20,
+                          background: '#e0e7ff',
+                          border: '1px solid #c7d2fe',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          fontSize: 12,
+                          color: '#4c1d95',
+                        }}
+                      >
+                        {interest}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveInterest(interest)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 0,
+                            fontSize: 16,
+                            lineHeight: 1,
+                            color: '#4c1d95',
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Notes */}
