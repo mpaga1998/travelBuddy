@@ -1281,6 +1281,9 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
               </div>
             )}
           </div>
+              </>
+            )}
+          </div>
         ) : null}
       </div>
 
