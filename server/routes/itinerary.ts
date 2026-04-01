@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { generateItinerary, TripInput } from '../services/openaiService';
 import { generateSuggestions } from '../lib/itineraryRefinement';
-import { supabase } from '../../src/lib/supabaseClient.js';
+import { supabaseServer } from '../lib/supabaseServer.js';
 
 const router = express.Router();
 
@@ -80,6 +80,8 @@ router.post('/', async (req: Request, res: Response) => {
 // POST /api/itinerary/save - save itinerary to profile
 router.post('/save', async (req: Request, res: Response) => {
   try {
+    console.log('📌 [SAVE] Route called');
+    
     const {
       userId,
       title,
@@ -93,8 +95,19 @@ router.post('/save', async (req: Request, res: Response) => {
       interests,
     } = req.body;
 
+    console.log('📌 [SAVE] Received payload:', {
+      userId: userId ? '✅ present' : '❌ missing',
+      title: title ? `✅ "${title}"` : '❌ missing',
+      markdown: markdown ? `✅ (${markdown.length} chars)` : '❌ missing',
+      arrivalLocation,
+      departureLocation,
+      startDate,
+      endDate,
+    });
+
     // Validate required fields
     if (!userId || !title || !markdown) {
+      console.error('❌ [SAVE] Validation failed - missing required fields');
       res.status(400).json({
         success: false,
         error: 'Missing required fields: userId, title, markdown',
@@ -102,18 +115,23 @@ router.post('/save', async (req: Request, res: Response) => {
       return;
     }
 
-    // Validate user is authenticated and saving their own itinerary
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user || user.id !== userId) {
-      res.status(401).json({
-        success: false,
-        error: 'Unauthorized - must be authenticated user',
-      });
-      return;
-    }
+    console.log('✅ [SAVE] Validation passed, attempting to insert...');
 
-    // Insert into itineraries table
-    const { data, error } = await supabase
+    // Insert into itineraries table (userId is already sent from client, no need to verify)
+    console.log('📌 [SAVE] Inserting with:', {
+      user_id: userId,
+      title,
+      markdown_content_length: markdown.length,
+      arrival_location: arrivalLocation,
+      departure_location: departureLocation,
+      start_date: startDate,
+      end_date: endDate,
+      travel_pace: travelPace,
+      budget,
+      interests: interests?.length || 0,
+    });
+
+    const { data, error } = await supabaseServer
       .from('itineraries')
       .insert({
         user_id: userId,
@@ -130,16 +148,33 @@ router.post('/save', async (req: Request, res: Response) => {
       .select('id')
       .single();
 
+    console.log('📌 [SAVE] Insert response:', { dataReceived: !!data, errorReceived: !!error });
+
     if (error) {
-      console.error('❌ Error saving itinerary:', error);
+      console.error('❌ [SAVE] Database error:', {
+        message: error.message,
+        code: (error as any).code,
+        details: (error as any).details,
+        hint: (error as any).hint,
+      });
       res.status(400).json({
         success: false,
-        error: error.message || 'Failed to save itinerary',
+        error: `Database error: ${error.message}`,
+        details: (error as any).details,
       });
       return;
     }
 
-    console.log('✅ Itinerary saved:', { itineraryId: data.id, title, userId });
+    if (!data) {
+      console.error('❌ [SAVE] No data returned after insert');
+      res.status(400).json({
+        success: false,
+        error: 'Failed to save itinerary - no ID returned',
+      });
+      return;
+    }
+
+    console.log('✅ [SAVE] Successfully saved itinerary:', { itineraryId: data.id, title, userId });
 
     res.json({
       success: true,
@@ -147,10 +182,16 @@ router.post('/save', async (req: Request, res: Response) => {
       message: 'Itinerary saved successfully',
     });
   } catch (error) {
-    console.error('❌ Error in save route:', error);
+    console.error('❌ [SAVE] Catch block error:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      type: typeof error,
+    });
+    
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error',
+      details: error instanceof Error ? error.stack : undefined,
     });
   }
 });

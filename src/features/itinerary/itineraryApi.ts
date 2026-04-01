@@ -60,44 +60,56 @@ export async function saveItineraryToProfile(
   }
 ): Promise<{ success: boolean; itineraryId: string; message: string }> {
   console.log('💾 Saving itinerary to profile:', { userId, title });
+  console.log('📦 Payload:', {
+    userId: userId ? '✅' : '❌',
+    title: title ? '✅' : '❌',
+    markdown: markdown ? `✅ (${markdown.length} chars)` : '❌',
+    params,
+  });
 
   try {
+    const payload = {
+      userId,
+      title,
+      markdown,
+      arrivalLocation: params.arrivalLocation,
+      departureLocation: params.departureLocation,
+      startDate: params.startDate,
+      endDate: params.endDate,
+      travelPace: params.travelPace,
+      budget: params.budget,
+      interests: params.interests || [],
+    };
+
+    console.log('🔗 Fetching from:', `${API_BASE}/itinerary/save`);
+    console.log('📨 Sending payload:', JSON.stringify(payload, null, 2).substring(0, 200) + '...');
+
     const response = await fetch(`${API_BASE}/itinerary/save`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        userId,
-        title,
-        markdown,
-        arrivalLocation: params.arrivalLocation,
-        departureLocation: params.departureLocation,
-        startDate: params.startDate,
-        endDate: params.endDate,
-        travelPace: params.travelPace,
-        budget: params.budget,
-        interests: params.interests || [],
-      }),
+      body: JSON.stringify(payload),
     });
 
     console.log('📡 Save response status:', response.status);
 
+    const responseData = await response.json();
+    console.log('📦 Save response data:', responseData);
+
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      const error = responseData;
       console.error('❌ Save API error:', error);
       throw new Error(error.error || `Failed to save itinerary: ${response.statusText}`);
     }
 
-    const data = await response.json();
-
-    if (!data.success) {
-      console.error('❌ Save failed:', data.error);
-      throw new Error(data.error || 'Unknown error');
+    if (!responseData.success) {
+      console.error('❌ Save failed:', responseData.error);
+      throw new Error(responseData.error || 'Unknown error');
     }
 
-    console.log('✅ Itinerary saved:', data.itineraryId);
-    return data;
+    console.log('✅ Itinerary saved:', responseData.itineraryId);
+    return responseData;
   } catch (err) {
     console.error('❌ Save fetch error:', err);
     if (err instanceof Error) {
