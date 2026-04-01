@@ -21,6 +21,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
   const [selectedPin, setSelectedPin] = useState<any | null>(null); // Pin detail view
   const [savedItineraries, setSavedItineraries] = useState<SavedItinerary[]>([]);
   const [loadingItineraries, setLoadingItineraries] = useState(false);
+  const [selectedItinerary, setSelectedItinerary] = useState<SavedItinerary | null>(null);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState<string>("");
@@ -49,6 +50,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
       setDob("");
       setBookmarkedPins([]);
       setSavedItineraries([]);
+      setSelectedItinerary(null);
       setErr(null);
       setMsg(null);
       return;
@@ -880,28 +882,283 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
         ) : selectedSection === "itineraries" ? (
           /* Itineraries Section */
           <div style={{ flex: 1, overflow: "auto", padding: 16, display: "flex", flexDirection: "column" }}>
-            <button
-              onClick={() => setSelectedSection("menu")}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 18,
-                color: "#9333ea",
-                fontWeight: 600,
-                marginBottom: 12,
-                padding: 0,
-                textAlign: "left",
-              }}
-            >
-              ← Back to Menu
-            </button>
+            {selectedItinerary ? (
+              /* Itinerary Detail View */
+              <>
+                <button
+                  onClick={() => setSelectedItinerary(null)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 18,
+                    color: "#9333ea",
+                    fontWeight: 600,
+                    marginBottom: 12,
+                    padding: 0,
+                    textAlign: "left",
+                  }}
+                >
+                  ← Back to List
+                </button>
 
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: "#111", marginBottom: 16 }}>
-              🎒 My Saved Itineraries
-            </h2>
+                {/* Itinerary Header */}
+                <div style={{ marginBottom: 16 }}>
+                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "#111", marginBottom: 8 }}>
+                    {selectedItinerary.title}
+                  </h2>
+                  <div style={{ fontSize: 13, color: "#666", display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div>
+                      📍 {selectedItinerary.arrival_location} → {selectedItinerary.departure_location}
+                    </div>
+                    <div>
+                      📅 {new Date(selectedItinerary.start_date).toLocaleDateString()} to {new Date(selectedItinerary.end_date).toLocaleDateString()}
+                    </div>
+                    {selectedItinerary.travel_pace && (
+                      <div>
+                        ⚡ {selectedItinerary.travel_pace.charAt(0).toUpperCase() + selectedItinerary.travel_pace.slice(1)} pace
+                      </div>
+                    )}
+                    {selectedItinerary.budget && (
+                      <div>
+                        💰 {selectedItinerary.budget.replace(/-/g, " ").toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-            {loadingItineraries ? (
+                {/* Itinerary Content - Formatted Markdown */}
+                <div
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                    color: "#333",
+                    fontFamily: '"Segoe UI", system-ui, sans-serif',
+                    paddingBottom: 20,
+                    flex: 1,
+                  }}
+                >
+                  {selectedItinerary.markdown_content.split("\n").map((line, idx) => {
+                    // Headers
+                    if (line.startsWith("###")) {
+                      return (
+                        <h3 key={idx} style={{ marginTop: 20, marginBottom: 10, fontSize: 16, fontWeight: 700 }}>
+                          {line.replace(/^#+\s/, "")}
+                        </h3>
+                      );
+                    }
+                    if (line.startsWith("##")) {
+                      return (
+                        <h2 key={idx} style={{ marginTop: 24, marginBottom: 12, fontSize: 18, fontWeight: 700 }}>
+                          {line.replace(/^#+\s/, "")}
+                        </h2>
+                      );
+                    }
+                    if (line.startsWith("#")) {
+                      return (
+                        <h1 key={idx} style={{ marginTop: 28, marginBottom: 14, fontSize: 20, fontWeight: 700 }}>
+                          {line.replace(/^#+\s/, "")}
+                        </h1>
+                      );
+                    }
+
+                    let content = line;
+                    if (content.trim() === "") {
+                      return <div key={idx} style={{ height: 8 }} />;
+                    }
+
+                    // Helper function to render inline markdown (bold, italic, and links)
+                    const renderInlineMarkdown = (text: string) => {
+                      const linkParts = text.split(/(\[[^\]]+\]\([^)]+\))/);
+                      
+                      return linkParts.flatMap((part, i) => {
+                        const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+                        if (linkMatch) {
+                          const [, linkText, url] = linkMatch;
+                          
+                          if (url.startsWith("mapbox:")) {
+                            const [, venueName, city] = url.match(/^mapbox:(.+)\|(.+)$/) || [];
+                            const decodedVenue = decodeURIComponent(venueName);
+                            
+                            return (
+                              <a
+                                key={i}
+                                href="#"
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  try {
+                                    const { geocodeVenue, generateGoogleMapsURL } = await import("../../lib/venueGeocoding");
+                                    const coords = await geocodeVenue(decodedVenue, city);
+                                    const mapsUrl = generateGoogleMapsURL(coords, decodedVenue);
+                                    if (mapsUrl) {
+                                      window.open(mapsUrl, "_blank");
+                                    }
+                                  } catch (error) {
+                                    console.error("Failed to geocode:", error);
+                                    window.open(`https://www.google.com/maps/search/${encodeURIComponent(decodedVenue)}`, "_blank");
+                                  }
+                                }}
+                                style={{ color: "#0066cc", textDecoration: "none", cursor: "pointer" }}
+                                onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                                onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                              >
+                                {linkText}
+                              </a>
+                            );
+                          }
+                          
+                          return (
+                            <a
+                              key={i}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: "#0066cc", textDecoration: "none", cursor: "pointer" }}
+                              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                            >
+                              {linkText}
+                            </a>
+                          );
+                        }
+                        
+                        const boldParts = part.split(/(\*\*[^*]+\*\*)/);
+                        
+                        return boldParts.map((boldPart, j) => {
+                          if (boldPart.startsWith("**") && boldPart.endsWith("**")) {
+                            const boldContent = boldPart.slice(2, -2);
+                            const italicParts = boldContent.split(/(\*[^*]+\*)/);
+                            return (
+                              <strong key={`${i}-${j}`}>
+                                {italicParts.map((segment, k) => {
+                                  if (segment.startsWith("*") && segment.endsWith("*") && segment.length > 2) {
+                                    return <em key={k}>{segment.slice(1, -1)}</em>;
+                                  }
+                                  return segment;
+                                })}
+                              </strong>
+                            );
+                          }
+                          const italicParts = boldPart.split(/(\*[^*]+\*)/);
+                          return italicParts.map((segment, k) => {
+                            if (segment.startsWith("*") && segment.endsWith("*") && segment.length > 2) {
+                              return <em key={k}>{segment.slice(1, -1)}</em>;
+                            }
+                            return segment;
+                          });
+                        });
+                      });
+                    };
+
+                    if (/^[-]\s/.test(line)) {
+                      const bulletContent = line.replace(/^-\s/, "");
+                      return (
+                        <div key={idx} style={{ marginLeft: 20, marginBottom: 4, display: "flex", gap: 8 }}>
+                          <span>•</span>
+                          <span>{renderInlineMarkdown(bulletContent)}</span>
+                        </div>
+                      );
+                    }
+
+                    const numberMatch = line.match(/^\d+\.\s/);
+                    if (numberMatch) {
+                      const listContent = line.replace(/^\d+\.\s/, "");
+                      const numberPart = line.match(/^\d+\./)?.[0];
+                      return (
+                        <div key={idx} style={{ marginLeft: 20, marginBottom: 4 }}>
+                          <span style={{ fontWeight: 600 }}>{numberPart}</span> {renderInlineMarkdown(listContent)}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={idx} style={{ marginBottom: 8 }}>
+                        {renderInlineMarkdown(content)}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: "flex", gap: 8, marginTop: 16, borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 16 }}>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedItinerary.markdown_content);
+                      alert("✅ Itinerary copied to clipboard!");
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: "1px solid rgba(0,0,0,0.18)",
+                      background: "white",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "#111",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.target as HTMLElement).style.background = "#f3f4f6";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.target as HTMLElement).style.background = "white";
+                    }}
+                  >
+                    📋 Copy
+                  </button>
+                  <button
+                    onClick={() => {
+                      onDeleteItinerary(selectedItinerary.id);
+                      setSelectedItinerary(null);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: "1px solid #fee2e2",
+                      background: "#fef2f2",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "#dc2626",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = "#fee2e2";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = "#fef2f2";
+                    }}
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setSelectedSection("menu")}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 18,
+                    color: "#9333ea",
+                    fontWeight: 600,
+                    marginBottom: 12,
+                    padding: 0,
+                    textAlign: "left",
+                  }}
+                >
+                  ← Back to Menu
+                </button>
+
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: "#111", marginBottom: 16 }}>
+                  🎒 My Saved Itineraries
+                </h2>
+
+                {loadingItineraries ? (
               <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 14, color: "#666", marginBottom: 8 }}>Loading...</div>
@@ -928,6 +1185,17 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                       display: "flex",
                       flexDirection: "column",
                       gap: 8,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                    onClick={() => setSelectedItinerary(itinerary)}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = "rgba(147, 51, 234, 0.02)";
+                      (e.currentTarget as HTMLElement).style.borderColor = "#9333ea";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = "white";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,0,0,0.08)";
                     }}
                   >
                     {/* Itinerary Title */}
@@ -955,8 +1223,8 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                       )}
                     </div>
 
-                    {/* Buttons */}
-                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    {/* Buttons - Stop propagation */}
+                    <div style={{ display: "flex", gap: 8, marginTop: 8 }} onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => {
                           // Copy itinerary to clipboard
