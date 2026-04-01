@@ -1,15 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseServiceKey = process.env.VITE_SUPABASE_SERVICE_KEY; // Service key for server operations
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY; // Anon key for RLS policies
+const supabaseServiceKey = process.env.VITE_SUPABASE_SERVICE_KEY;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+console.log('🔍 [SUPABASE] Checking environment:');
+console.log('📌 VITE_SUPABASE_URL:', supabaseUrl ? '✅ present' : '❌ missing');
+console.log('📌 VITE_SUPABASE_SERVICE_KEY:', supabaseServiceKey ? '✅ present' : '❌ missing');
+console.log('📌 VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ present' : '❌ missing');
 
 if (!supabaseUrl) {
-  throw new Error('Missing VITE_SUPABASE_URL env var');
+  throw new Error('❌ Missing VITE_SUPABASE_URL - add to .env.local or Vercel settings');
 }
 
 if (!supabaseServiceKey && !supabaseAnonKey) {
-  throw new Error('Missing Supabase keys: need either VITE_SUPABASE_SERVICE_KEY or VITE_SUPABASE_ANON_KEY');
+  throw new Error('❌ Missing Supabase keys - need VITE_SUPABASE_SERVICE_KEY or VITE_SUPABASE_ANON_KEY in .env.local or Vercel settings');
 }
 
 // Use service key if available (bypasses RLS for admin operations)
@@ -24,4 +29,4 @@ export const supabaseServer = createClient(supabaseUrl, apiKey!, {
 });
 
 console.log('✅ Supabase server client initialized');
-console.log('🔑 Using:', supabaseServiceKey ? 'SERVICE_KEY (admin)' : 'ANON_KEY (RLS)');
+console.log('🔑 Using:', supabaseServiceKey ? 'SERVICE_KEY (admin/bypass RLS)' : 'ANON_KEY (respects RLS)');
