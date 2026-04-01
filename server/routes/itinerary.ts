@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { generateItinerary, TripInput } from '../services/openaiService';
 import { generateSuggestions } from '../lib/itineraryRefinement';
-import { supabaseServer } from '../lib/supabaseServer.js';
+import { initSupabase } from '../lib/supabaseServer.js';
 
 const router = express.Router();
 
@@ -82,6 +82,19 @@ router.post('/save', async (req: Request, res: Response) => {
   try {
     console.log('📌 [SAVE] Route called');
     
+    // Initialize Supabase on first use
+    let supabaseServer: any;
+    try {
+      supabaseServer = initSupabase();
+    } catch (e) {
+      console.error('❌ [SAVE] Supabase initialization failed:', e);
+      res.status(500).json({
+        success: false,
+        error: e instanceof Error ? e.message : 'Supabase not configured',
+      });
+      return;
+    }
+
     const {
       userId,
       title,
