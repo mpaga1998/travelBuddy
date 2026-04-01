@@ -2,7 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 
-// Load environment variables
+// Load environment variabless
 dotenv.config();
 
 const supabase = createClient(
