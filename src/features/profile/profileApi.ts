@@ -203,3 +203,64 @@ export async function getMyBookmarkedPins(): Promise<any[]> {
     };
   });
 }
+
+export type SavedItinerary = {
+  id: string;
+  title: string;
+  markdown_content: string;
+  arrival_location: string;
+  departure_location: string;
+  start_date: string;
+  end_date: string;
+  travel_pace: string | null;
+  budget: string | null;
+  interests: string[];
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getMyItineraries(): Promise<SavedItinerary[]> {
+  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  if (userErr) throw userErr;
+
+  const user = userData.user;
+  if (!user) throw new Error("Not authenticated");
+
+  const { data, error } = await supabase
+    .from("itineraries")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data as SavedItinerary[]) || [];
+}
+
+export async function deleteItinerary(itineraryId: string): Promise<void> {
+  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  if (userErr) throw userErr;
+
+  const user = userData.user;
+  if (!user) throw new Error("Not authenticated");
+
+  // Verify ownership before deleting
+  const { data: itinerary, error: fetchError } = await supabase
+    .from("itineraries")
+    .select("user_id")
+    .eq("id", itineraryId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  if (itinerary?.user_id !== user.id) {
+    throw new Error("Unauthorized - you don't own this itinerary");
+  }
+
+  const { error: deleteError } = await supabase
+    .from("itineraries")
+    .delete()
+    .eq("id", itineraryId);
+
+  if (deleteError) throw deleteError;
+}

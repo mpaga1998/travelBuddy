@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { COUNTRIES } from "./countries";
 import { getMapsUrl } from "../../lib/mapsUtils";
-import { getMyProfile, sendPasswordReset, updateMyProfile, uploadMyAvatar, getMyBookmarkedPins, type Profile, calculateAge } from "./profileApi";
+import { getMyProfile, sendPasswordReset, updateMyProfile, uploadMyAvatar, getMyBookmarkedPins, getMyItineraries, deleteItinerary, type Profile, calculateAge, type SavedItinerary } from "./profileApi";
 
 type Props = {
   open: boolean;
@@ -15,10 +15,12 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
   const [saving, setSaving] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
-  const [selectedSection, setSelectedSection] = useState<"menu" | "profile" | "saved">("menu"); // Menu or section selection
+  const [selectedSection, setSelectedSection] = useState<"menu" | "profile" | "saved" | "itineraries">("menu"); // Menu or section selection
   const [bookmarkedPins, setBookmarkedPins] = useState<any[]>([]);
   const [loadingBookmarks, setLoadingBookmarks] = useState(false);
   const [selectedPin, setSelectedPin] = useState<any | null>(null); // Pin detail view
+  const [savedItineraries, setSavedItineraries] = useState<SavedItinerary[]>([]);
+  const [loadingItineraries, setLoadingItineraries] = useState(false);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState<string>("");
@@ -46,6 +48,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
       setCountryCode("");
       setDob("");
       setBookmarkedPins([]);
+      setSavedItineraries([]);
       setErr(null);
       setMsg(null);
       return;
@@ -93,6 +96,26 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
         setBookmarkedPins([]);
       } finally {
         setLoadingBookmarks(false);
+      }
+    })();
+  }, [open, selectedSection]);
+
+  // Load saved itineraries when Itineraries section is opened
+  useEffect(() => {
+    if (!open || selectedSection !== "itineraries") return;
+
+    setLoadingItineraries(true);
+    (async () => {
+      try {
+        console.log("📍 Fetching saved itineraries...");
+        const itineraries = await getMyItineraries();
+        console.log("✅ Saved itineraries fetched:", itineraries);
+        setSavedItineraries(itineraries);
+      } catch (e: any) {
+        console.error("❌ Failed to load itineraries:", e?.message || e);
+        setSavedItineraries([]);
+      } finally {
+        setLoadingItineraries(false);
       }
     })();
   }, [open, selectedSection]);
@@ -199,6 +222,20 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
     await supabase.auth.signOut();
     onClose();
     onSignedOut();
+  }
+
+  async function onDeleteItinerary(itineraryId: string) {
+    if (!window.confirm("🗑️ Are you sure you want to delete this itinerary?")) {
+      return;
+    }
+
+    try {
+      await deleteItinerary(itineraryId);
+      setSavedItineraries(savedItineraries.filter(it => it.id !== itineraryId));
+      setMsg("Itinerary deleted.");
+    } catch (e: any) {
+      setErr(e?.message ?? "Failed to delete itinerary");
+    }
   }
 
   const avatar = profile?.avatar_url || "";
@@ -314,6 +351,35 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
               }}
             >
               🔖 Saved
+            </button>
+
+            <div style={{ fontSize: 48, marginTop: 16, marginBottom: 16 }}>🎒</div>
+            <button
+              onClick={() => setSelectedSection("itineraries")}
+              onTouchStart={(e) => e.preventDefault()}
+              type="button"
+              style={{
+                width: "100%",
+                maxWidth: 300,
+                padding: "20px 24px",
+                borderRadius: 16,
+                border: "2px solid #9333ea",
+                background: "white",
+                cursor: "pointer",
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#9333ea",
+                transition: "all 0.2s",
+                boxShadow: "0 4px 12px rgba(147, 51, 234, 0.12)",
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLElement).style.background = "rgba(147, 51, 234, 0.05)";
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLElement).style.background = "white";
+              }}
+            >
+              🎒 Itineraries
             </button>
           </div>
         ) : loading ? (
@@ -805,6 +871,142 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                           🔖 {pin.bookmark_count}
                         </div>
                       )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : selectedSection === "itineraries" ? (
+          /* Itineraries Section */
+          <div style={{ flex: 1, overflow: "auto", padding: 16, display: "flex", flexDirection: "column" }}>
+            <button
+              onClick={() => setSelectedSection("menu")}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 18,
+                color: "#9333ea",
+                fontWeight: 600,
+                marginBottom: 12,
+                padding: 0,
+                textAlign: "left",
+              }}
+            >
+              ← Back to Menu
+            </button>
+
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: "#111", marginBottom: 16 }}>
+              🎒 My Saved Itineraries
+            </h2>
+
+            {loadingItineraries ? (
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 14, color: "#666", marginBottom: 8 }}>Loading...</div>
+                </div>
+              </div>
+            ) : savedItineraries.length === 0 ? (
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+                <div style={{ color: "#999" }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>📌</div>
+                  <div style={{ fontSize: 14 }}>No saved itineraries yet</div>
+                  <div style={{ fontSize: 12, color: "#bbb", marginTop: 4 }}>Generate and save your first itinerary!</div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {savedItineraries.map((itinerary) => (
+                  <div
+                    key={itinerary.id}
+                    style={{
+                      background: "white",
+                      border: "1px solid rgba(0,0,0,0.08)",
+                      borderRadius: 12,
+                      padding: 16,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    {/* Itinerary Title */}
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#111" }}>
+                      {itinerary.title}
+                    </div>
+
+                    {/* Itinerary Info */}
+                    <div style={{ fontSize: 13, color: "#666", display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div>
+                        📍 {itinerary.arrival_location} → {itinerary.departure_location}
+                      </div>
+                      <div>
+                        📅 {new Date(itinerary.start_date).toLocaleDateString()} to {new Date(itinerary.end_date).toLocaleDateString()}
+                      </div>
+                      {itinerary.travel_pace && (
+                        <div>
+                          ⚡ {itinerary.travel_pace.charAt(0).toUpperCase() + itinerary.travel_pace.slice(1)} pace
+                        </div>
+                      )}
+                      {itinerary.budget && (
+                        <div>
+                          💰 {itinerary.budget.replace(/-/g, " ").toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Buttons */}
+                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                      <button
+                        onClick={() => {
+                          // Copy itinerary to clipboard
+                          navigator.clipboard.writeText(itinerary.markdown_content);
+                          alert("✅ Itinerary copied to clipboard!");
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: "8px 12px",
+                          borderRadius: 8,
+                          border: "1px solid rgba(0,0,0,0.18)",
+                          background: "white",
+                          cursor: "pointer",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#111",
+                          transition: "all 0.2s",
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.target as HTMLElement).style.background = "#f3f4f6";
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.target as HTMLElement).style.background = "white";
+                        }}
+                      >
+                        📋 Copy
+                      </button>
+                      <button
+                        onClick={() => onDeleteItinerary(itinerary.id)}
+                        style={{
+                          flex: 1,
+                          padding: "8px 12px",
+                          borderRadius: 8,
+                          border: "1px solid #fee2e2",
+                          background: "#fef2f2",
+                          cursor: "pointer",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#dc2626",
+                          transition: "all 0.2s",
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.target as HTMLElement).style.background = "#fee2e2";
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.target as HTMLElement).style.background = "#fef2f2";
+                        }}
+                      >
+                        🗑️ Delete
+                      </button>
                     </div>
                   </div>
                 ))}

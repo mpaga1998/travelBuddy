@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ItineraryInput } from './types';
-import { generateItinerary } from './itineraryApi';
+import { generateItinerary, saveItineraryToProfile } from './itineraryApi';
 import { supabase } from '../../lib/supabaseClient';
 
 interface ItineraryModalProps {
@@ -45,6 +45,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const [itinerary, setItinerary] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form state
   const [arrivalDate, setArrivalDate] = useState('');
@@ -326,6 +327,46 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
     if (trimmedInterest && !selectedInterests.includes(trimmedInterest)) {
       setSelectedInterests([...selectedInterests, trimmedInterest]);
       setCustomInterestInput('');
+    }
+  };
+
+  const handleSaveItinerary = async () => {
+    if (!currentUserId) {
+      alert('❌ User not authenticated');
+      return;
+    }
+
+    // Prompt user for title
+    const title = prompt('📌 Give your itinerary a title:', `${arrivalLocation} Adventure`);
+    if (!title) return; // User cancelled
+
+    setIsSaving(true);
+    try {
+      await saveItineraryToProfile(
+        currentUserId,
+        title,
+        itinerary,
+        {
+          arrivalLocation,
+          departureLocation,
+          startDate: arrivalDate,
+          endDate: departureDate,
+          travelPace,
+          budget,
+          interests: selectedInterests,
+        }
+      );
+
+      // Show success message
+      alert('✨ Done! Your custom itinerary has been saved to your profile');
+      resetForm();
+      handleClose();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save itinerary';
+      console.error('❌ Save error:', err);
+      alert(`❌ ${message}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1291,25 +1332,23 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
           {step === 'result' && (
             <>
               <button
-                onClick={() => {
-                  const text = itinerary;
-                  navigator.clipboard.writeText(text);
-                  alert('Itinerary copied to clipboard!');
-                }}
+                onClick={handleSaveItinerary}
+                disabled={isSaving}
                 style={{
                   flex: 1,
                   padding: '12px 16px',
                   borderRadius: 10,
                   border: '1px solid rgba(0,0,0,0.18)',
-                  background: 'white',
+                  background: isSaving ? '#e5e7eb' : 'white',
                   color: '#111',
-                  cursor: 'pointer',
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
                   fontWeight: 600,
                   fontSize: 14,
                   minHeight: 44,
+                  opacity: isSaving ? 0.6 : 1,
                 }}
               >
-                📋 Copy
+                {isSaving ? '💾 Saving...' : '📌 Save to Profile'}
               </button>
               <button
                 onClick={() => resetForm()}

@@ -44,3 +44,65 @@ export async function generateItinerary(input: ItineraryInput): Promise<string> 
     throw new Error('Failed to fetch itinerary');
   }
 }
+
+export async function saveItineraryToProfile(
+  userId: string,
+  title: string,
+  markdown: string,
+  params: {
+    arrivalLocation: string;
+    departureLocation: string;
+    startDate: string;
+    endDate: string;
+    travelPace?: string;
+    budget?: string;
+    interests?: string[];
+  }
+): Promise<{ success: boolean; itineraryId: string; message: string }> {
+  console.log('💾 Saving itinerary to profile:', { userId, title });
+
+  try {
+    const response = await fetch(`${API_BASE}/itinerary/save`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        title,
+        markdown,
+        arrivalLocation: params.arrivalLocation,
+        departureLocation: params.departureLocation,
+        startDate: params.startDate,
+        endDate: params.endDate,
+        travelPace: params.travelPace,
+        budget: params.budget,
+        interests: params.interests || [],
+      }),
+    });
+
+    console.log('📡 Save response status:', response.status);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      console.error('❌ Save API error:', error);
+      throw new Error(error.error || `Failed to save itinerary: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      console.error('❌ Save failed:', data.error);
+      throw new Error(data.error || 'Unknown error');
+    }
+
+    console.log('✅ Itinerary saved:', data.itineraryId);
+    return data;
+  } catch (err) {
+    console.error('❌ Save fetch error:', err);
+    if (err instanceof Error) {
+      throw err;
+    }
+    throw new Error('Failed to save itinerary');
+  }
+}
