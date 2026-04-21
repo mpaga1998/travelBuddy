@@ -5,6 +5,8 @@ import { generateItinerary } from './lib/openai.js';
 import { generateSuggestions } from './lib/itineraryRefinement.js';
 import { initSupabase } from './lib/supabaseServer.js';
 import { requireAuth } from './lib/requireAuth.js';
+import { validateBodySize } from './lib/validateBodySize.js';
+import { enforceRateLimit, ITINERARY_RATE_LIMIT } from './lib/rateLimit.js';
 
 // Load environment variables
 dotenv.config();
@@ -68,6 +70,12 @@ export default async function handler(
   // 🔐 Verify JWT. On failure, requireAuth already wrote the 401 — we just bail.
   const user = await requireAuth(req, res);
   if (!user) return;
+
+  // 📦 Reject oversized payloads before doing any real work. 413 on too big.
+  if (!validateBodySize(req, res)) return;
+
+  // 🚦 Per-user rate limit (protects OpenAI bill). 429 on breach.
+  if (!(await enforceRateLimit(user.id, res, ITINERARY_RATE_LIMIT))) return;
 
   try {
     const routeStartTime = Date.now();

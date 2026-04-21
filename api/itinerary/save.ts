@@ -2,6 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import dotenv from 'dotenv';
 import { initSupabase } from '../lib/supabaseServer.js';
 import { requireAuth } from '../lib/requireAuth.js';
+import { validateBodySize } from '../lib/validateBodySize.js';
 
 // Load environment variables
 dotenv.config();
@@ -39,6 +40,9 @@ export default async function handler(
   // 🔐 Verify JWT. On failure, requireAuth already wrote the 401.
   const user = await requireAuth(req, res);
   if (!user) return;
+
+  // 📦 Reject oversized payloads (saved itineraries can be long — still cap at 100KB).
+  if (!validateBodySize(req, res)) return;
 
   try {
     console.log('📌 [SAVE] Route called for user', user.id);
