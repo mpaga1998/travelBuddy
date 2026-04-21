@@ -5,7 +5,7 @@ Do phases top-to-bottom; each assumes the previous is done.
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Progress:** 4 / 50 steps complete
+**Progress:** 5 / 50 steps complete
 
 ---
 
@@ -20,7 +20,7 @@ Nothing else matters until this is done.
 - [x] **1.1** Create `requireAuth` — JWT verification that returns the verified user or 401s. Shipped as `api/lib/requireAuth.ts` (serverless-shaped) and previously `server/middleware/requireAuth.ts` (Express).
 - [x] **1.2** Apply `requireAuth` to every protected route (`/api/itinerary`, `/api/itinerary/save`).
 - [x] **1.3** Stop trusting client-sent `userId`. Every handler now pulls ownership from `req.user.id` (the verified JWT) and fetches `firstName` server-side from the `profiles` table. In the process, unified on Vercel serverless and deleted `server/` + Express deps.
-- [ ] **1.4** Switch backend Supabase client to `service_role` key. Add `SUPABASE_SERVICE_ROLE_KEY` to `.env` and `.env.example`. Update `api/lib/supabaseServer.ts`. Review RLS policies now that the backend bypasses them.
+- [x] **1.4** Switch backend Supabase client to `service_role` key. `api/lib/supabaseServer.ts` now prefers `SUPABASE_SERVICE_ROLE_KEY` (server-only name, no VITE_ prefix), falls back to the legacy `VITE_SUPABASE_SERVICE_KEY` with a warning, and fails closed in production if neither is set. `.env.example` documents the new var. **User action still required:** add `SUPABASE_SERVICE_ROLE_KEY` in Vercel dashboard + run the RLS audit SQL.
 - [x] **1.5** Frontend sends JWT. `src/features/itinerary/itineraryApi.ts` grabs the session token and attaches `Authorization: Bearer <token>` on both calls. (Shipped alongside 1.3.)
 - [ ] **1.6** Add per-user rate limiting on `/api/itinerary`. Serverless-friendly options: Upstash Redis `@upstash/ratelimit`, or a `rate_limits` table in Supabase keyed on `req.user.id`. Cap ~10 itineraries/user/hour. Protects OpenAI bill.
 - [ ] **1.7** Add request size limits. Reject bodies >100 KB early in each handler (or configure at the Vercel project level).
