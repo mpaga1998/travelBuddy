@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import itineraryRoutes from './routes/itinerary';
-import redditRoutes from './routes/reddit.js';
+import { requireAuth } from './middleware/requireAuth';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,10 +22,11 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use('/api/itinerary', itineraryRoutes);
-app.use('/api/reddit', redditRoutes);
+// /api/itinerary/* is protected — requireAuth runs before the router matches,
+// so all current and future routes under this prefix require a valid JWT.
+app.use('/api/itinerary', requireAuth, itineraryRoutes);
 
-// Health check
+// Health check (public — no auth required)
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
