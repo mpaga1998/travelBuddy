@@ -1,14 +1,10 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import dotenv from 'dotenv';
-import { createClient } from '@supabase/supabase-js';
+import { initSupabase } from '../lib/supabaseServer.js';
+import { requireAuth } from '../lib/requireAuth.js';
 
-// Load environment variabless
+// Load environment variables
 dotenv.config();
-
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || '',
-  process.env.VITE_SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
-);
 
 export default async function handler(
   req: VercelRequest,
@@ -23,7 +19,7 @@ export default async function handler(
   );
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    'Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
   );
 
   // Handle preflight requests
@@ -40,11 +36,16 @@ export default async function handler(
     return;
   }
 
-  try {
-    console.log('📌 [SAVE] Route called');
+  // 🔐 Verify JWT. On failure, requireAuth already wrote the 401.
+  const user = await requireAuth(req, res);
+  if (!user) return;
 
+  try {
+    console.log('📌 [SAVE] Route called for user', user.id);
+
+    // NB: any `userId` in the body is ignored. The verified user from the JWT is
+    // the only source of truth for ownership.
     const {
-      userId,
       title,
       markdown,
       arrivalLocation,
@@ -54,10 +55,10 @@ export default async function handler(
       travelPace,
       budget,
       interests,
-    } = req.body;
+    } = req.body ?? {};
 
     console.log('📌 [SAVE] Received payload:', {
-      userId: userId ? '✅ present' : '❌ missing',
+      userId: user.id,
       title: title ? `✅ "${title}"` : '❌ missing',
       markdown: markdown ? `✅ (${markdown.length} chars)` : '❌ missing',
       arrivalLocation,
@@ -67,36 +68,34 @@ export default async function handler(
     });
 
     // Validate required fields
-    if (!userId || !title || !markdown) {
+    if (!title || !markdown) {
       console.error('❌ [SAVE] Validation failed - missing required fields');
       res.status(400).json({
         success: false,
-        error: 'Missing required fields: userId, title, markdown',
+        error: 'Missing required fields: title, markdown',
+      });
+      return;
+    }
+
+    let supabase;
+    try {
+      supabase = initSupabase();
+    } catch (e) {
+      console.error('❌ [SAVE] Supabase initialization failed:', e);
+      res.status(500).json({
+        success: false,
+        error: e instanceof Error ? e.message : 'Supabase not configured',
       });
       return;
     }
 
     console.log('✅ [SAVE] Validation passed, attempting to insert...');
 
-    // Log what we're inserting
-    console.log('📌 [SAVE] Inserting with:', {
-      user_id: userId,
-      title,
-      markdown_content_length: markdown.length,
-      arrival_location: arrivalLocation,
-      departure_location: departureLocation,
-      start_date: startDate,
-      end_date: endDate,
-      travel_pace: travelPace,
-      budget,
-      interests: interests?.length || 0,
-    });
-
-    // Insert into itineraries table
+    // Insert into itineraries table — user_id comes from verified JWT, not the body.
     const { data, error } = await supabase
       .from('itineraries')
       .insert({
-        user_id: userId,
+        user_id: user.id,
         title,
         markdown_content: markdown,
         arrival_location: arrivalLocation,
@@ -109,8 +108,6 @@ export default async function handler(
       })
       .select('id')
       .single();
-
-    console.log('📌 [SAVE] Insert response:', { dataReceived: !!data, errorReceived: !!error });
 
     if (error) {
       console.error('❌ [SAVE] Database error:', {
@@ -136,7 +133,7 @@ export default async function handler(
       return;
     }
 
-    console.log('✅ [SAVE] Successfully saved itinerary:', { itineraryId: data.id, title, userId });
+    console.log('✅ [SAVE] Successfully saved itinerary:', { itineraryId: data.id, title, userId: user.id });
 
     res.status(200).json({
       success: true,
@@ -153,7 +150,6 @@ export default async function handler(
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error',
-      details: error instanceof Error ? error.stack : undefined,
     });
   }
 }

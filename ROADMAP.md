@@ -5,22 +5,25 @@ Do phases top-to-bottom; each assumes the previous is done.
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Progress:** 2 / 50 steps complete
+**Progress:** 4 / 50 steps complete
 
 ---
 
 ## Phase 1 — Critical security
 
-Nothing else matters until this is done. Backend currently trusts
-client-sent `userId` and has no JWT verification.
+Nothing else matters until this is done.
 
-- [x] **1.1** Create `server/middleware/requireAuth.ts` — JWT verification middleware that attaches verified `req.user` and 401s on failure.
-- [x] **1.2** Apply `requireAuth` to every protected route (`/api/itinerary`, `/api/itinerary/save`). Leave `/health` public.
-- [ ] **1.3** Stop trusting client-sent `userId`. Replace every `req.body.userId` with `req.user.id`. Fetch `userFirstName` server-side from the `profiles` table keyed on the verified ID.
-- [ ] **1.4** Switch backend Supabase client to `service_role` key. Add `SUPABASE_SERVICE_ROLE_KEY` to `.env` and `.env.example`. Update `server/lib/supabaseServer.ts`. Review RLS policies now that the backend bypasses them.
-- [ ] **1.5** Update frontend API callers to send the JWT. Grab the session token via `supabase.auth.getSession()` and attach as `Authorization: Bearer <token>` in `itineraryApi.ts` and any other caller.
-- [ ] **1.6** Add per-user rate limiting on `/api/itinerary`. Install `express-rate-limit`, key on `req.user.id`, cap ~10 itineraries/user/hour. Protects OpenAI bill.
-- [ ] **1.7** Add request size limits. `express.json({ limit: '100kb' })` globally.
+> **Deploy target:** Vercel serverless (`api/`) is the single source of truth.
+> The duplicate Express backend (`server/`) was deleted once we unified Phase 1
+> across both code paths — see 1.3.
+
+- [x] **1.1** Create `requireAuth` — JWT verification that returns the verified user or 401s. Shipped as `api/lib/requireAuth.ts` (serverless-shaped) and previously `server/middleware/requireAuth.ts` (Express).
+- [x] **1.2** Apply `requireAuth` to every protected route (`/api/itinerary`, `/api/itinerary/save`).
+- [x] **1.3** Stop trusting client-sent `userId`. Every handler now pulls ownership from `req.user.id` (the verified JWT) and fetches `firstName` server-side from the `profiles` table. In the process, unified on Vercel serverless and deleted `server/` + Express deps.
+- [ ] **1.4** Switch backend Supabase client to `service_role` key. Add `SUPABASE_SERVICE_ROLE_KEY` to `.env` and `.env.example`. Update `api/lib/supabaseServer.ts`. Review RLS policies now that the backend bypasses them.
+- [x] **1.5** Frontend sends JWT. `src/features/itinerary/itineraryApi.ts` grabs the session token and attaches `Authorization: Bearer <token>` on both calls. (Shipped alongside 1.3.)
+- [ ] **1.6** Add per-user rate limiting on `/api/itinerary`. Serverless-friendly options: Upstash Redis `@upstash/ratelimit`, or a `rate_limits` table in Supabase keyed on `req.user.id`. Cap ~10 itineraries/user/hour. Protects OpenAI bill.
+- [ ] **1.7** Add request size limits. Reject bodies >100 KB early in each handler (or configure at the Vercel project level).
 - [ ] **1.8** Verify no secrets in git history (`git log --all -- .env`). Already clean, re-verify after any rebasing.
 
 ## Phase 2 — Refactor the giants
@@ -69,7 +72,7 @@ This is what makes it a "community" app. Currently missing despite the pitch.
 
 Before real users land.
 
-- [ ] **6.1** Structured logging. Replace every `console.log` in `server/` with `pino` or `winston`. Tag logs with request IDs.
+- [ ] **6.1** Structured logging. Replace every `console.log` in `api/` with `pino`. Tag logs with request IDs (use Vercel's `x-vercel-id` header or generate one).
 - [ ] **6.2** Error tracking. Drop Sentry into frontend (`@sentry/react`) and backend (`@sentry/node`). ~10 min of setup.
 - [ ] **6.3** Baseline analytics. PostHog or Plausible. Track: signup, pin created, itinerary generated/saved, follow, pin reported.
 - [ ] **6.4** Smoke tests in Playwright: sign up, log in, create pin, generate itinerary, save itinerary.

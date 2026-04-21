@@ -44,7 +44,6 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [itinerary, setItinerary] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Form state
@@ -88,24 +87,8 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
       if (user) {
         console.log('👤 Current user from auth:', user.id);
         setCurrentUserId(user.id);
-        
-        // Fetch user's first name from profile
-        try {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('first_name')
-            .eq('id', user.id)
-            .single();
-          
-          if (error) {
-            console.error('❌ Error fetching profile:', error);
-          } else if (profile?.first_name) {
-            console.log('✅ Profile name fetched:', profile.first_name);
-            setCurrentUserName(profile.first_name);
-          }
-        } catch (err) {
-          console.error('❌ Exception fetching profile:', err);
-        }
+        // First name is now fetched server-side from the verified JWT — no
+        // need to read/send it from the client.
       } else {
         console.log('⚠️ No user logged in');
       }
@@ -258,9 +241,9 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
         .map(a => a.trim())
         .filter(a => a.length > 0);
 
+      // NB: userId/userFirstName intentionally NOT sent - server uses the verified
+      // JWT + the profiles table as the only sources of truth for identity.
       const input: ItineraryInput = {
-        userId: currentUserId || undefined,
-        userFirstName: currentUserName || undefined,
         arrival: {
           date: arrivalDate,
           location: arrivalLocation,

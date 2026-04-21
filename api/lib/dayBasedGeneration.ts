@@ -37,7 +37,7 @@ export class ValidationError extends Error {
  */
 export async function generateItineraryDayBased(
   input: TripInput,
-  options: { maxRetries?: number } = {}
+  options: { maxRetries?: number; firstName?: string } = {}
 ): Promise<string> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not set in environment variables');
@@ -60,7 +60,7 @@ export async function generateItineraryDayBased(
     );
   }
 
-  const firstName = input.userFirstName || undefined;
+  const firstName = options.firstName;
   console.log('✅ Input validated. Planning for:', firstName || 'traveler');
   const inputValidationTime = Date.now() - totalStartTime;
   console.log(`⏱️ [TIMING] Input validation: ${inputValidationTime}ms`);

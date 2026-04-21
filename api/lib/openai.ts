@@ -18,26 +18,16 @@ export interface GenerationResult {
 }
 
 /**
- * Get first name from request input
- */
-function getUserFirstNameFromRequest(input: TripInput): string | undefined {
-  if (input.userFirstName) {
-    console.log(
-      '✅ [Vercel] Using firstName from request:',
-      input.userFirstName
-    );
-    return input.userFirstName;
-  }
-  return undefined;
-}
-
-/**
  * Text-based itinerary generation (PRIMARY)
- * Generates natural language itineraries with hardcoded dates/times that cannot be changed
+ * Generates natural language itineraries with hardcoded dates/times that cannot be changed.
+ *
+ * `options.firstName` is used for prompt personalization. It MUST be fetched server-side
+ * from the verified user's profile by the caller (see api/itinerary.ts). Do NOT accept a
+ * first name from the request body — it would let users impersonate others in the output.
  */
 export async function generateItinerary(
   input: TripInput,
-  options: { maxRetries?: number } = {}
+  options: { maxRetries?: number; firstName?: string } = {}
 ): Promise<string> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not set in environment variables');
@@ -54,7 +44,7 @@ export async function generateItinerary(
     );
   }
 
-  const firstName = getUserFirstNameFromRequest(input);
+  const firstName = options.firstName;
   console.log('✅ Input validated. Planning for:', firstName || 'traveler');
 
   // STEP 2: Generate text-based itinerary

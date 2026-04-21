@@ -1,20 +1,37 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import dotenv from 'dotenv';
-import { createClient } from '@supabase/supabase-js';
 import { TripInput, ItineraryResponse } from './lib/types.js';
 import { generateItinerary } from './lib/openai.js';
 import { generateSuggestions } from './lib/itineraryRefinement.js';
-import { calculateNights } from './lib/inputValidation.js';
+import { initSupabase } from './lib/supabaseServer.js';
+import { requireAuth } from './lib/requireAuth.js';
 
 // Load environment variables
 dotenv.config();
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || '',
-  process.env.VITE_SUPABASE_ANON_KEY || ''
-);
-
-
+/**
+ * Look up the authenticated user's first name from the profiles table.
+ * Best-effort: returns undefined on any failure (RLS, missing row, DB down).
+ * Used for prompt personalization only — never for authorization.
+ */
+async function fetchFirstName(userId: string): Promise<string | undefined> {
+  try {
+    const supabase = initSupabase();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('first_name')
+      .eq('id', userId)
+      .single();
+    if (error) {
+      console.warn('⚠️ [ITINERARY] profile lookup failed:', error.message);
+      return undefined;
+    }
+    return data?.first_name || undefined;
+  } catch (e) {
+    console.warn('⚠️ [ITINERARY] profile lookup threw:', e instanceof Error ? e.message : e);
+    return undefined;
+  }
+}
 
 export default async function handler(
   req: VercelRequest,
@@ -29,7 +46,7 @@ export default async function handler(
   );
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    'Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
   );
 
   // Handle preflight requests
@@ -48,21 +65,35 @@ export default async function handler(
     return;
   }
 
+  // 🔐 Verify JWT. On failure, requireAuth already wrote the 401 — we just bail.
+  const user = await requireAuth(req, res);
+  if (!user) return;
+
   try {
-    const tripInput: TripInput = req.body;
-    
-    // ⏱️ TIMING: Start API endpoint timer
-    const apiStartTime = Date.now();
+    const routeStartTime = Date.now();
+
+    // Whitelist ONLY trip-related body fields. Any userId / userFirstName the client
+    // sends is ignored — those come from the verified JWT + the profiles table.
+    const body = (req.body ?? {}) as Partial<TripInput>;
+    const tripInput: TripInput = {
+      arrival: body.arrival!,
+      departure: body.departure!,
+      stops: body.stops,
+      desiredAttractions: body.desiredAttractions,
+      travelPace: body.travelPace,
+      interests: body.interests,
+      budget: body.budget,
+      notes: body.notes,
+    };
 
     console.log('📝 [API] Received itinerary request:', {
+      userId: user.id,
       arrival: `${tripInput.arrival?.location} on ${tripInput.arrival?.date} at ${tripInput.arrival?.time || 'unspecified'}`,
       departure: `${tripInput.departure?.location} on ${tripInput.departure?.date} at ${tripInput.departure?.time || 'unspecified'}`,
       stops: tripInput.stops,
       attractions: tripInput.desiredAttractions,
       pace: tripInput.travelPace,
       budget: tripInput.budget,
-      interests: tripInput.interests,
-      notes: tripInput.notes,
     });
 
     // Validation
@@ -76,10 +107,13 @@ export default async function handler(
       return;
     }
 
+    // Fetch firstName server-side from the verified user's profile.
+    const firstName = await fetchFirstName(user.id);
+
     // Generate itinerary
     console.log('⏱️ [TIMING] Starting itinerary generation...');
-    const itinerary = await generateItinerary(tripInput);
-    const generationTime = Date.now() - apiStartTime;
+    const itinerary = await generateItinerary(tripInput, { firstName });
+    const generationTime = Date.now() - routeStartTime;
 
     console.log(`⏱️ [TIMING] API TOTAL TIME: ${generationTime}ms (${(generationTime / 1000).toFixed(2)}s)`);
 
@@ -90,16 +124,16 @@ export default async function handler(
     res.status(200).json(response);
   } catch (error) {
     console.error('Itinerary generation error:', error);
-    
+
     let statusCode = 500;
     let errorMessage = 'Failed to generate itinerary';
     let suggestions: string[] = [];
-    
+
     if (error instanceof Error) {
       if (error.message.includes('validation')) {
         statusCode = 400;
         errorMessage = error.message;
-        
+
         // Generate helpful suggestions based on error context
         const context = (error as any).context;
         if (context && req.body) {
@@ -109,7 +143,7 @@ export default async function handler(
         errorMessage = error.message;
       }
     }
-    
+
     const response: ItineraryResponse = {
       success: false,
       itinerary: '',
