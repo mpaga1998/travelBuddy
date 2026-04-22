@@ -101,7 +101,7 @@ export async function generateItinerary(
         { role: 'system', content: buildSystemPrompt() },
         { role: 'user', content: buildUserPrompt(input, firstName, options.travelContext, options.placesContext, options.communityPinsContext, options.weatherContext, options.practicalContext, options.budgetContext) },
       ],
-      max_tokens: maxTokens,
+      max_completion_tokens: maxTokens,
       temperature: 0.7,
     });
 

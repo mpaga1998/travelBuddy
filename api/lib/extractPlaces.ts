@@ -62,7 +62,7 @@ async function extractPlacesFromMarkdown(markdown: string): Promise<RawPlace[]> 
       { role: 'system', content: EXTRACTION_SYSTEM },
       { role: 'user', content: EXTRACTION_USER(markdown) },
     ],
-    max_tokens: 1500,
+    max_completion_tokens: 1500,
     temperature: 0,
   });
 
