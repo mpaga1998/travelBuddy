@@ -4,8 +4,10 @@ import { ItineraryModal } from "../itinerary/ItineraryModal";
 import { ProfileModal } from "../profile/profileModal";
 import { getMyProfile } from "../profile/profileApi";
 
+import type { ExtractedPlace } from '../itinerary/itineraryMapOverlay';
+
 interface InitialPageProps {
-  onGoToMap: (location: { lng: number; lat: number }) => void;
+  onGoToMap: (location: { lng: number; lat: number }, itineraryPlaces?: ExtractedPlace[]) => void;
 }
 
 interface Suggestion {
@@ -552,6 +554,11 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
       <ItineraryModal
         open={itineraryModalOpen}
         onClose={() => setItineraryModalOpen(false)}
+        onViewOnMap={(places, arrivalLocation) => {
+          setItineraryModalOpen(false);
+          // Navigate to map with no specific center — MapView will fit to the places.
+          onGoToMap({ lng: 0, lat: 0 }, places);
+        }}
       />
 
       {/* Profile Modal */}

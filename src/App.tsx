@@ -7,6 +7,7 @@ import { AuthPage } from "./features/auth/AuthPage";
 import { LoadingPage } from "./features/auth/LoadingPage";
 import { InitialPage } from "./features/auth/InitialPage";
 import { MapView } from "./features/map/MapView";
+import type { ExtractedPlace } from "./features/itinerary/itineraryMapOverlay";
 
 type AppPage = "loading" | "auth" | "initial" | "map";
 
@@ -16,6 +17,7 @@ export default function App() {
   const [showInitialPage, setShowInitialPage] = useState(true);
   const [currentPage, setCurrentPage] = useState<AppPage>("loading");
   const [mapCenter, setMapCenter] = useState<{ lng: number; lat: number } | null>(null);
+  const [pendingItineraryPlaces, setPendingItineraryPlaces] = useState<ExtractedPlace[]>([]);
 
   // 1️⃣ Get session on first load
   useEffect(() => {
@@ -80,8 +82,9 @@ export default function App() {
   if (currentPage === "initial") {
     return (
       <InitialPage
-        onGoToMap={(location) => {
+        onGoToMap={(location, itineraryPlaces) => {
           setMapCenter(location);
+          if (itineraryPlaces?.length) setPendingItineraryPlaces(itineraryPlaces);
           setShowInitialPage(false);
         }}
       />
@@ -89,7 +92,7 @@ export default function App() {
   }
 
   if (currentPage === "map") {
-    return <MapView onBack={() => setShowInitialPage(true)} initialCenter={mapCenter} />;
+    return <MapView onBack={() => { setShowInitialPage(true); setPendingItineraryPlaces([]); }} initialCenter={mapCenter} initialItineraryPlaces={pendingItineraryPlaces} />;
   }
 
   return <div>Unknown page state</div>;

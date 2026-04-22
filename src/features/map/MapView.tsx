@@ -38,6 +38,7 @@ type DraftPin = {
 type MapViewProps = {
   onBack?: () => void;
   initialCenter?: { lng: number; lat: number } | null;
+  initialItineraryPlaces?: ExtractedPlace[];
 };
 
 /**
@@ -56,7 +57,7 @@ type MapViewProps = {
  * has one owner. Ready for 2.2 (native clustering) which only touches
  * PinLayer.
  */
-export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
+export function MapView({ onBack, initialCenter, initialItineraryPlaces = [] }: MapViewProps = {}) {
   const mapRef = useRef<MapboxMap | null>(null);
   const isMobile = useIsMobile();
 
@@ -91,7 +92,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftPin | null>(null);
   const [itineraryModalOpen, setItineraryModalOpen] = useState(false);
-  const [itineraryPlaces, setItineraryPlaces] = useState<ExtractedPlace[]>([]);
+  const [itineraryPlaces, setItineraryPlaces] = useState<ExtractedPlace[]>(initialItineraryPlaces);
   const [tipsViewerOpen, setTipsViewerOpen] = useState(false);
   const [viewerTips, setViewerTips] = useState<string[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
