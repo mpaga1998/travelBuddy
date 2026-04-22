@@ -5,7 +5,7 @@ Do phases top-to-bottom; each assumes the previous is done.
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Progress:** 8 / 50 steps complete — **Phase 1 code-complete**
+**Progress:** 9 / 50 steps complete — **Phase 1 complete ✅**
 
 ---
 
@@ -20,9 +20,9 @@ Nothing else matters until this is done.
 - [x] **1.1** Create `requireAuth` — JWT verification that returns the verified user or 401s. Shipped as `api/lib/requireAuth.ts` (serverless-shaped) and previously `server/middleware/requireAuth.ts` (Express).
 - [x] **1.2** Apply `requireAuth` to every protected route (`/api/itinerary`, `/api/itinerary/save`).
 - [x] **1.3** Stop trusting client-sent `userId`. Every handler now pulls ownership from `req.user.id` (the verified JWT) and fetches `firstName` server-side from the `profiles` table. In the process, unified on Vercel serverless and deleted `server/` + Express deps.
-- [x] **1.4** Switch backend Supabase client to `service_role` key. `api/lib/supabaseServer.ts` now prefers `SUPABASE_SERVICE_ROLE_KEY` (server-only name, no VITE_ prefix), falls back to the legacy `VITE_SUPABASE_SERVICE_KEY` with a warning, and fails closed in production if neither is set. `.env.example` documents the new var. **User action still required:** add `SUPABASE_SERVICE_ROLE_KEY` in Vercel dashboard + run the RLS audit SQL.
+- [x] **1.4** Switch backend Supabase client to `service_role` key. `api/lib/supabaseServer.ts` now prefers `SUPABASE_SERVICE_ROLE_KEY` (server-only name, no VITE_ prefix), falls back to the legacy `VITE_SUPABASE_SERVICE_KEY` with a warning, and fails closed in production if neither is set. `.env.example` documents the new var. Vercel env var added; RLS fixes applied (profiles SELECT locked to self, pin_bookmarks SELECT narrowed to authenticated).
 - [x] **1.5** Frontend sends JWT. `src/features/itinerary/itineraryApi.ts` grabs the session token and attaches `Authorization: Bearer <token>` on both calls. (Shipped alongside 1.3.)
-- [x] **1.6** Per-user sliding-window rate limiter on `/api/itinerary` (10/hour). Backed by a `rate_limits` table in Supabase — chosen over Upstash to avoid a new vendor. Shipped as `api/lib/rateLimit.ts` + `supabase/migrations/20260421_add_rate_limits.sql`. Fails **open** on DB error (cost-protection limiter should never lock a paying user out because Postgres hiccuped). Sets `X-RateLimit-*` + `Retry-After` headers. **User action still required:** run the `rate_limits` CREATE TABLE SQL in the Supabase dashboard.
+- [x] **1.6** Per-user sliding-window rate limiter on `/api/itinerary` (10/hour). Backed by a `rate_limits` table in Supabase — chosen over Upstash to avoid a new vendor. Shipped as `api/lib/rateLimit.ts` + `supabase/migrations/20260421_add_rate_limits.sql` (applied). Fails **open** on DB error (cost-protection limiter should never lock a paying user out because Postgres hiccuped). Sets `X-RateLimit-*` + `Retry-After` headers.
 - [x] **1.7** Request size limits. `api/lib/validateBodySize.ts` rejects bodies >100 KB with 413 before any JSON parse / DB call / OpenAI call. Checks `Content-Length` first, falls back to measuring the parsed body (catches chunked uploads and lying clients). Applied to both `/api/itinerary` and `/api/itinerary/save`.
 - [x] **1.8** Verified git history clean across all 173 commits / all 22 refs (local + origin). `.env` never tracked (confirmed via `git log --all -- .env` + `git ls-files`, and it's gitignored at `.gitignore:26`). Pickaxe search (`git log -S`) for the live OpenAI key prefix and the Supabase project ref returned zero hits. `.env.example` contains only `sk-...` / `eyJ...` placeholders — no real values. The worktree `.env` holds real secrets but is properly ignored. If any branch is ever force-pushed or rebased, re-run these checks before merging.
 
@@ -30,7 +30,7 @@ Nothing else matters until this is done.
 
 So future changes don't require rewriting 1,800-line files.
 
-- [ ] **2.1** Split `MapView.tsx` (1,812 lines) into: `MapCanvas.tsx` (pure Mapbox instance), `PinLayer.tsx` (markers + clustering), `PinPopup.tsx` (React component, not HTML string), `FilterBar.tsx`, `hooks/useMapPins.ts`, `hooks/useBookmarks.ts`.
+- [x] **2.1** Split `MapView.tsx` (1,812 → 850 lines). New files under `src/features/map/`: `MapCanvas.tsx` (pure Mapbox instance + lifecycle), `PinLayer.tsx` (marker cache + popup lifecycle via `createRoot`), `PinPopup.tsx` (real React component — killed the 300-line escaped-HTML string), `FilterBar.tsx` (controlled top bar + mobile drawer), `hooks/useMapPins.ts` (pins + filter state), `hooks/useBookmarks.ts` (bookmark set + toggle), plus `mapConstants.ts` + `hooks/useIsMobile.ts`. Draft-pin modal, tips viewer, delete confirmation, and lightbox were NOT in 2.1's scope so they remain as file-local components in `MapView.tsx` — obvious follow-up.
 - [ ] **2.2** Enable Mapbox native clustering in `PinLayer`. Use `cluster: true` on the GeoJSON source. Map dies past ~2k pins without this.
 - [ ] **2.3** Split `ItineraryModal.tsx` (1,393 lines) into: form component, preview/render component, save-to-profile flow, `useItineraryDraft` hook.
 - [ ] **2.4** Split `profileModal.tsx` (1,414 lines) into tabbed subcomponents: profile info, saved itineraries list, bookmarked pins list.
@@ -110,7 +110,7 @@ Can happen in parallel with earlier phases, but must be decided before fundraisi
 
 | Phase | Effort | Blocking for launch? |
 |-------|--------|----------------------|
-| 1. Security | ~1 week | Yes — don't put users on the current backend |
+| 1. Security | ~1 week | **Complete ✅** |
 | 2. Refactor | ~1 week | No, but everything later gets slower without it |
 | 3. Scale | ~3 days | Only if you expect >1k pins at launch |
 | 4. Moderation | ~1 week | Yes for public launch |
@@ -120,8 +120,8 @@ Can happen in parallel with earlier phases, but must be decided before fundraisi
 | 8. Launch prep | ~3 days | Yes obviously |
 | 9. Polish | Ongoing | No |
 
-**Non-negotiable before any real user:** Phase 1 (all 8 steps) + Phase 4.
+**Non-negotiable before any real user:** ~~Phase 1~~ (done) + Phase 4.
 
 ---
 
-*Last updated: 2026-04-21 (Phase 1 code-complete: 1.1–1.8 all shipped)*
+*Last updated: 2026-04-22 (2.1 shipped — MapView split)*
