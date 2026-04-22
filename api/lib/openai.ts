@@ -7,6 +7,7 @@ import OpenAI from 'openai';
 import { TripInput } from './types.js';
 import { validateTripInput, calculateNights } from './inputValidation.js';
 import { buildSystemPrompt, buildUserPrompt } from './prompts.js';
+import type { TravelContext } from './travelContext.js';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -49,9 +50,10 @@ export async function generateItinerary(
     maxRetries?: number;
     firstName?: string;
     onToken?: (delta: string) => void;
+    travelContext?: TravelContext;
   } = {}
 ): Promise<string> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (\!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not set in environment variables');
   }
 
@@ -84,7 +86,7 @@ export async function generateItinerary(
       stream: true,
       messages: [
         { role: 'system', content: buildSystemPrompt() },
-        { role: 'user', content: buildUserPrompt(input, firstName) },
+        { role: 'user', content: buildUserPrompt(input, firstName, options.travelContext) },
       ],
       max_tokens: maxTokens,
       temperature: 0.7,
@@ -93,12 +95,12 @@ export async function generateItinerary(
     let full = '';
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta?.content;
-      if (!delta) continue;
+      if (\!delta) continue;
       full += delta;
       options.onToken?.(delta);
     }
 
-    if (!full) {
+    if (\!full) {
       throw new Error('No content received from OpenAI');
     }
 
@@ -112,5 +114,6 @@ export async function generateItinerary(
     throw error;
   }
 }
+
 
 

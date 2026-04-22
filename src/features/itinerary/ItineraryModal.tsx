@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { ItineraryInput } from './types';
 import { generateItinerary, saveItineraryToProfile } from './itineraryApi';
 import { supabase } from '../../lib/supabaseClient';
@@ -1177,6 +1179,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                 </div>
               )}
               <div
+                className="itinerary-markdown"
                 style={{
                   fontSize: 14,
                   lineHeight: 1.6,
@@ -1185,157 +1188,113 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                   paddingBottom: 20,
                 }}
               >
-                {/* Render markdown as HTML - precise formatting */}
-                {itinerary.split('\n').map((line, idx) => {
-                  // Headers
-                  if (line.startsWith('###')) {
-                    return (
-                      <h3 key={idx} style={{ marginTop: 20, marginBottom: 10, fontSize: 16, fontWeight: 700 }}>
-                        {line.replace(/^#+\s/, '')}
-                      </h3>
-                    );
-                  }
-                  if (line.startsWith('##')) {
-                    return (
-                      <h2 key={idx} style={{ marginTop: 24, marginBottom: 12, fontSize: 18, fontWeight: 700 }}>
-                        {line.replace(/^#+\s/, '')}
-                      </h2>
-                    );
-                  }
-                  if (line.startsWith('#')) {
-                    return (
-                      <h1 key={idx} style={{ marginTop: 28, marginBottom: 14, fontSize: 20, fontWeight: 700 }}>
-                        {line.replace(/^#+\s/, '')}
-                      </h1>
-                    );
-                  }
-
-                  let content = line;
-                  if (content.trim() === '') {
-                    return <div key={idx} style={{ height: 8 }} />;
-                  }
-
-                  // Helper function to render inline markdown (bold, italic, and links)
-                  const renderInlineMarkdown = (text: string) => {
-                    // Split by links first [text](url)
-                    const linkParts = text.split(/(\[[^\]]+\]\([^)]+\))/);
-                    
-                    return linkParts.flatMap((part, i) => {
-                      // Handle markdown links [text](url)
-                      const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-                      if (linkMatch) {
-                        const [, linkText, url] = linkMatch;
-                        
-                        // Handle special mapbox: protocol for on-demand geocoding
-                        if (url.startsWith('mapbox:')) {
-                          const [, venueName, city] = url.match(/^mapbox:(.+)\|(.+)$/) || [];
-                          const decodedVenue = decodeURIComponent(venueName);
-                          
-                          return (
-                            <a
-                              key={i}
-                              href="#"
-                              onClick={async (e) => {
-                                e.preventDefault();
-                                try {
-                                  const { geocodeVenue, generateGoogleMapsURL } = await import('../../lib/venueGeocoding');
-                                  const coords = await geocodeVenue(decodedVenue, city);
-                                  const mapsUrl = generateGoogleMapsURL(coords, decodedVenue);
-                                  if (mapsUrl) {
-                                    window.open(mapsUrl, '_blank');
-                                  }
-                                } catch (error) {
-                                  console.error('Failed to geocode:', error);
-                                  // Fallback: search by name
-                                  window.open(`https://www.google.com/maps/search/${encodeURIComponent(decodedVenue)}`, '_blank');
-                                }
-                              }}
-                              style={{ color: '#0066cc', textDecoration: 'none', cursor: 'pointer' }}
-                              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-                              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
-                            >
-                              {linkText}
-                            </a>
-                          );
-                        }
-                        
-                        // Normal links
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    // Style headings to match previous look.
+                    h1: ({ node: _n, ...props }: any) => (
+                      <h1 style={{ marginTop: 28, marginBottom: 14, fontSize: 20, fontWeight: 700 }} {...props} />
+                    ),
+                    h2: ({ node: _n, ...props }: any) => (
+                      <h2 style={{ marginTop: 24, marginBottom: 12, fontSize: 18, fontWeight: 700 }} {...props} />
+                    ),
+                    h3: ({ node: _n, ...props }: any) => (
+                      <h3 style={{ marginTop: 20, marginBottom: 10, fontSize: 16, fontWeight: 700 }} {...props} />
+                    ),
+                    p: ({ node: _n, ...props }: any) => (
+                      <p style={{ marginTop: 0, marginBottom: 10 }} {...props} />
+                    ),
+                    ul: ({ node: _n, ...props }: any) => (
+                      <ul style={{ marginTop: 4, marginBottom: 10, paddingLeft: 20 }} {...props} />
+                    ),
+                    ol: ({ node: _n, ...props }: any) => (
+                      <ol style={{ marginTop: 4, marginBottom: 10, paddingLeft: 20 }} {...props} />
+                    ),
+                    li: ({ node: _n, ...props }: any) => (
+                      <li style={{ marginBottom: 4 }} {...props} />
+                    ),
+                    blockquote: ({ node: _n, ...props }: any) => (
+                      <blockquote
+                        style={{
+                          borderLeft: '4px solid #bfdbfe',
+                          background: '#eff6ff',
+                          margin: '10px 0',
+                          padding: '8px 12px',
+                          color: '#1e3a8a',
+                          borderRadius: 4,
+                        }}
+                        {...props}
+                      />
+                    ),
+                    table: ({ node: _n, ...props }: any) => (
+                      <div style={{ overflowX: 'auto', margin: '12px 0' }}>
+                        <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }} {...props} />
+                      </div>
+                    ),
+                    th: ({ node: _n, ...props }: any) => (
+                      <th
+                        style={{
+                          border: '1px solid #e5e7eb',
+                          padding: '6px 10px',
+                          background: '#f9fafb',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                        }}
+                        {...props}
+                      />
+                    ),
+                    td: ({ node: _n, ...props }: any) => (
+                      <td style={{ border: '1px solid #e5e7eb', padding: '6px 10px' }} {...props} />
+                    ),
+                    a: ({ node: _n, href, children, ...props }: any) => {
+                      // Preserve the on-demand geocoding behavior for mapbox: links
+                      // (the prompt may emit these for venue names).
+                      if (href?.startsWith('mapbox:')) {
+                        const match = href.match(/^mapbox:(.+)\|(.+)$/);
+                        const decodedVenue = match ? decodeURIComponent(match[1]) : String(children);
+                        const city = match ? match[2] : '';
                         return (
                           <a
-                            key={i}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href="#"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              try {
+                                const { geocodeVenue, generateGoogleMapsURL } = await import(
+                                  '../../lib/venueGeocoding'
+                                );
+                                const coords = await geocodeVenue(decodedVenue, city);
+                                const mapsUrl = generateGoogleMapsURL(coords, decodedVenue);
+                                if (mapsUrl) window.open(mapsUrl, '_blank');
+                              } catch (err) {
+                                console.error('Failed to geocode:', err);
+                                window.open(
+                                  `https://www.google.com/maps/search/${encodeURIComponent(decodedVenue)}`,
+                                  '_blank'
+                                );
+                              }
+                            }}
                             style={{ color: '#0066cc', textDecoration: 'none', cursor: 'pointer' }}
-                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
                           >
-                            {linkText}
+                            {children}
                           </a>
                         );
                       }
-                      
-                      // Split by bold (**text**)
-                      const boldParts = part.split(/(\*\*[^*]+\*\*)/);
-                      
-                      return boldParts.map((boldPart, j) => {
-                        if (boldPart.startsWith('**') && boldPart.endsWith('**')) {
-                          // Bold text
-                          const boldContent = boldPart.slice(2, -2);
-                          // Now handle italics within bold
-                          const italicParts = boldContent.split(/(\*[^*]+\*)/);
-                          return (
-                            <strong key={`${i}-${j}`}>
-                              {italicParts.map((segment, k) => {
-                                if (segment.startsWith('*') && segment.endsWith('*') && segment.length > 2) {
-                                  return <em key={k}>{segment.slice(1, -1)}</em>;
-                                }
-                                return segment;
-                              })}
-                            </strong>
-                          );
-                        }
-                        // Handle italics in non-bold text (*text*)
-                        const italicParts = boldPart.split(/(\*[^*]+\*)/);
-                        return italicParts.map((segment, k) => {
-                          if (segment.startsWith('*') && segment.endsWith('*') && segment.length > 2) {
-                            return <em key={k}>{segment.slice(1, -1)}</em>;
-                          }
-                          return segment;
-                        });
-                      });
-                    });
-                  };
-
-                  // Bullet lists - only if starts with - or * followed by space
-                  if (/^[-]\s/.test(line)) {
-                    const bulletContent = line.replace(/^-\s/, '');
-                    return (
-                      <div key={idx} style={{ marginLeft: 20, marginBottom: 4, display: 'flex', gap: 8 }}>
-                        <span>•</span>
-                        <span>{renderInlineMarkdown(bulletContent)}</span>
-                      </div>
-                    );
-                  }
-
-                  // Numbered lists
-                  const numberMatch = line.match(/^\d+\.\s/);
-                  if (numberMatch) {
-                    const listContent = line.replace(/^\d+\.\s/, '');
-                    const numberPart = line.match(/^\d+\./)?.[0];
-                    return (
-                      <div key={idx} style={{ marginLeft: 20, marginBottom: 4 }}>
-                        <span style={{ fontWeight: 600 }}>{numberPart}</span> {renderInlineMarkdown(listContent)}
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div key={idx} style={{ marginBottom: 8 }}>
-                      {renderInlineMarkdown(content)}
-                    </div>
-                  );
-                })}
+                      return (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#0066cc', textDecoration: 'none' }}
+                          {...props}
+                        >
+                          {children}
+                        </a>
+                      );
+                    },
+                  }}
+                >
+                  {itinerary}
+                </ReactMarkdown>
               </div>
             </div>
           )}

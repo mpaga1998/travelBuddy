@@ -1,8 +1,39 @@
 import { TripInput } from './types.js';
 import { formatDate } from './date.js';
+import type { TravelContext } from './travelContext.js';
 
 export const buildSystemPrompt = () =>
-  `You are an expert backpacker trip planner who creates engaging, practical, highly-specific itineraries. Your style is conversational, encouraging, and data-driven.
+  `You are an expert backpacker trip planner who creates engaging, practical, highly-specific itineraries for ANY destination in the world. Your style is conversational, encouraging, and data-driven.
+
+**⚠️ DESTINATION CONTEXT — OVERRIDES ALL EXAMPLES BELOW:**
+The examples throughout this prompt use Milan / € / trains because that was the original test destination. For every actual itinerary you MUST adapt:
+- **Currency**: use the ISO currency code provided in the user message (not € unless told to). Prices in that currency, with the symbol or code inline (e.g. "~THB 180", "~KGS 500", "~$25").
+- **Units**: use the units provided (metric or imperial). Distances in km unless the user message says imperial.
+- **Transport modes**: use what's actually realistic for the destination — trains in Europe/Japan/Korea, domestic flights + buses in large countries, marshrutkas/shared taxis in Central Asia, ferries + 4WD in island nations, tuk-tuks + BTS in Bangkok, etc. Do NOT default to trains everywhere.
+- **Transport nodes**: name the correct airport or station when a city has multiple (e.g. BKK vs DMK in Bangkok, Milano Centrale vs Cadorna, NRT vs HND in Tokyo, Moscow's three airports).
+- **Local ritual**: always include ONE culturally-defining local routine each day — aperitivo in Italy, izakaya night in Japan, chai at a dhaba in India, aperitif-sundowner in East Africa, plov-sharing in Uzbekistan, tea house in Iran, etc. Pick what fits the country.
+- **Holiday / religious-period awareness**: the user message lists any public holidays or religious periods (Ramadan, Chinese New Year, etc.) that overlap the trip window. Adjust restaurant recommendations, opening hours, and tone accordingly, and flag closures with \`> ⚠️\`.
+
+**⚠️ MARKDOWN OUTPUT FORMAT — STRICT:**
+Output must be valid GitHub-Flavored Markdown so the client renderer displays it correctly:
+- Use \`##\` for day headers ("## Day 1 — Thursday, April 30"), \`###\` for sub-sections within a day.
+- Use \`**bold**\` (double-asterisks) for emphasis. NEVER use single \`*word*\` — that does not render bold.
+- Use \`-\` bullets for lists (not \`•\`). Indent with 2 spaces for nested lists.
+- Use \`>\` for Smart Tips and \`> ⚠️\` for warnings.
+- At the end of each day, include a GFM table:
+  \`\`\`
+  | Food | Transport | Activities | Day total |
+  |------|-----------|-----------|-----------|
+  | ~X   | ~Y        | ~Z        | **~T**    |
+  \`\`\`
+  All values in the trip's currency.
+- Emojis are welcome in headings and section labels; do NOT put them inside bold markers.
+
+**⚠️ TAG ONE DON'T-MISS MOMENT PER TRIP:**
+Across the whole itinerary, pick exactly ONE standout activity that defines the trip and prefix its line with \`🌟 Don't-miss:\` — one per trip, not one per day.
+
+**⚠️ FINAL DAY MUST NOT BE EMPTY:**
+If the departure time is afternoon or night, the final day needs 2–3 concrete activities (not just "pack and rest"). Schedule them near the departure transport hub so the traveler can roll straight to it.
 
 **⚠️ CRITICAL - DATES AND TIMES ARE FIXED (DO NOT CHANGE):**
 The arrival date, arrival time, departure date, and departure time are LOCKED IN and cannot be modified under any circumstances.
@@ -195,9 +226,31 @@ Transport: [methods]
 **REMEMBER: FOR RELAXED PACE, AVOID DAY TRIPS ON DEPARTURE DAY ENTIRELY. Suggest light local recovery instead (walking, local cafes, packing time).**
 **REMEMBER: Main day trips (like Lake Como) should ONLY appear on full middle days, return by 5-6 PM for dinner at base.**`;
 
+/**
+ * Render the destination frame (country/currency/units/holidays) as a block
+ * injected at the top of the user prompt. Returns empty string if no context.
+ */
+function renderTravelContext(ctx?: TravelContext): string {
+  if (!ctx) return '';
+  const lines: string[] = ['**🌍 DESTINATION FRAME (use this, not defaults):**'];
+  if (ctx.countryName) lines.push(`- Country: ${ctx.countryName}${ctx.countryIso2 ? ` (${ctx.countryIso2})` : ''}`);
+  lines.push(`- Currency for all cost lines: **${ctx.currency}**`);
+  lines.push(`- Units: ${ctx.units}`);
+  if (ctx.holidays.length) {
+    lines.push('- Public holidays that overlap this trip (flag closures):');
+    for (const h of ctx.holidays) lines.push(`  - ${h.date}: ${h.name}`);
+  }
+  if (ctx.religiousPeriods.length) {
+    lines.push('- Religious/cultural periods affecting this trip:');
+    for (const r of ctx.religiousPeriods) lines.push(`  - ${r.name} — ${r.overlap}`);
+  }
+  return lines.join('\n') + '\n';
+}
+
 export const buildUserPrompt = (
   input: TripInput,
-  firstName?: string
+  firstName?: string,
+  travelContext?: TravelContext
 ): string => {
   // Parse dates more reliably by extracting components
   const [arrivalYear, arrivalMonth, arrivalDay] = input.arrival.date
@@ -272,6 +325,7 @@ export const buildUserPrompt = (
   if (isLongTrip) {
     return `${firstName ? `Hey ${firstName}!` : 'Hello!'} Building your ${fullDays}-day trip...
 
+${renderTravelContext(travelContext)}
 ⚠️ **FIXED DATES AND TIMES (DO NOT CHANGE THESE):**
 - **ARRIVAL:** ${startDate} in ${input.arrival.location}${arrivalTimeConstraint}
 - **DEPARTURE:** ${endDate} from ${input.departure.location}${departureTimeConstraint}
@@ -323,6 +377,7 @@ Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be pract
   } else {
     return `${firstName ? `Hey ${firstName}!` : "Hey there!"} Let's plan your ${fullDays}-day trip...
 
+${renderTravelContext(travelContext)}
 ⚠️ **FIXED DATES AND TIMES (DO NOT CHANGE THESE):**
 - **ARRIVAL:** ${startDate} in ${input.arrival.location}${arrivalTimeConstraint}
 - **DEPARTURE:** ${endDate} from ${input.departure.location}${departureTimeConstraint}
@@ -371,4 +426,5 @@ ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 
 Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be practical, encouraging, and incredibly specific. Make it feel like a best friend giving insider tips.`;
   }
-}; 
+};
+
