@@ -1361,4 +1361,55 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                   padding: '12px 16px',
                   borderRadius: 10,
                   border: '1px solid rgba(0,0,0,0.18)',
-             
+                  background: isSaving ? '#e5e7eb' : 'white',
+                  color: '#111',
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  minHeight: 44,
+                  opacity: isSaving ? 0.6 : 1,
+                }}
+              >
+                {isSaving ? '💾 Saving...' : '📌 Save to Profile'}
+              </button>
+              <button
+                onClick={() => resetForm()}
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: '#2563eb',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  minHeight: 44,
+                }}
+              >
+                ✨ Create Another
+              </button>
+            </>
+          )}
+          <button
+            onClick={handleClose}
+            style={{
+              flex: step === 'form' ? 1 : undefined,
+              padding: '12px 16px',
+              borderRadius: 10,
+              border: step === 'form' ? 'none' : '1px solid rgba(0,0,0,0.18)',
+              background: step === 'form' ? '#f3f4f6' : 'white',
+              color: '#111',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: 14,
+              minHeight: 44,
+            }}
+          >
+            {step === 'form' ? 'Cancel' : 'Close'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

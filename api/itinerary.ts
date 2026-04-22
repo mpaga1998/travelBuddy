@@ -149,4 +149,69 @@ export default async function handler(
         },
       });
 
-      const generation
+      const generationTime = Date.now() - routeStartTime;
+      console.log(
+        `⏱️ [TIMING] API TOTAL TIME: ${generationTime}ms (${(generationTime / 1000).toFixed(2)}s)`
+      );
+      res.end();
+      return;
+    }
+
+    // Legacy JSON path — buffer the full result, return one response.
+    const firstName = await firstNamePromise;
+    console.log('⏱️ [TIMING] Starting itinerary generation (non-stream)...');
+    const itinerary = await generateItinerary(tripInput, { firstName });
+    const generationTime = Date.now() - routeStartTime;
+    console.log(
+      `⏱️ [TIMING] API TOTAL TIME: ${generationTime}ms (${(generationTime / 1000).toFixed(2)}s)`
+    );
+
+    const response: ItineraryResponse = {
+      success: true,
+      itinerary,
+    };
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Itinerary generation error:', error);
+
+    let statusCode = 500;
+    let errorMessage = 'Failed to generate itinerary';
+    let suggestions: string[] = [];
+
+    if (error instanceof Error) {
+      if (error.message.includes('validation')) {
+        statusCode = 400;
+        errorMessage = error.message;
+
+        // Generate helpful suggestions based on error context
+        const context = (error as any).context;
+        if (context && req.body) {
+          suggestions = generateSuggestions(req.body as TripInput, context);
+        }
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
+    // If we've already started streaming the body, we can't send a JSON
+    // error response — headers are committed. Best we can do is append an
+    // error marker the client will pick up and close the stream.
+    if (res.headersSent) {
+      try {
+        res.write(`\n\n__ITINERARY_ERROR__:${errorMessage}`);
+      } catch {
+        /* socket might already be gone */
+      }
+      res.end();
+      return;
+    }
+
+    const response: ItineraryResponse = {
+      success: false,
+      itinerary: '',
+      error: errorMessage,
+      ...(suggestions.length > 0 && { suggestions }),
+    };
+    res.status(statusCode).json(response);
+  }
+}

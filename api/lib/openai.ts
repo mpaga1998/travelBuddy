@@ -71,4 +71,46 @@ export async function generateItinerary(
 
   // STEP 2: Stream text-based itinerary
   try {
-    // Default bumped from gpt-3.5-turbo -> gpt-4
+    // Default bumped from gpt-3.5-turbo -> gpt-4o-mini: faster TTFT, cheaper,
+    // better quality at similar latency. OPENAI_FALLBACK_MODEL still overrides.
+    const selectedModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-4o-mini';
+    const maxTokens = computeMaxTokens(input);
+    console.log(
+      `📄 Streaming itinerary using model: ${selectedModel} (max_tokens=${maxTokens})`
+    );
+
+    const stream = await openai.chat.completions.create({
+      model: selectedModel,
+      stream: true,
+      messages: [
+        { role: 'system', content: buildSystemPrompt() },
+        { role: 'user', content: buildUserPrompt(input, firstName) },
+      ],
+      max_tokens: maxTokens,
+      temperature: 0.7,
+    });
+
+    let full = '';
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (!delta) continue;
+      full += delta;
+      options.onToken?.(delta);
+    }
+
+    if (!full) {
+      throw new Error('No content received from OpenAI');
+    }
+
+    console.log('✅ Itinerary streamed successfully');
+    return full;
+  } catch (error) {
+    console.error(
+      '❌ Itinerary generation failed:',
+      error instanceof Error ? error.message : error
+    );
+    throw error;
+  }
+}
+
+
