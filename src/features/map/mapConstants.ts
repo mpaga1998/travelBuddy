@@ -25,12 +25,28 @@ export const AGE_RANGES = [
 
 export function categoryEmoji(cat: PinCategory) {
   switch (cat) {
-    case "food": return "🍜";
-    case "nightlife": return "🎧";
-    case "sight": return "📸";
-    case "shop": return "🛍️";
-    case "beach": return "🏖️";
-    default: return "📍";
+    case "food": return "\u{1F35C}";
+    case "nightlife": return "\u{1F3A7}";
+    case "sight": return "\u{1F4F8}";
+    case "shop": return "\u{1F6CD}\uFE0F";
+    case "beach": return "\u{1F3D6}\uFE0F";
+    default: return "\u{1F4CD}";
+  }
+}
+
+/**
+ * Per-category accent color. Used by the droplet marker + (future) legend
+ * and filter chips. Picked for contrast on both outdoors-v12 (warm beige)
+ * and light-v11 (near-white), and to stay distinct when clustered.
+ */
+export function categoryColor(cat: PinCategory): string {
+  switch (cat) {
+    case "food":      return "#f59e0b"; // amber
+    case "nightlife": return "#8b5cf6"; // violet
+    case "sight":     return "#0ea5e9"; // sky
+    case "shop":      return "#ec4899"; // pink
+    case "beach":     return "#06b6d4"; // cyan
+    default:          return "#64748b"; // slate
   }
 }
 
