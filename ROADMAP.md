@@ -5,7 +5,7 @@ Do phases top-to-bottom; each assumes the previous is done.
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Progress:** 9 / 50 steps complete — **Phase 1 complete ✅**
+**Progress:** 10 / 50 steps complete — **Phase 1 complete ✅**
 
 ---
 
@@ -31,7 +31,7 @@ Nothing else matters until this is done.
 So future changes don't require rewriting 1,800-line files.
 
 - [x] **2.1** Split `MapView.tsx` (1,812 → 850 lines). New files under `src/features/map/`: `MapCanvas.tsx` (pure Mapbox instance + lifecycle), `PinLayer.tsx` (marker cache + popup lifecycle via `createRoot`), `PinPopup.tsx` (real React component — killed the 300-line escaped-HTML string), `FilterBar.tsx` (controlled top bar + mobile drawer), `hooks/useMapPins.ts` (pins + filter state), `hooks/useBookmarks.ts` (bookmark set + toggle), plus `mapConstants.ts` + `hooks/useIsMobile.ts`. Draft-pin modal, tips viewer, delete confirmation, and lightbox were NOT in 2.1's scope so they remain as file-local components in `MapView.tsx` — obvious follow-up.
-- [ ] **2.2** Enable Mapbox native clustering in `PinLayer`. Use `cluster: true` on the GeoJSON source. Map dies past ~2k pins without this.
+- [x] **2.2** Native clustering shipped in `PinLayer`. Replaced per-pin `mapboxgl.Marker` elements with a single GeoJSON source (`cluster: true`, `clusterRadius: 50`, `clusterMaxZoom: 14`). Four GL layers: cluster circle (graduated color/size by `point_count`), cluster count label, unclustered point circle (blue / black-for-hostels, keeps the 2.1 look), emoji symbol layer. Cluster click calls `getClusterExpansionZoom` + `easeTo`; point click looks the pin up by id from a ref and delegates to `onSelect` so the popup lifecycle is unchanged. Removes the ~2k-pin DOM wall.
 - [ ] **2.3** Split `ItineraryModal.tsx` (1,393 lines) into: form component, preview/render component, save-to-profile flow, `useItineraryDraft` hook.
 - [ ] **2.4** Split `profileModal.tsx` (1,414 lines) into tabbed subcomponents: profile info, saved itineraries list, bookmarked pins list.
 - [ ] **2.5** Extract inline styles. Move to Tailwind utility classes or CSS modules. Unblocks a design refresh later.
@@ -124,4 +124,4 @@ Can happen in parallel with earlier phases, but must be decided before fundraisi
 
 ---
 
-*Last updated: 2026-04-22 (2.1 shipped — MapView split)*
+*Last updated: 2026-04-22 (2.2 shipped — native clustering)*
