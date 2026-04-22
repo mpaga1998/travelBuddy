@@ -53,7 +53,7 @@ export async function generateItinerary(
     travelContext?: TravelContext;
   } = {}
 ): Promise<string> {
-  if (\!process.env.OPENAI_API_KEY) {
+  if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not set in environment variables');
   }
 
@@ -95,12 +95,12 @@ export async function generateItinerary(
     let full = '';
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta?.content;
-      if (\!delta) continue;
+      if (!delta) continue;
       full += delta;
       options.onToken?.(delta);
     }
 
-    if (\!full) {
+    if (!full) {
       throw new Error('No content received from OpenAI');
     }
 

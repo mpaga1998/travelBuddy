@@ -70,13 +70,13 @@ export default async function handler(
 
   // 🔐 Verify JWT. On failure, requireAuth already wrote the 401 — we just bail.
   const user = await requireAuth(req, res);
-  if (\!user) return;
+  if (!user) return;
 
   // 📦 Reject oversized payloads before doing any real work. 413 on too big.
-  if (\!validateBodySize(req, res)) return;
+  if (!validateBodySize(req, res)) return;
 
   // 🚦 Per-user rate limit (protects OpenAI bill). 429 on breach.
-  if (\!(await enforceRateLimit(user.id, res, ITINERARY_RATE_LIMIT))) return;
+  if (!(await enforceRateLimit(user.id, res, ITINERARY_RATE_LIMIT))) return;
 
   try {
     const routeStartTime = Date.now();
@@ -85,8 +85,8 @@ export default async function handler(
     // sends is ignored — those come from the verified JWT + the profiles table.
     const body = (req.body ?? {}) as Partial<TripInput>;
     const tripInput: TripInput = {
-      arrival: body.arrival\!,
-      departure: body.departure\!,
+      arrival: body.arrival!,
+      departure: body.departure!,
       stops: body.stops,
       desiredAttractions: body.desiredAttractions,
       travelPace: body.travelPace,
@@ -106,7 +106,7 @@ export default async function handler(
     });
 
     // Validation
-    if (\!tripInput.arrival?.date || \!tripInput.departure?.date) {
+    if (!tripInput.arrival?.date || !tripInput.departure?.date) {
       const response: ItineraryResponse = {
         success: false,
         itinerary: '',
