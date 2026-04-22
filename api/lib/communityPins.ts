@@ -86,7 +86,7 @@ async function queryPinsNear(
 
     let query = supabase
       .from('pins')
-      .select('id, title, category, lat, lng, bookmark_count, profiles(username, role, hostel_name)')
+      .select('id, title, category, lat, lng, bookmark_count, profiles!created_by(username, role, hostel_name)')
       .gte('lat', point.lat - BBOX_DEGREES)
       .lte('lat', point.lat + BBOX_DEGREES)
       .gte('lng', point.lng - BBOX_DEGREES)
