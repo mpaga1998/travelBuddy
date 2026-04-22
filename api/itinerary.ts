@@ -58,7 +58,7 @@ export default async function handler(
     return;
   }
 
-  if (req.method \!== 'POST') {
+  if (req.method !== 'POST') {
     const response: ItineraryResponse = {
       success: false,
       itinerary: '',
