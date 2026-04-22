@@ -10,6 +10,8 @@ import {
 } from "../pins/pinApi";
 
 import { ItineraryModal } from "../itinerary/ItineraryModal";
+import { ItineraryMapLayer } from "../itinerary/ItineraryMapLayer";
+import type { ExtractedPlace } from "../itinerary/itineraryMapOverlay";
 import { supabase } from "../../lib/supabaseClient";
 import { getLocationNameFromCoordinates } from "../../lib/mapbox";
 
@@ -89,6 +91,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftPin | null>(null);
   const [itineraryModalOpen, setItineraryModalOpen] = useState(false);
+  const [itineraryPlaces, setItineraryPlaces] = useState<ExtractedPlace[]>([]);
   const [tipsViewerOpen, setTipsViewerOpen] = useState(false);
   const [viewerTips, setViewerTips] = useState<string[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -351,7 +354,42 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
             <ItineraryModal
               open={itineraryModalOpen}
               onClose={() => setItineraryModalOpen(false)}
+              onViewOnMap={(places) => {
+                setItineraryPlaces(places);
+                setItineraryModalOpen(false);
+              }}
             />
+          )}
+
+          {itineraryPlaces.length > 0 && (
+            <>
+              <ItineraryMapLayer
+                map={mapRef.current}
+                places={itineraryPlaces}
+                onPinSaved={reload}
+              />
+              {/* Dismiss overlay button */}
+              <button
+                onClick={() => setItineraryPlaces([])}
+                style={{
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: 'rgba(255,255,255,0.95)',
+                  color: '#111',
+                  fontWeight: 600,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  zIndex: 10,
+                }}
+              >
+                ✕ Clear itinerary
+              </button>
+            </>
           )}
 
           {tipsViewerOpen && viewerTips.length > 0 && (

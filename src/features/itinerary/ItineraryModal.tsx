@@ -3,11 +3,14 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { ItineraryInput } from './types';
 import { generateItinerary, saveItineraryToProfile } from './itineraryApi';
+import { extractItineraryPlaces, type ExtractedPlace } from './itineraryMapOverlay';
 import { supabase } from '../../lib/supabaseClient';
 
 interface ItineraryModalProps {
   open: boolean;
   onClose: () => void;
+  /** Called when user clicks "View on map". Places and arrivalLocation are passed to the parent map view. */
+  onViewOnMap?: (places: ExtractedPlace[], arrivalLocation: string) => void;
 }
 
 interface LocationSuggestion {
@@ -41,12 +44,13 @@ const INTEREST_OPTIONS = [
   'Adventure',
 ];
 
-export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
+export function ItineraryModal({ open, onClose, onViewOnMap }: ItineraryModalProps) {
   const [step, setStep] = useState<'form' | 'loading' | 'streaming' | 'result'>('form');
   const [error, setError] = useState<string | null>(null);
   const [itinerary, setItinerary] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExtractingPlaces, setIsExtractingPlaces] = useState(false);
 
   // Form state
   const [arrivalDate, setArrivalDate] = useState('');
@@ -361,6 +365,27 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
       alert(`❌ ${message}`);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleViewOnMap = async () => {
+    if (!onViewOnMap) return;
+    setIsExtractingPlaces(true);
+    try {
+      const places = await extractItineraryPlaces(itinerary, arrivalLocation);
+      if (!places.length) {
+        alert('No named places could be extracted from this itinerary.');
+        return;
+      }
+      onViewOnMap(places, arrivalLocation);
+      resetForm();
+      onClose();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to extract places';
+      console.error('❌ View on map error:', err);
+      alert(`❌ ${message}`);
+    } finally {
+      setIsExtractingPlaces(false);
     }
   };
 
@@ -1312,9 +1337,30 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
         >
           {step === 'result' && (
             <>
+              {onViewOnMap && (
+                <button
+                  onClick={handleViewOnMap}
+                  disabled={isExtractingPlaces || isSaving}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    borderRadius: 10,
+                    border: 'none',
+                    background: isExtractingPlaces ? '#e5e7eb' : '#0ea5e9',
+                    color: isExtractingPlaces ? '#111' : 'white',
+                    cursor: (isExtractingPlaces || isSaving) ? 'not-allowed' : 'pointer',
+                    fontWeight: 600,
+                    fontSize: 14,
+                    minHeight: 44,
+                    opacity: (isExtractingPlaces || isSaving) ? 0.6 : 1,
+                  }}
+                >
+                  {isExtractingPlaces ? '🗺️ Mapping…' : '📍 View on map'}
+                </button>
+              )}
               <button
                 onClick={handleSaveItinerary}
-                disabled={isSaving}
+                disabled={isSaving || isExtractingPlaces}
                 style={{
                   flex: 1,
                   padding: '12px 16px',
