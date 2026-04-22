@@ -8,6 +8,8 @@ import { TripInput } from './types.js';
 import { validateTripInput, calculateNights } from './inputValidation.js';
 import { buildSystemPrompt, buildUserPrompt } from './prompts.js';
 import type { TravelContext } from './travelContext.js';
+import type { PlacesContext } from './placesContext.js';
+import type { CommunityPinsContext } from './communityPins.js';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -51,6 +53,8 @@ export async function generateItinerary(
     firstName?: string;
     onToken?: (delta: string) => void;
     travelContext?: TravelContext;
+    placesContext?: PlacesContext;
+    communityPinsContext?: CommunityPinsContext;
   } = {}
 ): Promise<string> {
   if (!process.env.OPENAI_API_KEY) {
@@ -86,7 +90,7 @@ export async function generateItinerary(
       stream: true,
       messages: [
         { role: 'system', content: buildSystemPrompt() },
-        { role: 'user', content: buildUserPrompt(input, firstName, options.travelContext) },
+        { role: 'user', content: buildUserPrompt(input, firstName, options.travelContext, options.placesContext, options.communityPinsContext) },
       ],
       max_tokens: maxTokens,
       temperature: 0.7,

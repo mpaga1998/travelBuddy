@@ -8,6 +8,8 @@ import { requireAuth } from './lib/requireAuth.js';
 import { validateBodySize } from './lib/validateBodySize.js';
 import { enforceRateLimit, ITINERARY_RATE_LIMIT } from './lib/rateLimit.js';
 import { buildTravelContext } from './lib/travelContext.js';
+import { fetchPlacesContext } from './lib/placesContext.js';
+import { fetchCommunityPins } from './lib/communityPins.js';
 
 // Load environment variables
 dotenv.config();
@@ -122,12 +124,18 @@ export default async function handler(
     const firstNamePromise = fetchFirstName(user.id);
 
     // Build the destination context (country / currency / units / holidays /
-    // religious periods) synchronously — it's just lookups, no I/O. Done
-    // alongside firstName so it's ready before generation.
+    // religious periods / transport hints) synchronously — it's just lookups,
+    // no I/O. Pass all locations so multi-country trips get per-country hints.
+    const allLocations = [
+      tripInput.arrival.location,
+      ...(tripInput.stops ?? []),
+      tripInput.departure.location,
+    ];
     const travelContext = buildTravelContext(
       tripInput.arrival.location,
       tripInput.arrival.date,
-      tripInput.departure.date
+      tripInput.departure.date,
+      allLocations
     );
     console.log('🌍 [TRAVEL CONTEXT]', {
       country: travelContext.countryName,
@@ -135,7 +143,23 @@ export default async function handler(
       units: travelContext.units,
       holidays: travelContext.holidays.length,
       religiousPeriods: travelContext.religiousPeriods.length,
+      transportHints: travelContext.transportHints.length,
     });
+
+    // B1 + B2: Fetch real nearby places; share geocoded coords with community pins
+    // to avoid a second round of Mapbox geocoding. Both are best-effort —
+    // failures silently return empty contexts so generation always proceeds.
+    const placesContext = await fetchPlacesContext(
+      tripInput.arrival.location,
+      tripInput.departure.location,
+      tripInput.stops
+    );
+    const communityPinsContext = await fetchCommunityPins(
+      placesContext.geocodedCoords,
+      tripInput.interests
+    );
+    console.log('📍 [PLACES]', placesContext.byLocation.map((l) => `${l.location.split(',')[0]}: ${l.restaurants.length}r/${l.cafes.length}c/${l.attractions.length}a`));
+    console.log('💎 [COMMUNITY PINS]', communityPinsContext.pins.length, 'pins found');
 
     // If the client asked for streaming (default for our UI), push tokens as
     // they arrive. Otherwise fall back to the old JSON-blob response for any
@@ -162,6 +186,8 @@ export default async function handler(
       await generateItinerary(tripInput, {
         firstName,
         travelContext,
+        placesContext,
+        communityPinsContext,
         onToken: (delta) => {
           res.write(delta);
         },
@@ -178,7 +204,7 @@ export default async function handler(
     // Legacy JSON path — buffer the full result, return one response.
     const firstName = await firstNamePromise;
     console.log('⏱️ [TIMING] Starting itinerary generation (non-stream)...');
-    const itinerary = await generateItinerary(tripInput, { firstName, travelContext });
+    const itinerary = await generateItinerary(tripInput, { firstName, travelContext, placesContext, communityPinsContext });
     const generationTime = Date.now() - routeStartTime;
     console.log(
       `⏱️ [TIMING] API TOTAL TIME: ${generationTime}ms (${(generationTime / 1000).toFixed(2)}s)`

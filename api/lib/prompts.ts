@@ -1,6 +1,10 @@
 import { TripInput } from './types.js';
 import { formatDate } from './date.js';
 import type { TravelContext } from './travelContext.js';
+import { renderPlacesContext } from './placesContext.js';
+import type { PlacesContext } from './placesContext.js';
+import { renderCommunityPinsContext } from './communityPins.js';
+import type { CommunityPinsContext } from './communityPins.js';
 
 export const buildSystemPrompt = () =>
   `You are an expert backpacker trip planner who creates engaging, practical, highly-specific itineraries for ANY destination in the world. Your style is conversational, encouraging, and data-driven.
@@ -244,13 +248,28 @@ function renderTravelContext(ctx?: TravelContext): string {
     lines.push('- Religious/cultural periods affecting this trip:');
     for (const r of ctx.religiousPeriods) lines.push(`  - ${r.name} — ${r.overlap}`);
   }
+
+  // B3: Transport hints
+  if (ctx.transportHints?.length) {
+    lines.push('- **Transport guidance:**');
+    for (const hint of ctx.transportHints) {
+      lines.push(`  - Intercity: ${hint.intercity}`);
+      lines.push(`  - Intracity: ${hint.intracity}`);
+      if (hint.apps.length) lines.push(`  - Key apps: ${hint.apps.join(', ')}`);
+      if (hint.bookingWarning) lines.push(`  - ⚠️ Booking: ${hint.bookingWarning}`);
+      if (hint.seasonalWarning) lines.push(`  - ⚠️ Seasonal: ${hint.seasonalWarning}`);
+    }
+  }
+
   return lines.join('\n') + '\n';
 }
 
 export const buildUserPrompt = (
   input: TripInput,
   firstName?: string,
-  travelContext?: TravelContext
+  travelContext?: TravelContext,
+  placesContext?: PlacesContext,
+  communityPinsContext?: CommunityPinsContext
 ): string => {
   // Parse dates more reliably by extracting components
   const [arrivalYear, arrivalMonth, arrivalDay] = input.arrival.date
@@ -326,6 +345,8 @@ export const buildUserPrompt = (
     return `${firstName ? `Hey ${firstName}!` : 'Hello!'} Building your ${fullDays}-day trip...
 
 ${renderTravelContext(travelContext)}
+${placesContext ? renderPlacesContext(placesContext) : ''}
+${communityPinsContext ? renderCommunityPinsContext(communityPinsContext) : ''}
 ⚠️ **FIXED DATES AND TIMES (DO NOT CHANGE THESE):**
 - **ARRIVAL:** ${startDate} in ${input.arrival.location}${arrivalTimeConstraint}
 - **DEPARTURE:** ${endDate} from ${input.departure.location}${departureTimeConstraint}
@@ -378,6 +399,8 @@ Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be pract
     return `${firstName ? `Hey ${firstName}!` : "Hey there!"} Let's plan your ${fullDays}-day trip...
 
 ${renderTravelContext(travelContext)}
+${placesContext ? renderPlacesContext(placesContext) : ''}
+${communityPinsContext ? renderCommunityPinsContext(communityPinsContext) : ''}
 ⚠️ **FIXED DATES AND TIMES (DO NOT CHANGE THESE):**
 - **ARRIVAL:** ${startDate} in ${input.arrival.location}${arrivalTimeConstraint}
 - **DEPARTURE:** ${endDate} from ${input.departure.location}${departureTimeConstraint}
