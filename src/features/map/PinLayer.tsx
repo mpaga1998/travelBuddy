@@ -2,16 +2,20 @@ import { useEffect, useRef } from "react";
 import mapboxgl, { Map as MapboxMap, Marker } from "mapbox-gl";
 import { createRoot, type Root } from "react-dom/client";
 import type { Pin } from "../pins/pinTypes";
-import { categoryColor, categoryEmoji, MOBILE_BREAKPOINT } from "./mapConstants";
+import { categoryEmoji, MOBILE_BREAKPOINT } from "./mapConstants";
 import { PinPopup } from "./PinPopup";
 
 export type PinLayerProps = {
   map: MapboxMap | null;
   pins: Pin[];
+  /** Currently selected pin (for popup). `null` = no popup. */
   selectedPin: Pin | null;
+  /** Fired when a marker is clicked. Parent decides what "selected" means. */
   onSelect: (pin: Pin) => void;
+  /** Fired when the popup's close button or background is dismissed. */
   onCloseSelection: () => void;
 
+  // Popup-content props (forwarded to PinPopup).
   currentUserId: string | null;
   bookmarkedPinIds: Set<string>;
   onReact: (pin: Pin, kind: "like" | "dislike") => void | Promise<void>;
@@ -23,6 +27,14 @@ export type PinLayerProps = {
 
 /**
  * Renders markers for every pin + a Mapbox popup for the selected pin.
+ *
+ * Two effects here:
+ *   1. Marker sync — diffs `pins` against a Map<pinId, Marker> cache.
+ *      Old approach; kept for 2.1. Native clustering lands in 2.2 and will
+ *      replace this effect with a GeoJSON source + cluster layers.
+ *   2. Popup lifecycle — when `selectedPin` changes, tear down the old popup
+ *      and build a new one. The popup's DOM content is a React tree rendered
+ *      via createRoot(), so the heart/bookmark buttons are real components.
  */
 export function PinLayer({
   map,
@@ -43,12 +55,13 @@ export function PinLayer({
   const popupRootRef = useRef<Root | null>(null);
   const popupContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // 1) Marker sync
+  // --- 1) Marker sync -----------------------------------------------------
   useEffect(() => {
     if (!map) return;
     const cache = markersRef.current;
     const keep = new Set(pins.map((p) => p.id));
 
+    // Remove markers for pins that filtered out.
     for (const [id, marker] of cache.entries()) {
       if (!keep.has(id)) {
         marker.remove();
@@ -56,6 +69,7 @@ export function PinLayer({
       }
     }
 
+    // Add/update markers.
     for (const pin of pins) {
       const existing = cache.get(pin.id);
       if (existing) {
@@ -71,17 +85,19 @@ export function PinLayer({
         onSelect(pin);
       });
 
-      const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
+      const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([pin.lng, pin.lat])
         .addTo(map);
       cache.set(pin.id, marker);
     }
 
+    // Cleanup on full unmount.
     return () => {
-      // intentionally NOT clearing here on every pins update  we only diff.
+      // intentionally NOT clearing here on every pins update — we only diff.
     };
   }, [map, pins, onSelect]);
 
+  // Full teardown when the component unmounts or the map goes away.
   useEffect(() => {
     return () => {
       markersRef.current.forEach((m) => m.remove());
@@ -97,10 +113,11 @@ export function PinLayer({
     };
   }, []);
 
-  // 2) Popup lifecycle
+  // --- 2) Popup lifecycle -------------------------------------------------
   useEffect(() => {
     if (!map) return;
 
+    // Always tear down the previous popup first — keeps state clean.
     if (popupRef.current) {
       popupRef.current.remove();
       popupRef.current = null;
@@ -113,12 +130,14 @@ export function PinLayer({
     if (!selectedPin) return;
     const pin = selectedPin;
 
+    // Pan so the pin sits comfortably below popup area.
     map.easeTo({
       center: [pin.lng, pin.lat],
       duration: 400,
       padding: { top: 180, bottom: 80, left: 40, right: 40 },
     });
 
+    // Build after pan completes — matches prior behavior.
     const timer = window.setTimeout(() => {
       const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
       const popupMaxWidth = isMobile
@@ -144,6 +163,7 @@ export function PinLayer({
       popup.on("close", onCloseSelection);
       popupRef.current = popup;
 
+      // Render the React tree INTO the popup's container.
       const root = createRoot(container);
       popupRootRef.current = root;
       root.render(
@@ -163,9 +183,16 @@ export function PinLayer({
     return () => {
       window.clearTimeout(timer);
     };
+    // We intentionally omit the callback props from the dep array: they
+    // change every render (they close over parent state) and we don't
+    // want to rebuild the popup each time. The callbacks inside PinPopup
+    // read through the latest pin via closure in the render() above,
+    // which is fine because selectedPin DOES trigger rebuilds.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, selectedPin]);
 
+  // Re-render the popup's React tree when bookmark state or counts change
+  // (so the popup UI stays in sync without rebuilding the Mapbox popup).
   useEffect(() => {
     if (!popupRootRef.current || !selectedPin) return;
     popupRootRef.current.render(
@@ -183,64 +210,29 @@ export function PinLayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPin, bookmarkedPinIds, currentUserId]);
 
-  return null;
+  return null; // all work happens via Mapbox side-effects
 }
 
-/**
- * Build a single marker DOM element  36x46 SVG teardrop droplet.
- */
 function buildMarkerElement(pin: Pin): HTMLDivElement {
-  const color = categoryColor(pin.category);
-  const isHostel = pin.createdByType === "hostel";
+  const el = document.createElement("div");
+  el.style.width = "34px";
+  el.style.height = "34px";
+  el.style.borderRadius = "999px";
+  el.style.display = "flex";
+  el.style.alignItems = "center";
+  el.style.justifyContent = "center";
+  el.style.cursor = "pointer";
+  el.style.boxShadow = "0 6px 18px rgba(0,0,0,0.18)";
+  el.style.border = "2px solid white";
+  el.style.background = pin.createdByType === "hostel" ? "#111" : "#2563eb";
+  el.style.color = "white";
+  el.style.userSelect = "none";
 
-  const wrapper = document.createElement("div");
-  wrapper.style.width = "36px";
-  wrapper.style.height = "46px";
-  wrapper.style.position = "relative";
-  wrapper.style.cursor = "pointer";
-  wrapper.style.userSelect = "none";
-  wrapper.style.filter = isHostel
-    ? "drop-shadow(0 4px 6px rgba(0,0,0,0.35))"
-    : "drop-shadow(0 3px 4px rgba(0,0,0,0.28))";
-  wrapper.style.transition = "transform 0.15s ease";
+  const badge = document.createElement("div");
+  badge.setAttribute("data-badge", "1");
+  badge.textContent = categoryEmoji(pin.category);
+  badge.style.fontSize = "16px";
+  el.appendChild(badge);
 
-  wrapper.addEventListener("mouseenter", () => {
-    wrapper.style.transform = "translateY(-2px) scale(1.05)";
-  });
-  wrapper.addEventListener("mouseleave", () => {
-    wrapper.style.transform = "";
-  });
-
-  const outerStroke = isHostel ? "#0f172a" : "rgba(255,255,255,0)";
-
-  wrapper.innerHTML = `
-    <svg width="36" height="46" viewBox="0 0 36 46" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-      ${isHostel ? `
-        <path d="M18 1.5
-                 C 9.5 1.5, 2.5 8.5, 2.5 17
-                 C 2.5 26.5, 12 35, 18 44.5
-                 C 24 35, 33.5 26.5, 33.5 17
-                 C 33.5 8.5, 26.5 1.5, 18 1.5 Z"
-              fill="${outerStroke}" />
-      ` : ""}
-      <path d="M18 ${isHostel ? 3 : 1}
-               C ${isHostel ? "10.5 3, 4 9.5, 4 17" : "9 1, 2 8, 2 17"}
-               C ${isHostel ? "4 26, 13 33.5, 18 43" : "2 26.5, 11.5 34, 18 44"}
-               C ${isHostel ? "23 33.5, 32 26, 32 17" : "24.5 34, 34 26.5, 34 17"}
-               C ${isHostel ? "32 9.5, 25.5 3, 18 3 Z" : "34 8, 27 1, 18 1 Z"}"
-            fill="${color}"
-            stroke="white"
-            stroke-width="2"
-            stroke-linejoin="round" />
-    </svg>
-    <div data-badge
-         style="position:absolute; top:0; left:0; width:36px; height:36px;
-                display:flex; align-items:center; justify-content:center;
-                font-size:17px; line-height:1; pointer-events:none;
-                filter: drop-shadow(0 1px 1px rgba(0,0,0,0.4));">
-      ${categoryEmoji(pin.category)}
-    </div>
-  `;
-
-  return wrapper;
+  return el;
 }
