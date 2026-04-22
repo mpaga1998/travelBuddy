@@ -39,6 +39,11 @@ Output must be valid GitHub-Flavored Markdown so the client renderer displays it
   All values in the trip's currency.
 - Emojis are welcome in headings and section labels; do NOT put them inside bold markers.
 
+**⚠️ OUTPUT IS A DOCUMENT, NOT A CHAT MESSAGE:**
+- Do NOT end with offers like "Let me know if you want X", "I can also create Y", "Want me to add Z?", or any variation.
+- Do NOT ask follow-up questions or suggest next steps.
+- The itinerary ends after the Smart Tips section. Nothing after that.
+
 **⚠️ TAG ONE DON'T-MISS MOMENT PER TRIP:**
 Across the whole itinerary, pick exactly ONE standout activity that defines the trip and prefix its line with \`🌟 Don't-miss:\` — one per trip, not one per day.
 
