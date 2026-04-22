@@ -88,7 +88,7 @@ export async function generateItinerary(
   try {
     // Default bumped from gpt-3.5-turbo -> gpt-4o-mini: faster TTFT, cheaper,
     // better quality at similar latency. OPENAI_FALLBACK_MODEL still overrides.
-    const selectedModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-4o-mini';
+    const selectedModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-5.4-mini';
     const maxTokens = computeMaxTokens(input);
     console.log(
       `📄 Streaming itinerary using model: ${selectedModel} (max_tokens=${maxTokens})`

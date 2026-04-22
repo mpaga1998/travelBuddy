@@ -55,7 +55,7 @@ const EXTRACTION_USER = (markdown: string) =>
   `Itinerary:\n${markdown.slice(0, 12000)}`; // cap to avoid excessive token use
 
 async function extractPlacesFromMarkdown(markdown: string): Promise<RawPlace[]> {
-  const model = process.env.OPENAI_FALLBACK_MODEL || 'gpt-4o-mini';
+  const model = process.env.OPENAI_FALLBACK_MODEL || 'gpt-5.4-mini';
   const response = await openai.chat.completions.create({
     model,
     messages: [
