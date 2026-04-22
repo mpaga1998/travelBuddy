@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Map as MapboxMap } from "mapbox-gl";
+import mapboxgl, { type Map as MapboxMap } from "mapbox-gl";
 
 import type { Pin, PinCategory } from "../pins/pinTypes";
 import {
@@ -59,6 +59,7 @@ type MapViewProps = {
  */
 export function MapView({ onBack, initialCenter, initialItineraryPlaces = [] }: MapViewProps = {}) {
   const mapRef = useRef<MapboxMap | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const isMobile = useIsMobile();
 
   // --- Auth (just the id — we don't need profile here) --------------------
@@ -117,7 +118,22 @@ export function MapView({ onBack, initialCenter, initialItineraryPlaces = [] }: 
   // --- Map callbacks ------------------------------------------------------
   const handleMapReady = useCallback((map: MapboxMap) => {
     mapRef.current = map;
+    setMapReady(true);
   }, []);
+
+  // --- Fit map to itinerary places ----------------------------------------
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || itineraryPlaces.length === 0) return;
+    const valid = itineraryPlaces.filter((p) => p.lat && p.lng);
+    if (!valid.length) return;
+    const lngs = valid.map((p) => p.lng);
+    const lats = valid.map((p) => p.lat);
+    const bounds = new mapboxgl.LngLatBounds(
+      [Math.min(...lngs), Math.min(...lats)],
+      [Math.max(...lngs), Math.max(...lats)]
+    );
+    mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 14, duration: 1000 });
+  }, [mapReady, itineraryPlaces]);
 
   const handleMapClick = useCallback(async (lngLat: mapboxgl.LngLat) => {
     // Clicking empty map: close popup first, then on a second empty click,

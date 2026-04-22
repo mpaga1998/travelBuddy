@@ -37,10 +37,10 @@ function buildMarkerEl(place: ExtractedPlace, seqInDay: number): HTMLElement {
   Object.assign(el.style, {
     width: '34px',
     height: '34px',
-    borderRadius: '50%',
+    borderRadius: '999px',
     background: color,
     border: '2px solid white',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+    boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
