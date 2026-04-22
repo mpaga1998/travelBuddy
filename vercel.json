@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/itinerary.ts": {
+      "maxDuration": 60
+    },
+    "api/itinerary/save.ts": {
+      "maxDuration": 30
+    }
+  }
+}

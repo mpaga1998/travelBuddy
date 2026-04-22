@@ -115,49 +115,38 @@ export default async function handler(
       return;
     }
 
-    // Fetch firstName server-side from the verified user's profile.
-    const firstName = await fetchFirstName(user.id);
+    // Kick off the profile lookup immediately so it runs in parallel with
+    // any remaining pre-flight work. We only await it right before the
+    // generator call actually needs firstName.
+    const firstNamePromise = fetchFirstName(user.id);
 
-    // Generate itinerary
-    console.log('⏱️ [TIMING] Starting itinerary generation...');
-    const itinerary = await generateItinerary(tripInput, { firstName });
-    const generationTime = Date.now() - routeStartTime;
+    // If the client asked for streaming (default for our UI), push tokens as
+    // they arrive. Otherwise fall back to the old JSON-blob response for any
+    // legacy caller. The client opts in via Accept: text/plain, which our
+    // itineraryApi.ts sets.
+    const wantsStream = (req.headers.accept ?? '').includes('text/plain');
 
-    console.log(`⏱️ [TIMING] API TOTAL TIME: ${generationTime}ms (${(generationTime / 1000).toFixed(2)}s)`);
-
-    const response: ItineraryResponse = {
-      success: true,
-      itinerary,
-    };
-    res.status(200).json(response);
-  } catch (error) {
-    console.error('Itinerary generation error:', error);
-
-    let statusCode = 500;
-    let errorMessage = 'Failed to generate itinerary';
-    let suggestions: string[] = [];
-
-    if (error instanceof Error) {
-      if (error.message.includes('validation')) {
-        statusCode = 400;
-        errorMessage = error.message;
-
-        // Generate helpful suggestions based on error context
-        const context = (error as any).context;
-        if (context && req.body) {
-          suggestions = generateSuggestions(req.body as TripInput, context);
-        }
-      } else {
-        errorMessage = error.message;
+    if (wantsStream) {
+      // text/plain + chunked transfer encoding. We ignore the shape of
+      // ItineraryResponse here and write raw tokens — the client reads them
+      // off a ReadableStream.
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.status(200);
+      // Flush headers so the client sees the 200 before the first token.
+      if (typeof (res as any).flushHeaders === 'function') {
+        (res as any).flushHeaders();
       }
-    }
 
-    const response: ItineraryResponse = {
-      success: false,
-      itinerary: '',
-      error: errorMessage,
-      ...(suggestions.length > 0 && { suggestions }),
-    };
-    res.status(statusCode).json(response);
-  }
-}
+      const firstName = await firstNamePromise;
+      console.log('⏱️ [TIMING] Starting itinerary stream...');
+
+      await generateItinerary(tripInput, {
+        firstName,
+        onToken: (delta) => {
+          res.write(delta);
+        },
+      });
+
+      const generation

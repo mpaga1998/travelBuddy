@@ -40,7 +40,7 @@ const INTEREST_OPTIONS = [
 ];
 
 export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
-  const [step, setStep] = useState<'form' | 'loading' | 'result'>('form');
+  const [step, setStep] = useState<'form' | 'loading' | 'streaming' | 'result'>('form');
   const [error, setError] = useState<string | null>(null);
   const [itinerary, setItinerary] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -272,7 +272,16 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
         interests: input.interests,
         notes: input.notes,
       });
-      const result = await generateItinerary(input);
+      // Stream tokens straight into the result view so the user sees words
+      // appear instead of staring at a 40-second spinner. The first delta
+      // flips us from 'loading' -> 'streaming' so the content area mounts.
+      setItinerary('');
+      const result = await generateItinerary(input, (_delta, accumulated) => {
+        setItinerary(accumulated);
+        setStep((prev) => (prev === 'loading' ? 'streaming' : prev));
+      });
+      // Belt + suspenders: make sure we end on the final text in case any
+      // trailing bytes escaped the onToken path.
       setItinerary(result);
       setStep('result');
     } catch (err) {
@@ -1135,8 +1144,38 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
             </div>
           )}
 
-          {step === 'result' && (
+          {(step === 'streaming' || step === 'result') && (
             <div>
+              {step === 'streaming' && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 14px',
+                    marginBottom: 12,
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: 8,
+                    color: '#1d4ed8',
+                    fontSize: 13,
+                    fontWeight: 600,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 14,
+                      height: 14,
+                      border: '2px solid #bfdbfe',
+                      borderTop: '2px solid #1d4ed8',
+                      borderRadius: '50%',
+                      animation: 'spin 0.9s linear infinite',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span>Writing your itinerary…</span>
+                </div>
+              )}
               <div
                 style={{
                   fontSize: 14,
@@ -1322,55 +1361,4 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                   padding: '12px 16px',
                   borderRadius: 10,
                   border: '1px solid rgba(0,0,0,0.18)',
-                  background: isSaving ? '#e5e7eb' : 'white',
-                  color: '#111',
-                  cursor: isSaving ? 'not-allowed' : 'pointer',
-                  fontWeight: 600,
-                  fontSize: 14,
-                  minHeight: 44,
-                  opacity: isSaving ? 0.6 : 1,
-                }}
-              >
-                {isSaving ? '💾 Saving...' : '📌 Save to Profile'}
-              </button>
-              <button
-                onClick={() => resetForm()}
-                style={{
-                  flex: 1,
-                  padding: '12px 16px',
-                  borderRadius: 10,
-                  border: 'none',
-                  background: '#2563eb',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 14,
-                  minHeight: 44,
-                }}
-              >
-                ✨ Create Another
-              </button>
-            </>
-          )}
-          <button
-            onClick={handleClose}
-            style={{
-              flex: step === 'form' ? 1 : undefined,
-              padding: '12px 16px',
-              borderRadius: 10,
-              border: step === 'form' ? 'none' : '1px solid rgba(0,0,0,0.18)',
-              background: step === 'form' ? '#f3f4f6' : 'white',
-              color: '#111',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: 14,
-              minHeight: 44,
-            }}
-          >
-            {step === 'form' ? 'Cancel' : 'Close'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+             

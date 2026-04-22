@@ -18,8 +18,26 @@ export interface GenerationResult {
 }
 
 /**
- * Text-based itinerary generation (PRIMARY)
+ * Pick a max_tokens budget sized to the trip length.
+ * Rough rule: ~400 tokens per day, floored at 600 so short trips still
+ * get a full intro/outro, capped at 4000 to stay inside model limits
+ * and keep the worst case inside our Vercel function budget.
+ */
+function computeMaxTokens(input: TripInput): number {
+  const nights = calculateNights(input);
+  const days = Math.max(1, nights + 1); // nights=0 -> 1 day
+  const estimated = days * 400;
+  return Math.min(4000, Math.max(600, estimated));
+}
+
+/**
+ * Text-based itinerary generation (PRIMARY) — streaming.
  * Generates natural language itineraries with hardcoded dates/times that cannot be changed.
+ *
+ * Streams tokens to the provided `onToken` callback as they arrive from OpenAI,
+ * and also returns the full concatenated text when the stream completes. This lets
+ * the HTTP handler pipe chunks to the client for a responsive UX while still being
+ * able to log/verify the full result on the server.
  *
  * `options.firstName` is used for prompt personalization. It MUST be fetched server-side
  * from the verified user's profile by the caller (see api/itinerary.ts). Do NOT accept a
@@ -27,7 +45,11 @@ export interface GenerationResult {
  */
 export async function generateItinerary(
   input: TripInput,
-  options: { maxRetries?: number; firstName?: string } = {}
+  options: {
+    maxRetries?: number;
+    firstName?: string;
+    onToken?: (delta: string) => void;
+  } = {}
 ): Promise<string> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not set in environment variables');
@@ -47,40 +69,6 @@ export async function generateItinerary(
   const firstName = options.firstName;
   console.log('✅ Input validated. Planning for:', firstName || 'traveler');
 
-  // STEP 2: Generate text-based itinerary
+  // STEP 2: Stream text-based itinerary
   try {
-    const selectedModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-3.5-turbo';
-    console.log(`📄 Generating text-based itinerary using model: ${selectedModel}`);
-    const response = await openai.chat.completions.create({
-      model: selectedModel,
-      messages: [
-        {
-          role: 'system',
-          content: buildSystemPrompt(),
-        },
-        {
-          role: 'user',
-          content: buildUserPrompt(input, firstName),
-        },
-      ],
-      max_tokens: 3000,
-      temperature: 0.7,
-    });
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No content received from OpenAI');
-    }
-
-    console.log('✅ Itinerary generated successfully');
-    return content;
-  } catch (error) {
-    console.error(
-      '❌ Itinerary generation failed:',
-      error instanceof Error ? error.message : error
-    );
-    throw error;
-  }
-}
-
-
+    // Default bumped from gpt-3.5-turbo -> gpt-4
