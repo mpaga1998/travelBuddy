@@ -25,15 +25,18 @@ export interface GenerationResult {
 
 /**
  * Pick a max_tokens budget sized to the trip length.
- * Rough rule: ~400 tokens per day, floored at 600 so short trips still
- * get a full intro/outro, capped at 4000 to stay inside model limits
- * and keep the worst case inside our Vercel function budget.
+ * Each day needs ~700 tokens to cover: activity blocks, 2-3 restaurant
+ * suggestions per meal, a cost table, and smart tips. Add 800 tokens of
+ * fixed overhead for the intro, outro, and before-you-go section.
+ * Floor at 1500 (covers the fixed overhead for any 1-day trip).
+ * Cap at 8000 — well inside gpt-4o-mini's 16k output limit while keeping
+ * the worst-case cost reasonable.
  */
 function computeMaxTokens(input: TripInput): number {
   const nights = calculateNights(input);
-  const days = Math.max(1, nights + 1); // nights=0 -> 1 day
-  const estimated = days * 400;
-  return Math.min(4000, Math.max(600, estimated));
+  const days = Math.max(1, nights + 1);
+  const estimated = 800 + days * 700;
+  return Math.min(8000, Math.max(1500, estimated));
 }
 
 /**
