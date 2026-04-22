@@ -35,8 +35,8 @@ export interface GenerationResult {
 function computeMaxTokens(input: TripInput): number {
   const nights = calculateNights(input);
   const days = Math.max(1, nights + 1);
-  const estimated = 800 + days * 700;
-  return Math.min(8000, Math.max(1500, estimated));
+  const estimated = 1200 + days * 1100;
+  return Math.min(8000, Math.max(3000, estimated));
 }
 
 /**
