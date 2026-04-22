@@ -10,6 +10,9 @@ import { buildSystemPrompt, buildUserPrompt } from './prompts.js';
 import type { TravelContext } from './travelContext.js';
 import type { PlacesContext } from './placesContext.js';
 import type { CommunityPinsContext } from './communityPins.js';
+import type { WeatherContext } from './weatherContext.js';
+import type { PracticalContext } from './practicalContext.js';
+import type { BudgetContext } from './budgetContext.js';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -55,6 +58,9 @@ export async function generateItinerary(
     travelContext?: TravelContext;
     placesContext?: PlacesContext;
     communityPinsContext?: CommunityPinsContext;
+    weatherContext?: WeatherContext;
+    practicalContext?: PracticalContext;
+    budgetContext?: BudgetContext;
   } = {}
 ): Promise<string> {
   if (!process.env.OPENAI_API_KEY) {
@@ -90,7 +96,7 @@ export async function generateItinerary(
       stream: true,
       messages: [
         { role: 'system', content: buildSystemPrompt() },
-        { role: 'user', content: buildUserPrompt(input, firstName, options.travelContext, options.placesContext, options.communityPinsContext) },
+        { role: 'user', content: buildUserPrompt(input, firstName, options.travelContext, options.placesContext, options.communityPinsContext, options.weatherContext, options.practicalContext, options.budgetContext) },
       ],
       max_tokens: maxTokens,
       temperature: 0.7,

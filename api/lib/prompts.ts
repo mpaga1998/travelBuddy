@@ -5,6 +5,12 @@ import { renderPlacesContext } from './placesContext.js';
 import type { PlacesContext } from './placesContext.js';
 import { renderCommunityPinsContext } from './communityPins.js';
 import type { CommunityPinsContext } from './communityPins.js';
+import { renderWeatherContext } from './weatherContext.js';
+import type { WeatherContext } from './weatherContext.js';
+import { renderPracticalContext } from './practicalContext.js';
+import type { PracticalContext } from './practicalContext.js';
+import { renderBudgetContext } from './budgetContext.js';
+import type { BudgetContext } from './budgetContext.js';
 
 export const buildSystemPrompt = () =>
   `You are an expert backpacker trip planner who creates engaging, practical, highly-specific itineraries for ANY destination in the world. Your style is conversational, encouraging, and data-driven.
@@ -269,7 +275,10 @@ export const buildUserPrompt = (
   firstName?: string,
   travelContext?: TravelContext,
   placesContext?: PlacesContext,
-  communityPinsContext?: CommunityPinsContext
+  communityPinsContext?: CommunityPinsContext,
+  weatherContext?: WeatherContext,
+  practicalContext?: PracticalContext,
+  budgetContext?: BudgetContext
 ): string => {
   // Parse dates more reliably by extracting components
   const [arrivalYear, arrivalMonth, arrivalDay] = input.arrival.date
@@ -345,6 +354,9 @@ export const buildUserPrompt = (
     return `${firstName ? `Hey ${firstName}!` : 'Hello!'} Building your ${fullDays}-day trip...
 
 ${renderTravelContext(travelContext)}
+${weatherContext ? renderWeatherContext(weatherContext) : ''}
+${practicalContext ? renderPracticalContext(practicalContext) : ''}
+${budgetContext ? renderBudgetContext(budgetContext) : ''}
 ${placesContext ? renderPlacesContext(placesContext) : ''}
 ${communityPinsContext ? renderCommunityPinsContext(communityPinsContext) : ''}
 ⚠️ **FIXED DATES AND TIMES (DO NOT CHANGE THESE):**
@@ -399,6 +411,9 @@ Use ${firstName ? firstName + "'s" : "the user's"} name in the opening. Be pract
     return `${firstName ? `Hey ${firstName}!` : "Hey there!"} Let's plan your ${fullDays}-day trip...
 
 ${renderTravelContext(travelContext)}
+${weatherContext ? renderWeatherContext(weatherContext) : ''}
+${practicalContext ? renderPracticalContext(practicalContext) : ''}
+${budgetContext ? renderBudgetContext(budgetContext) : ''}
 ${placesContext ? renderPlacesContext(placesContext) : ''}
 ${communityPinsContext ? renderCommunityPinsContext(communityPinsContext) : ''}
 ⚠️ **FIXED DATES AND TIMES (DO NOT CHANGE THESE):**

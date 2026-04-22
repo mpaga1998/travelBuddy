@@ -10,6 +10,9 @@ import { enforceRateLimit, ITINERARY_RATE_LIMIT } from './lib/rateLimit.js';
 import { buildTravelContext } from './lib/travelContext.js';
 import { fetchPlacesContext } from './lib/placesContext.js';
 import { fetchCommunityPins } from './lib/communityPins.js';
+import { fetchWeatherContext } from './lib/weatherContext.js';
+import { buildPracticalContext } from './lib/practicalContext.js';
+import { buildBudgetContext } from './lib/budgetContext.js';
 
 // Load environment variables
 dotenv.config();
@@ -161,6 +164,32 @@ export default async function handler(
     console.log('📍 [PLACES]', placesContext.byLocation.map((l) => `${l.location.split(',')[0]}: ${l.restaurants.length}r/${l.cafes.length}c/${l.attractions.length}a`));
     console.log('💎 [COMMUNITY PINS]', communityPinsContext.pins.length, 'pins found');
 
+    // C1: Weather — runs in parallel with community-pins fetch above; reuses
+    // geocoded coords from B1 so no extra Mapbox calls are needed. Best-effort.
+    const arrivalCoords = placesContext.geocodedCoords.get(tripInput.arrival.location);
+    const weatherContext = arrivalCoords
+      ? await fetchWeatherContext(
+          tripInput.arrival.location,
+          arrivalCoords.lat,
+          arrivalCoords.lng,
+          tripInput.arrival.date
+        )
+      : undefined;
+
+    // C2 + C3: Synchronous static lookups — zero I/O, no latency impact.
+    const practicalContext = buildPracticalContext(
+      travelContext.countryIso2,
+      travelContext.countryName
+    );
+    const budgetContext = buildBudgetContext(
+      travelContext.countryIso2,
+      travelContext.countryName,
+      tripInput.budget as 'budget' | 'mid-range' | 'luxury' | undefined,
+      travelContext.currency
+    );
+    console.log('🧳 [PRACTICAL]', practicalContext ? `${practicalContext.countryName} found` : 'no data');
+    console.log('💰 [BUDGET CAL]', budgetContext ? `${budgetContext.countryName} ${budgetContext.costBand}` : 'no data');
+
     // If the client asked for streaming (default for our UI), push tokens as
     // they arrive. Otherwise fall back to the old JSON-blob response for any
     // legacy caller. The client opts in via Accept: text/plain, which our
@@ -188,6 +217,9 @@ export default async function handler(
         travelContext,
         placesContext,
         communityPinsContext,
+        weatherContext,
+        practicalContext,
+        budgetContext,
         onToken: (delta) => {
           res.write(delta);
         },
@@ -204,7 +236,7 @@ export default async function handler(
     // Legacy JSON path — buffer the full result, return one response.
     const firstName = await firstNamePromise;
     console.log('⏱️ [TIMING] Starting itinerary generation (non-stream)...');
-    const itinerary = await generateItinerary(tripInput, { firstName, travelContext, placesContext, communityPinsContext });
+    const itinerary = await generateItinerary(tripInput, { firstName, travelContext, placesContext, communityPinsContext, weatherContext, practicalContext, budgetContext });
     const generationTime = Date.now() - routeStartTime;
     console.log(
       `⏱️ [TIMING] API TOTAL TIME: ${generationTime}ms (${(generationTime / 1000).toFixed(2)}s)`
