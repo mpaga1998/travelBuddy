@@ -14,7 +14,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { getLocationNameFromCoordinates } from "../../lib/mapbox";
 
 import { MapCanvas } from "./MapCanvas";
-import { PinLayer } from "./PinLayer";
+import { PinLayer, PIN_INTERACTIVE_LAYERS } from "./PinLayer";
 import { FilterBar } from "./FilterBar";
 import { CATEGORIES, categoryEmoji } from "./mapConstants";
 import { useIsMobile } from "./hooks/useIsMobile";
@@ -301,6 +301,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
             initialCenter={initialCenter}
             onMapReady={handleMapReady}
             onMapClick={handleMapClick}
+            interactiveLayers={PIN_INTERACTIVE_LAYERS}
           />
 
           <PinLayer

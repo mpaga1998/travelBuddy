@@ -1,16 +1,18 @@
 import { useEffect, useRef } from "react";
-import mapboxgl, { Map as MapboxMap, GeoJSONSource } from "mapbox-gl";
+import mapboxgl, { Map as MapboxMap, Marker, GeoJSONSource } from "mapbox-gl";
 import { createRoot, type Root } from "react-dom/client";
 import type { Pin } from "../pins/pinTypes";
 import { categoryEmoji, MOBILE_BREAKPOINT } from "./mapConstants";
 import { PinPopup } from "./PinPopup";
 
-// Source + layer ids  one place, no magic strings scattered.
+// Source + layer ids. Exported so MapCanvas can skip empty-map clicks that
+// landed on the cluster bubble (see handleMapClick logic).
 const SRC = "pins";
-const L_CLUSTERS = "pins-clusters";
-const L_CLUSTER_COUNT = "pins-cluster-count";
-const L_POINT = "pins-point";
-const L_POINT_LABEL = "pins-point-label";
+export const L_CLUSTERS = "pins-clusters";
+export const L_CLUSTER_COUNT = "pins-cluster-count";
+
+/** Layers whose clicks should NOT trigger the empty-map draft flow. */
+export const PIN_INTERACTIVE_LAYERS = [L_CLUSTERS, L_CLUSTER_COUNT];
 
 export type PinLayerProps = {
   map: MapboxMap | null;
@@ -29,15 +31,12 @@ export type PinLayerProps = {
 };
 
 /**
- * Native Mapbox clustering (2.2).
- *
- * Before: one HTMLElement marker per pin  dies past ~2k pins.
- * Now: a single GeoJSON source with cluster:true. Mapbox tiles the clusters
- * at render time; we only ship coordinates + a few flat properties per pin.
- *
- * Click semantics are unchanged from the upstream perspective  onSelect
- * still fires with a full Pin object, and the popup lifecycle effect below
- * is identical to 2.1.
+ * Hybrid clustering (2.2):
+ *   - GeoJSON source with cluster:true handles aggregation.
+ *   - Clusters render as native GL layers (circle + count)  scales to 10k+ pins.
+ *   - Unclustered points render as HTML markers, synced from source features.
+ *     Keeps emoji glyphs + lets DOM click handlers stopPropagation so the
+ *     map's empty-click draft flow doesn't fire underneath.
  */
 export function PinLayer({
   map,
@@ -53,20 +52,65 @@ export function PinLayer({
   onShowImages,
   onRequestDelete,
 }: PinLayerProps) {
-  // Refs hold always-current versions of pins/onSelect so the Mapbox click
-  // handlers (registered once at install-time) resolve against fresh values.
+  // Refs kept fresh so the once-registered map listeners resolve latest values.
   const pinsRef = useRef<Pin[]>(pins);
   const onSelectRef = useRef(onSelect);
   useEffect(() => { pinsRef.current = pins; }, [pins]);
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
 
+  // HTML marker bookkeeping: markers by id (persisted), and those currently in DOM.
+  const markersRef = useRef<globalThis.Map<string, Marker>>(new globalThis.Map());
+  const markersOnScreenRef = useRef<globalThis.Map<string, Marker>>(new globalThis.Map());
+
   const popupRef = useRef<mapboxgl.Popup | null>(null);
   const popupRootRef = useRef<Root | null>(null);
   const popupContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // --- Install source + layers once the style is ready. -------------------
+  // --- Install source + cluster GL layers once the style is ready. --------
   useEffect(() => {
     if (!map) return;
+
+    const updateMarkers = () => {
+      if (!map.getSource(SRC)) return;
+      if (!map.isSourceLoaded(SRC)) return;
+
+      const features = map.querySourceFeatures(SRC);
+      const next = new globalThis.Map<string, Marker>();
+
+      for (const feat of features) {
+        const props = feat.properties;
+        if (!props) continue;
+        if (props.cluster) continue; // clusters handled by GL layer
+        const pinId = props.pinId as string;
+        if (!pinId) continue;
+        const coords = (feat.geometry as GeoJSON.Point).coordinates as [number, number];
+
+        let marker = markersRef.current.get(pinId);
+        if (!marker) {
+          const pin = pinsRef.current.find((p) => p.id === pinId);
+          if (!pin) continue;
+          const el = buildMarkerElement(pin);
+          el.addEventListener("click", (ev) => {
+            // Block the map's general click so handleMapClick doesn't open a draft.
+            ev.stopPropagation();
+            onSelectRef.current(pin);
+          });
+          marker = new mapboxgl.Marker({ element: el }).setLngLat(coords);
+          markersRef.current.set(pinId, marker);
+        } else {
+          marker.setLngLat(coords);
+        }
+
+        next.set(pinId, marker);
+        if (!markersOnScreenRef.current.has(pinId)) marker.addTo(map);
+      }
+
+      // Remove markers no longer on screen (clustered or viewport-culled).
+      for (const [id, marker] of markersOnScreenRef.current) {
+        if (!next.has(id)) marker.remove();
+      }
+      markersOnScreenRef.current = next;
+    };
 
     const install = () => {
       if (map.getSource(SRC)) return;
@@ -75,11 +119,10 @@ export function PinLayer({
         type: "geojson",
         data: pinsToFc(pinsRef.current),
         cluster: true,
-        clusterRadius: 50,      // px  generous so dense areas aggregate
-        clusterMaxZoom: 14,     // stop clustering past this (street-level)
+        clusterRadius: 50,
+        clusterMaxZoom: 14,
       });
 
-      // Cluster bubble  graduated by count, same hue family as unclustered.
       map.addLayer({
         id: L_CLUSTERS,
         type: "circle",
@@ -88,9 +131,9 @@ export function PinLayer({
         paint: {
           "circle-color": [
             "step", ["get", "point_count"],
-            "#93c5fd", 10,   // <10  light blue
-            "#3b82f6", 50,   // 10-49  blue
-            "#1d4ed8",       // 50+  dark blue
+            "#93c5fd", 10,
+            "#3b82f6", 50,
+            "#1d4ed8",
           ],
           "circle-radius": [
             "step", ["get", "point_count"],
@@ -101,7 +144,6 @@ export function PinLayer({
         },
       });
 
-      // Cluster count label. Mapbox ships Open Sans in every base style.
       map.addLayer({
         id: L_CLUSTER_COUNT,
         type: "symbol",
@@ -116,39 +158,7 @@ export function PinLayer({
         paint: { "text-color": "#ffffff" },
       });
 
-      // Unclustered point  mirrors the old 34px circle, black for hostels.
-      map.addLayer({
-        id: L_POINT,
-        type: "circle",
-        source: SRC,
-        filter: ["!", ["has", "point_count"]],
-        paint: {
-          "circle-color": [
-            "case",
-            ["==", ["get", "isHostel"], 1], "#111111",
-            "#2563eb",
-          ],
-          "circle-radius": 14,
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#ffffff",
-        },
-      });
-
-      // Emoji glyph on top of the unclustered circle.
-      map.addLayer({
-        id: L_POINT_LABEL,
-        type: "symbol",
-        source: SRC,
-        filter: ["!", ["has", "point_count"]],
-        layout: {
-          "text-field": ["get", "emoji"],
-          "text-size": 16,
-          "text-allow-overlap": true,
-          "text-ignore-placement": true,
-        },
-      });
-
-      // Cluster click  zoom to expansion level.
+      // Cluster click  zoom in to the expansion level.
       map.on("click", L_CLUSTERS, (e) => {
         const feat = e.features?.[0];
         if (!feat) return;
@@ -162,45 +172,30 @@ export function PinLayer({
         });
       });
 
-      // Point click  resolve id to Pin and delegate to parent.
-      map.on("click", L_POINT, (e) => {
-        const feat = e.features?.[0];
-        if (!feat) return;
-        const pinId = feat.properties?.pinId as string | undefined;
-        if (!pinId) return;
-        const pin = pinsRef.current.find((p) => p.id === pinId);
-        if (pin) onSelectRef.current(pin);
-      });
+      map.on("mouseenter", L_CLUSTERS, () => { map.getCanvas().style.cursor = "pointer"; });
+      map.on("mouseleave", L_CLUSTERS, () => { map.getCanvas().style.cursor = ""; });
 
-      // Also handle the emoji label layer on top  clicks can land there.
-      map.on("click", L_POINT_LABEL, (e) => {
-        const feat = e.features?.[0];
-        if (!feat) return;
-        const pinId = feat.properties?.pinId as string | undefined;
-        if (!pinId) return;
-        const pin = pinsRef.current.find((p) => p.id === pinId);
-        if (pin) onSelectRef.current(pin);
-      });
-
-      // Cursor affordances.
-      for (const lyr of [L_CLUSTERS, L_POINT, L_POINT_LABEL]) {
-        map.on("mouseenter", lyr, () => { map.getCanvas().style.cursor = "pointer"; });
-        map.on("mouseleave", lyr, () => { map.getCanvas().style.cursor = ""; });
-      }
+      // Sync HTML markers every frame (guarded by isSourceLoaded). This matches
+      // the Mapbox "cluster-html" example  cheap because the guard short-circuits.
+      map.on("render", updateMarkers);
+      // Run once now in case source is already loaded (HMR etc).
+      updateMarkers();
     };
 
     if (map.isStyleLoaded()) install();
     else map.once("load", install);
 
-    // Teardown on unmount / map swap. Guard each op  style may already be torn down.
     return () => {
       try {
-        for (const l of [L_POINT_LABEL, L_POINT, L_CLUSTER_COUNT, L_CLUSTERS]) {
-          if (map.getLayer(l)) map.removeLayer(l);
-        }
+        map.off("render", updateMarkers);
+        for (const m of markersOnScreenRef.current.values()) m.remove();
+        markersOnScreenRef.current.clear();
+        markersRef.current.clear();
+        if (map.getLayer(L_CLUSTER_COUNT)) map.removeLayer(L_CLUSTER_COUNT);
+        if (map.getLayer(L_CLUSTERS)) map.removeLayer(L_CLUSTERS);
         if (map.getSource(SRC)) map.removeSource(SRC);
       } catch {
-        // style/map already gone  nothing to clean.
+        // style/map already gone
       }
     };
   }, [map]);
@@ -209,12 +204,19 @@ export function PinLayer({
   useEffect(() => {
     if (!map) return;
     const src = map.getSource(SRC) as GeoJSONSource | undefined;
-    // If source isn't installed yet (style still loading), the install effect
-    // will seed from pinsRef  nothing to do here.
     if (src) src.setData(pinsToFc(pins));
+    // Drop cached markers whose pin is gone  prevents stale DOM when a pin is deleted.
+    const alive = new Set(pins.map((p) => p.id));
+    for (const [id, marker] of markersRef.current) {
+      if (!alive.has(id)) {
+        marker.remove();
+        markersRef.current.delete(id);
+        markersOnScreenRef.current.delete(id);
+      }
+    }
   }, [map, pins]);
 
-  // --- Full teardown on unmount (popup ref cleanup). -----------------------
+  // --- Popup ref cleanup on unmount. --------------------------------------
   useEffect(() => {
     return () => {
       if (popupRef.current) {
@@ -263,7 +265,7 @@ export function PinLayer({
         closeButton: true,
         closeOnClick: false,
         maxWidth: popupMaxWidth,
-        offset: [0, -18],        // lift clear of the 14px circle + stroke
+        offset: [0, -10],
         anchor: "bottom",
         focusAfterOpen: false,
         className: "pin-popup",
@@ -297,7 +299,6 @@ export function PinLayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, selectedPin]);
 
-  // Re-render popup content on count/bookmark changes without rebuilding popup.
   useEffect(() => {
     if (!popupRootRef.current || !selectedPin) return;
     popupRootRef.current.render(
@@ -328,10 +329,32 @@ function pinsToFc(pins: Pin[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
       properties: {
         pinId: p.id,
         category: p.category,
-        emoji: categoryEmoji(p.category),
-        // Mapbox filter expressions cant compare strings cleanly, use 0/1.
-        isHostel: p.createdByType === "hostel" ? 1 : 0,
       },
     })),
   };
+}
+
+/** Original 2.1 marker  34px circle, emoji badge, black for hostels. */
+function buildMarkerElement(pin: Pin): HTMLDivElement {
+  const el = document.createElement("div");
+  el.style.width = "34px";
+  el.style.height = "34px";
+  el.style.borderRadius = "999px";
+  el.style.display = "flex";
+  el.style.alignItems = "center";
+  el.style.justifyContent = "center";
+  el.style.cursor = "pointer";
+  el.style.boxShadow = "0 6px 18px rgba(0,0,0,0.18)";
+  el.style.border = "2px solid white";
+  el.style.background = pin.createdByType === "hostel" ? "#111" : "#2563eb";
+  el.style.color = "white";
+  el.style.userSelect = "none";
+
+  const badge = document.createElement("div");
+  badge.setAttribute("data-badge", "1");
+  badge.textContent = categoryEmoji(pin.category);
+  badge.style.fontSize = "16px";
+  el.appendChild(badge);
+
+  return el;
 }
