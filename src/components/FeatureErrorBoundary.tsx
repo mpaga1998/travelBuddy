@@ -62,56 +62,25 @@ export class FeatureErrorBoundary extends Component<Props, State> {
     return (
       <div
         role="alert"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 12,
-          padding: 24,
-          minHeight: 200,
-          textAlign: 'center',
-        }}
+        className="flex flex-col items-center justify-center gap-3 p-6 min-h-[200px] text-center"
       >
-        <div style={{ fontSize: 36 }}>⚠️</div>
-        <div style={{ fontSize: 16, fontWeight: 600, color: '#0f172a' }}>
+        <div className="text-4xl">⚠️</div>
+        <div className="text-base font-semibold text-slate-900">
           Something went wrong in {featureName}.
         </div>
-        <div style={{ maxWidth: 440, fontSize: 14, color: '#475569' }}>
+        <div className="max-w-[440px] text-sm text-slate-600">
           The rest of the app is still usable. You can try again — if the
           problem keeps happening, refresh the page.
         </div>
         {import.meta.env.DEV && (
-          <pre
-            style={{
-              marginTop: 8,
-              maxWidth: 440,
-              overflow: 'auto',
-              borderRadius: 6,
-              background: '#f1f5f9',
-              padding: 12,
-              textAlign: 'left',
-              fontSize: 12,
-              color: '#334155',
-            }}
-          >
+          <pre className="mt-2 max-w-[440px] overflow-auto rounded-md bg-slate-100 p-3 text-left text-xs text-slate-700">
             {error.message}
           </pre>
         )}
         <button
           type="button"
           onClick={this.reset}
-          style={{
-            marginTop: 8,
-            borderRadius: 8,
-            border: 'none',
-            background: '#0284c7',
-            color: 'white',
-            padding: '8px 16px',
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
+          className="mt-2 rounded-lg border-none bg-sky-600 text-white px-4 py-2 text-sm font-semibold cursor-pointer"
         >
           Try again
         </button>

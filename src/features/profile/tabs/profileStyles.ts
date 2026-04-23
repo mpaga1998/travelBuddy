@@ -1,56 +1,26 @@
 /**
- * Shared style tokens for the profile modal's tabbed subcomponents.
+ * Shared Tailwind class strings for the profile modal's tabbed subcomponents.
  *
  * Extracted in 2.4 when profileModal.tsx was split into ProfileInfoTab,
- * BookmarkedPinsTab, and SavedItinerariesTab. Kept as plain CSSProperties
- * rather than Tailwind classes so the tabs render correctly before Phase 2.5's
- * Tailwind migration lands.
+ * BookmarkedPinsTab, and SavedItinerariesTab. Migrated to Tailwind classes in
+ * 2.5 — callsites use className={inputClass} / className={primaryBtn(saving)}.
  */
-import type { CSSProperties } from 'react';
 
-export const inputStyle: CSSProperties = {
-  padding: '12px 14px',
-  borderRadius: 10,
-  border: '1px solid rgba(0,0,0,0.2)',
-  outline: 'none',
-  color: '#111',
-  background: 'white',
-  minHeight: 44,
-};
+export const inputClass =
+  'w-full px-3.5 py-3 rounded-lg border border-black/20 outline-none text-slate-900 bg-white min-h-[44px]';
 
-export const smallBtn: CSSProperties = {
-  padding: '10px 14px',
-  borderRadius: 10,
-  border: '1px solid rgba(0,0,0,0.18)',
-  background: 'white',
-  color: '#111',
-  cursor: 'pointer',
-  fontWeight: 800,
-  minHeight: 44,
-};
+export const smallBtn =
+  'px-3.5 py-2.5 rounded-lg border border-black/[0.18] bg-white text-slate-900 cursor-pointer font-extrabold min-h-[44px]';
 
-export function primaryBtn(disabled: boolean): CSSProperties {
-  return {
-    padding: '12px 16px',
-    borderRadius: 10,
-    border: 'none',
-    background: disabled ? 'rgba(0,0,0,0.25)' : '#111',
-    color: 'white',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    fontWeight: 900,
-    minHeight: 44,
-    width: '100%',
-  };
+export function primaryBtn(disabled: boolean): string {
+  return [
+    'px-4 py-3 rounded-lg border-none text-white font-black min-h-[44px] w-full',
+    disabled ? 'bg-black/25 cursor-not-allowed' : 'bg-slate-900 cursor-pointer',
+  ].join(' ');
 }
 
-export const dangerBtn: CSSProperties = {
-  padding: '12px 16px',
-  borderRadius: 10,
-  border: '1px solid rgba(220,38,38,0.35)',
-  background: 'rgba(220,38,38,0.08)',
-  color: '#991b1b',
-  cursor: 'pointer',
-  fontWeight: 900,
-  minHeight: 44,
-  width: '100%',
-};
+export const dangerBtn =
+  'px-4 py-3 rounded-lg border border-red-600/35 bg-red-600/10 text-red-900 cursor-pointer font-black min-h-[44px] w-full';
+
+/** Alias for migration compatibility; prefer `inputClass`. */
+export const inputStyle = inputClass;

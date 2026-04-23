@@ -9,7 +9,7 @@ import {
   calculateAge,
 } from '../profileApi';
 import { Field } from './Field';
-import { inputStyle, smallBtn, primaryBtn, dangerBtn } from './profileStyles';
+import { inputClass, smallBtn, primaryBtn, dangerBtn } from './profileStyles';
 
 export interface ProfileInfoTabProps {
   isMobile: boolean;
@@ -154,64 +154,27 @@ export function ProfileInfoTab({
 
   return (
     <>
-      <div
-        style={{
-          flex: 1,
-          overflow: 'auto',
-          padding: 16,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+      <div className="flex-1 overflow-auto p-4 flex flex-col">
         {/* Avatar */}
-        <div style={{ display: 'grid', justifyItems: 'center', gap: 10, marginBottom: 16 }}>
+        <div className="grid justify-items-center gap-2.5 mb-4">
           <div
-            style={{
-              width: isMobile ? 90 : 110,
-              height: isMobile ? 90 : 110,
-              borderRadius: '999px',
-              overflow: 'hidden',
-              background: 'rgba(0,0,0,0.06)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: isMobile ? 28 : 34,
-              fontWeight: 900,
-              border: '1px solid rgba(0,0,0,0.10)',
-            }}
+            className={`${isMobile ? 'w-[90px] h-[90px] text-[28px]' : 'w-[110px] h-[110px] text-[34px]'} rounded-full overflow-hidden bg-black/5 flex items-center justify-center font-black border border-black/10`}
           >
             {avatar ? (
-              <img
-                src={avatar}
-                alt="Avatar"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
               initials
             )}
           </div>
 
           <label
-            style={{
-              padding: isMobile ? '12px 16px' : '8px 12px',
-              borderRadius: 10,
-              border: '1px solid rgba(0,0,0,0.18)',
-              background: 'white',
-              cursor: busyAvatar ? 'not-allowed' : 'pointer',
-              fontWeight: 700,
-              opacity: busyAvatar ? 0.6 : 1,
-              fontSize: 14,
-              minHeight: 44,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            className={`${isMobile ? 'px-4 py-3' : 'px-3 py-2'} rounded-lg border border-black/[0.18] bg-white font-bold text-sm min-h-[44px] flex items-center justify-center ${busyAvatar ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
           >
             {busyAvatar ? 'Uploading…' : 'Add photo'}
             <input
               type="file"
               accept="image/*"
-              style={{ display: 'none' }}
+              className="hidden"
               disabled={busyAvatar}
               onChange={(e) => onPickAvatar(e.target.files?.[0] ?? null)}
             />
@@ -219,12 +182,12 @@ export function ProfileInfoTab({
         </div>
 
         {/* Fields */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+        <div className="grid grid-cols-1 gap-3">
           <Field label="Name">
             <input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              style={inputStyle}
+              className={inputClass}
             />
           </Field>
 
@@ -232,7 +195,7 @@ export function ProfileInfoTab({
             <input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              style={inputStyle}
+              className={inputClass}
             />
           </Field>
 
@@ -241,11 +204,11 @@ export function ProfileInfoTab({
               type="date"
               value={dob}
               onChange={(e) => setDob(e.target.value)}
-              style={inputStyle}
+              className={inputClass}
               max={new Date().toISOString().split('T')[0]}
             />
             {dob && (
-              <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85, color: '#111' }}>
+              <div className="mt-1.5 text-xs opacity-85 text-slate-900">
                 Age: {calculateAge(dob)} years old
               </div>
             )}
@@ -255,7 +218,7 @@ export function ProfileInfoTab({
             <select
               value={countryCode}
               onChange={(e) => setCountryCode(e.target.value)}
-              style={inputStyle}
+              className={inputClass}
             >
               <option value="">Select country…</option>
               {COUNTRIES.map((c) => (
@@ -265,7 +228,7 @@ export function ProfileInfoTab({
               ))}
             </select>
             {countryCode && (
-              <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85, color: '#111' }}>
+              <div className="mt-1.5 text-xs opacity-85 text-slate-900">
                 Selected: {COUNTRIES.find((x) => x.code === countryCode)?.flag}{' '}
                 {COUNTRIES.find((x) => x.code === countryCode)?.name}
               </div>
@@ -276,122 +239,63 @@ export function ProfileInfoTab({
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              style={inputStyle}
+              className={inputClass}
             />
           </Field>
 
           <Field label="Email">
-            <input
-              value={email}
-              readOnly
-              style={{ ...inputStyle, background: 'rgba(0,0,0,0.04)' }}
-            />
+            <input value={email} readOnly className={`${inputClass} bg-black/5`} />
           </Field>
 
           <Field label="Password">
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <input
-                value={'••••••••'}
-                readOnly
-                style={{ ...inputStyle, flex: 1, background: 'rgba(0,0,0,0.04)' }}
-              />
-              <button onClick={onResetPassword} style={smallBtn}>
+            <div className="flex gap-2.5 items-center">
+              <input value={'••••••••'} readOnly className={`${inputClass} flex-1 bg-black/5`} />
+              <button onClick={onResetPassword} className={smallBtn}>
                 Reset
               </button>
             </div>
           </Field>
         </div>
 
-        {err && <div style={{ marginTop: 12, color: 'crimson', fontSize: 13 }}>{err}</div>}
-        {msg && <div style={{ marginTop: 12, color: 'green', fontSize: 13 }}>{msg}</div>}
+        {err && <div className="mt-3 text-[crimson] text-[13px]">{err}</div>}
+        {msg && <div className="mt-3 text-green-700 text-[13px]">{msg}</div>}
       </div>
 
       {/* Actions */}
-      <div
-        style={{
-          padding: 16,
-          borderTop: '1px solid rgba(0,0,0,0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-          flexShrink: 0,
-        }}
-      >
-        <button onClick={onSave} disabled={saving} style={primaryBtn(saving)}>
+      <div className="p-4 border-t border-black/[0.08] flex flex-col gap-2.5 flex-shrink-0">
+        <button onClick={onSave} disabled={saving} className={primaryBtn(saving)}>
           {saving ? 'Saving…' : 'Save'}
         </button>
 
-        <button onClick={() => setShowSignOutConfirm(true)} style={dangerBtn}>
+        <button onClick={() => setShowSignOutConfirm(true)} className={dangerBtn}>
           Sign out
         </button>
       </div>
 
       {showSignOutConfirm && (
         <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10000,
-          }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000]"
           onClick={() => setShowSignOutConfirm(false)}
         >
           <div
-            style={{
-              background: 'white',
-              borderRadius: '20px',
-              padding: '24px',
-              maxWidth: '300px',
-              boxShadow: '0 12px 48px rgba(0, 0, 0, 0.3)',
-            }}
+            className="bg-white rounded-[20px] p-6 max-w-[300px] shadow-[0_12px_48px_rgba(0,0,0,0.3)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', color: '#111' }}>Sign out?</h3>
-            <p
-              style={{
-                margin: '0 0 24px 0',
-                fontSize: '14px',
-                color: '#666',
-                lineHeight: '1.5',
-              }}
-            >
+            <h3 className="m-0 mb-3 text-lg text-slate-900">Sign out?</h3>
+            <p className="m-0 mb-6 text-sm text-slate-500 leading-relaxed">
               Are you sure you want to sign out? You'll need to sign in again to access your
               profile.
             </p>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <div className="flex gap-2.5 justify-end">
               <button
                 onClick={() => setShowSignOutConfirm(false)}
-                style={{
-                  padding: '10px 20px',
-                  borderRadius: '10px',
-                  border: '1px solid rgba(0, 0, 0, 0.18)',
-                  background: 'white',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: '#111',
-                }}
+                className="px-5 py-2.5 rounded-lg border border-black/[0.18] bg-white cursor-pointer text-sm font-semibold text-slate-900"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmSignOut}
-                style={{
-                  padding: '10px 20px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: '#ff4444',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: 'white',
-                }}
+                className="px-5 py-2.5 rounded-lg border-none bg-[#ff4444] cursor-pointer text-sm font-semibold text-white"
               >
                 Sign out
               </button>
