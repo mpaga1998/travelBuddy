@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { ItineraryModal } from "../itinerary/ItineraryModal";
 import { ProfileModal } from "../profile/profileModal";
 import { getMyProfile } from "../profile/profileApi";
+import { FeatureErrorBoundary } from "../../components/FeatureErrorBoundary";
 
 interface InitialPageProps {
   onGoToMap: (location: { lng: number; lat: number } | null) => void;
@@ -548,28 +549,37 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
         </div>
       )}
 
-      {/* Itinerary Modal */}
-      <ItineraryModal
-        open={itineraryModalOpen}
-        onClose={() => setItineraryModalOpen(false)}
-      />
+      {/* Itinerary Modal — isolated behind its own boundary so a crash in
+          itinerary generation doesn't take down the home page. */}
+      {itineraryModalOpen && (
+        <FeatureErrorBoundary featureName="Itinerary">
+          <ItineraryModal
+            open={itineraryModalOpen}
+            onClose={() => setItineraryModalOpen(false)}
+          />
+        </FeatureErrorBoundary>
+      )}
 
-      {/* Profile Modal */}
-      <ProfileModal
-        open={profileOpen}
-        onClose={async () => {
-          setProfileOpen(false);
-          try {
-            const p = await getMyProfile();
-            setAvatarUrl(p.avatar_url ?? "");
-          } catch {
-            // ignore
-          }
-        }}
-        onSignedOut={() => {
-          // App.tsx will switch to AuthPage automatically
-        }}
-      />
+      {/* Profile Modal — same pattern. */}
+      {profileOpen && (
+        <FeatureErrorBoundary featureName="Profile">
+          <ProfileModal
+            open={profileOpen}
+            onClose={async () => {
+              setProfileOpen(false);
+              try {
+                const p = await getMyProfile();
+                setAvatarUrl(p.avatar_url ?? "");
+              } catch {
+                // ignore
+              }
+            }}
+            onSignedOut={() => {
+              // App.tsx will switch to AuthPage automatically
+            }}
+          />
+        </FeatureErrorBoundary>
+      )}
 
       {/* Coming Soon Popup */}
       {showComingSoon && (
@@ -639,6 +649,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
                 border: "none",
                 borderRadius: "12px",
                 background: "#ff8c00",
+        
                 color: "white",
                 cursor: "pointer",
                 transition: "background 0.2s",

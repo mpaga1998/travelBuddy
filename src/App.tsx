@@ -7,6 +7,7 @@ import { AuthPage } from "./features/auth/AuthPage";
 import { LoadingPage } from "./features/auth/LoadingPage";
 import { InitialPage } from "./features/auth/InitialPage";
 import { MapView } from "./features/map/MapView";
+import { FeatureErrorBoundary } from "./components/FeatureErrorBoundary";
 
 type AppPage = "loading" | "auth" | "initial" | "map";
 
@@ -79,17 +80,23 @@ export default function App() {
 
   if (currentPage === "initial") {
     return (
-      <InitialPage
-        onGoToMap={(location) => {
-          setMapCenter(location);
-          setShowInitialPage(false);
-        }}
-      />
+      <FeatureErrorBoundary featureName="Home">
+        <InitialPage
+          onGoToMap={(location) => {
+            setMapCenter(location);
+            setShowInitialPage(false);
+          }}
+        />
+      </FeatureErrorBoundary>
     );
   }
 
   if (currentPage === "map") {
-    return <MapView onBack={() => { setShowInitialPage(true); }} initialCenter={mapCenter} />;
+    return (
+      <FeatureErrorBoundary featureName="Map">
+        <MapView onBack={() => { setShowInitialPage(true); }} initialCenter={mapCenter} />
+      </FeatureErrorBoundary>
+    );
   }
 
   return <div>Unknown page state</div>;

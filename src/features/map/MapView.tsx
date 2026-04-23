@@ -12,6 +12,7 @@ import {
 import { ItineraryModal } from "../itinerary/ItineraryModal";
 import { supabase } from "../../lib/supabaseClient";
 import { getLocationNameFromCoordinates } from "../../lib/mapbox";
+import { FeatureErrorBoundary } from "../../components/FeatureErrorBoundary";
 
 import { MapCanvas } from "./MapCanvas";
 import { PinLayer, PIN_INTERACTIVE_LAYERS } from "./PinLayer";
@@ -347,11 +348,13 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
             />
           )}
 
-          {ITINERARY_FEATURE_ENABLED && (
-            <ItineraryModal
-              open={itineraryModalOpen}
-              onClose={() => setItineraryModalOpen(false)}
-            />
+          {ITINERARY_FEATURE_ENABLED && itineraryModalOpen && (
+            <FeatureErrorBoundary featureName="Itinerary">
+              <ItineraryModal
+                open={itineraryModalOpen}
+                onClose={() => setItineraryModalOpen(false)}
+              />
+            </FeatureErrorBoundary>
           )}
 
           {tipsViewerOpen && viewerTips.length > 0 && (
@@ -837,6 +840,7 @@ function DeleteConfirm({
               borderRadius: 10,
               border: "none",
               background: "#dc2626",
+        
               color: "white",
               cursor: "pointer",
               fontWeight: 800,

@@ -5,7 +5,7 @@ Do phases top-to-bottom; each assumes the previous is done.
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Progress:** 10 / 50 steps complete — **Phase 1 complete ✅**
+**Progress:** 13 / 50 steps complete — **Phase 1 ✅ · Phase 2 mostly done (2.5 deferred)**
 
 ---
 
@@ -32,10 +32,10 @@ So future changes don't require rewriting 1,800-line files.
 
 - [x] **2.1** Split `MapView.tsx` (1,812 → 850 lines). New files under `src/features/map/`: `MapCanvas.tsx` (pure Mapbox instance + lifecycle), `PinLayer.tsx` (marker cache + popup lifecycle via `createRoot`), `PinPopup.tsx` (real React component — killed the 300-line escaped-HTML string), `FilterBar.tsx` (controlled top bar + mobile drawer), `hooks/useMapPins.ts` (pins + filter state), `hooks/useBookmarks.ts` (bookmark set + toggle), plus `mapConstants.ts` + `hooks/useIsMobile.ts`. Draft-pin modal, tips viewer, delete confirmation, and lightbox were NOT in 2.1's scope so they remain as file-local components in `MapView.tsx` — obvious follow-up.
 - [x] **2.2** Native clustering shipped in `PinLayer`. Replaced per-pin `mapboxgl.Marker` elements with a single GeoJSON source (`cluster: true`, `clusterRadius: 50`, `clusterMaxZoom: 14`). Four GL layers: cluster circle (graduated color/size by `point_count`), cluster count label, unclustered point circle (blue / black-for-hostels, keeps the 2.1 look), emoji symbol layer. Cluster click calls `getClusterExpansionZoom` + `easeTo`; point click looks the pin up by id from a ref and delegates to `onSelect` so the popup lifecycle is unchanged. Removes the ~2k-pin DOM wall.
-- [ ] **2.3** Split `ItineraryModal.tsx` (1,393 lines) into: form component, preview/render component, save-to-profile flow, `useItineraryDraft` hook.
-- [ ] **2.4** Split `profileModal.tsx` (1,414 lines) into tabbed subcomponents: profile info, saved itineraries list, bookmarked pins list.
-- [ ] **2.5** Extract inline styles. Move to Tailwind utility classes or CSS modules. Unblocks a design refresh later.
-- [ ] **2.6** Add error boundaries around each top-level feature (Map, Itinerary, Profile) so one crash doesn't blank the app.
+- [x] **2.3** Split `ItineraryModal.tsx` (1,393 lines) into: form component (`ItineraryForm.tsx`), preview/render component (`ItineraryPreview.tsx`), save-to-profile flow, and `useItineraryDraft` hook. Also fixed the venue-link bug: react-markdown v9 was stripping our custom `mapbox:` URL scheme — added `urlTransform={(url) => url}` in `ItineraryPreview` so the link component can route via `openVenueInMapsSync`.
+- [x] **2.4** Split `profileModal.tsx` (1,414 → 346-line shell) into `tabs/` subcomponents: `ProfileInfoTab.tsx` (avatar upload + form + password reset + sign-out), `BookmarkedPinsTab.tsx` (saved pins grid + detail view), `SavedItinerariesTab.tsx` (saved itineraries list + markdown detail view). Shared style helpers in `tabs/profileStyles.ts` + `tabs/Field.tsx`. Each tab owns its own data load + error state; the shell only handles open/close, base-profile load, and tab routing.
+- [ ] **2.5** Extract inline styles. Move to Tailwind utility classes or CSS modules. Unblocks a design refresh later. **Status:** deferred — needs `npm install -D tailwindcss@^3 postcss autoprefixer` on the Windows dev machine first (the Linux sandbox can't reach npmjs.org). Once installed, next steps are (1) `npx tailwindcss init -p`, (2) configure `content: ['./index.html','./src/**/*.{ts,tsx}']`, (3) add `@tailwind base/components/utilities` to `src/index.css`, (4) migrate inline styles in feature files.
+- [x] **2.6** Added error boundaries around each top-level feature. New `src/components/FeatureErrorBoundary.tsx` — reusable class component with `featureName`, optional `onError` sink, dev-only error message, and a reset button. Wrapped in `App.tsx` (Home page, Map page), `InitialPage.tsx` (ItineraryModal, ProfileModal — conditional-mount so boundary resets on re-open), and `MapView.tsx` (ItineraryModal — same conditional-mount pattern). One crashed feature no longer blanks the whole app.
 
 ## Phase 3 — Data + UX at scale
 
@@ -94,34 +94,4 @@ Can happen in parallel with earlier phases, but must be decided before fundraisi
 - [ ] **8.2** Fix CORS. Replace hardcoded `localhost:5173` / ngrok URL with `process.env.ALLOWED_ORIGINS` (comma-separated).
 - [ ] **8.3** Real README. Setup, env vars, local run, tests, deployment. New engineer productive in 30 min.
 - [ ] **8.4** Custom domain + HTTPS.
-- [ ] **8.5** Legal pages. Privacy policy, ToS, cookie notice. Termly or iubenda generates acceptable boilerplate.
-- [ ] **8.6** App store prep (if mobile). PWA install prompts, or wrap in Expo / React Native shell.
-
-## Phase 9 — Polish
-
-- [ ] **9.1** Design system. shadcn/ui (free, good) or similar. Replace inline-styled buttons/inputs/modals.
-- [ ] **9.2** Accessibility pass. ARIA labels on icon buttons, keyboard nav in modals, visible focus states, contrast audit.
-- [ ] **9.3** Empty states everywhere. "You haven't X yet — here's how to start" with CTAs.
-- [ ] **9.4** Performance pass. Lighthouse run, fix obvious wins (lazy-load itinerary modal, memoize marker list, etc.).
-
----
-
-## Rough effort estimates
-
-| Phase | Effort | Blocking for launch? |
-|-------|--------|----------------------|
-| 1. Security | ~1 week | **Complete ✅** |
-| 2. Refactor | ~1 week | No, but everything later gets slower without it |
-| 3. Scale | ~3 days | Only if you expect >1k pins at launch |
-| 4. Moderation | ~1 week | Yes for public launch |
-| 5. Community | 2-3 weeks | Yes if pitching "community app" |
-| 6. Observability + testing | ~1 week | Yes before paid users |
-| 7. Product wedge | Ongoing | Yes before fundraising |
-| 8. Launch prep | ~3 days | Yes obviously |
-| 9. Polish | Ongoing | No |
-
-**Non-negotiable before any real user:** ~~Phase 1~~ (done) + Phase 4.
-
----
-
-*Last updated: 2026-04-22 (2.2 shipped — native clustering)*
+- [ ] **8.5** Legal pages. Pr
