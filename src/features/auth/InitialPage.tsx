@@ -556,8 +556,9 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
         onClose={() => setItineraryModalOpen(false)}
         onViewOnMap={(places, _arrivalLocation) => {
           setItineraryModalOpen(false);
-          // Navigate to map with no specific center — MapView will fit to the places.
-          onGoToMap({ lng: 0, lat: 0 }, places);
+          // Pass null center so MapCanvas uses DEFAULT_CENTER; ItineraryMapLayer
+          // will call fitBounds once the map style loads.
+          onGoToMap(null, places);
         }}
       />
 
