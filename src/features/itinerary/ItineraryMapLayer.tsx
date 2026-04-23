@@ -421,7 +421,7 @@ export function ItineraryMapLayer({
     const run = async () => {
       onGeocoding?.(true);
       try {
-        console.info(`${LOG} start`, {
+        console.log(`${LOG} start`, {
           arrivalLocation,
           placeCount: places.length,
           venues: places.map((p) => ({ name: p.name, day: p.day, type: p.type })),
@@ -435,7 +435,7 @@ export function ItineraryMapLayer({
           ? { lat: cityResult.lat, lng: cityResult.lng }
           : null;
 
-        console.info(`${LOG} city geocode`, {
+        console.log(`${LOG} city geocode`, {
           query: arrivalLocation,
           resolvedLat: cityResult?.lat ?? null,
           resolvedLng: cityResult?.lng ?? null,
@@ -467,7 +467,7 @@ export function ItineraryMapLayer({
               `${encodeURIComponent(logQuery)}.json` +
               `?limit=1&proximity=${proximityStr}&access_token=REDACTED`;
 
-            console.info(`${LOG} geocode request`, {
+            console.log(`${LOG} geocode request`, {
               venueName: name,
               cityHint: arrivalLocation || '(none)',
               proximityCoords: cityCoords,
@@ -478,7 +478,7 @@ export function ItineraryMapLayer({
 
             if (r) {
               cache.set(name, r);
-              console.info(`${LOG} geocode response`, {
+              console.log(`${LOG} geocode response`, {
                 venueName: name,
                 resolvedLat: r.lat,
                 resolvedLng: r.lng,
@@ -549,7 +549,7 @@ export function ItineraryMapLayer({
             ? Number((distances.reduce((a, b) => a + b, 0) / distances.length).toFixed(2))
             : null;
 
-        console.info(`${LOG} final summary`, {
+        console.log(`${LOG} final summary`, {
           totalVenues: geocoded.length,
           geocodedOk,
           fellBackToCity,

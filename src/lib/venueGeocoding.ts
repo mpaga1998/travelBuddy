@@ -38,10 +38,17 @@ export async function geocodeVenueDetailed(
   }
 
   try {
-    const query = cityHint ? `${venueName}, ${cityHint}` : venueName;
+    // Do NOT embed cityHint in the query string — if the venue isn't in Mapbox's
+    // index, appending ", Milan" causes every failed query to return the city
+    // centroid instead of undefined, stacking all unfound pins at the same point.
+    // Proximity bias alone is the correct signal.
+    const query = venueName;
     const encodedQuery = encodeURIComponent(query);
     const params = new URLSearchParams({ limit: '1', access_token: mapboxToken });
     if (proximity) params.set('proximity', `${proximity.lng},${proximity.lat}`);
+    // cityHint is kept as a parameter for call-site clarity but is no longer
+    // embedded in the query. Suppress the unused-var lint warning:
+    void cityHint;
 
     const response = await fetch(
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedQuery}.json?${params}`,

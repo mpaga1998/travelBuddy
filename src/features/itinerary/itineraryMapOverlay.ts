@@ -86,7 +86,7 @@ export async function extractItineraryPlaces(
   arrivalLocation: string,
   itineraryId?: string,
 ): Promise<ExtractedPlace[]> {
-  console.info('[ITINERARY-MAP] extractItineraryPlaces called', {
+  console.log('[ITINERARY-MAP] extractItineraryPlaces called', {
     markdownLength: markdown.length,
     markdownPreview: markdown.slice(0, 500),
     arrivalLocation,
@@ -117,7 +117,7 @@ export async function extractItineraryPlaces(
   const json = await response.json() as { places?: ExtractedPlace[] };
   const places = json.places ?? [];
 
-  console.info('[ITINERARY-MAP] server returned places', {
+  console.log('[ITINERARY-MAP] server returned places', {
     count: places.length,
     places: places.map((p) => ({
       name: p.name,
