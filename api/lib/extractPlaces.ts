@@ -62,7 +62,7 @@ async function extractPlacesFromMarkdown(markdown: string): Promise<RawPlace[]> 
       { role: 'system', content: EXTRACTION_SYSTEM },
       { role: 'user', content: EXTRACTION_USER(markdown) },
     ],
-    max_completion_tokens: 1500,
+    max_completion_tokens: 4000,
     // temperature is not supported by reasoning models (gpt-5.x); omit it.
   });
 
