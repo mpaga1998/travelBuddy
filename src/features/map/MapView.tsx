@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import mapboxgl, { type Map as MapboxMap } from "mapbox-gl";
+import { type Map as MapboxMap } from "mapbox-gl";
 
 import type { Pin, PinCategory } from "../pins/pinTypes";
 import {
@@ -59,7 +59,6 @@ type MapViewProps = {
  */
 export function MapView({ onBack, initialCenter, initialItineraryPlaces = [] }: MapViewProps = {}) {
   const mapRef = useRef<MapboxMap | null>(null);
-  const [mapReady, setMapReady] = useState(false);
   const isMobile = useIsMobile();
 
   // --- Auth (just the id — we don't need profile here) --------------------
@@ -118,7 +117,6 @@ export function MapView({ onBack, initialCenter, initialItineraryPlaces = [] }: 
   // --- Map callbacks ------------------------------------------------------
   const handleMapReady = useCallback((map: MapboxMap) => {
     mapRef.current = map;
-    setMapReady(true);
   }, []);
 
   const handleMapClick = useCallback(async (lngLat: mapboxgl.LngLat) => {

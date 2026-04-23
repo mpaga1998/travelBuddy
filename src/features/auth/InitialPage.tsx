@@ -7,7 +7,7 @@ import { getMyProfile } from "../profile/profileApi";
 import type { ExtractedPlace } from '../itinerary/itineraryMapOverlay';
 
 interface InitialPageProps {
-  onGoToMap: (location: { lng: number; lat: number }, itineraryPlaces?: ExtractedPlace[]) => void;
+  onGoToMap: (location: { lng: number; lat: number } | null, itineraryPlaces?: ExtractedPlace[]) => void;
 }
 
 interface Suggestion {
