@@ -63,7 +63,7 @@ async function extractPlacesFromMarkdown(markdown: string): Promise<RawPlace[]> 
       { role: 'user', content: EXTRACTION_USER(markdown) },
     ],
     max_completion_tokens: 1500,
-    temperature: 0,
+    // temperature is not supported by reasoning models (gpt-5.x); omit it.
   });
 
   const raw = response.choices[0]?.message?.content?.trim() ?? '[]';
@@ -72,13 +72,15 @@ async function extractPlacesFromMarkdown(markdown: string): Promise<RawPlace[]> 
   try {
     const parsed = JSON.parse(cleaned);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (p): p is RawPlace =>
-        typeof p?.name === 'string' &&
-        typeof p?.day === 'number' &&
-        typeof p?.type === 'string' &&
-        typeof p?.context === 'string'
-    );
+    return parsed
+      .filter(
+        (p) =>
+          typeof p?.name === 'string' &&
+          (typeof p?.day === 'number' || typeof p?.day === 'string') &&
+          typeof p?.type === 'string' &&
+          typeof p?.context === 'string'
+      )
+      .map((p): RawPlace => ({ ...p, day: Number(p.day) || 1 }));
   } catch {
     console.warn('⚠️ [EXTRACT] JSON parse failed:', cleaned.slice(0, 200));
     return [];
