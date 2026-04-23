@@ -52,6 +52,13 @@ export function ItineraryPreview({ markdown, isStreaming }: ItineraryPreviewProp
       >
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
+          // react-markdown 9 sanitizes URLs by default and strips any scheme
+          // not on its allowlist. Our venue links use a custom `mapbox:` scheme
+          // (e.g. `mapbox:Trattoria%20Da%20Enzo|Rome`), which was being rewritten
+          // to an empty string — clicking then opened a blank tab that resolved
+          // to the app's home URL. Pass urlTransform through so our scheme
+          // survives and the `a` override below can handle it.
+          urlTransform={(url) => url}
           components={{
             h1: ({ node: _n, ...props }) => (
               <h1 style={{ marginTop: 28, marginBottom: 14, fontSize: 20, fontWeight: 700 }} {...props} />
