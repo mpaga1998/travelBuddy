@@ -7,7 +7,7 @@ import { getMyProfile } from "../profile/profileApi";
 import type { ExtractedPlace } from '../itinerary/itineraryMapOverlay';
 
 interface InitialPageProps {
-  onGoToMap: (location: { lng: number; lat: number } | null, itineraryPlaces?: ExtractedPlace[]) => void;
+  onGoToMap: (location: { lng: number; lat: number } | null, itineraryPlaces?: ExtractedPlace[], arrivalLocation?: string) => void;
 }
 
 interface Suggestion {
@@ -554,11 +554,11 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
       <ItineraryModal
         open={itineraryModalOpen}
         onClose={() => setItineraryModalOpen(false)}
-        onViewOnMap={(places, _arrivalLocation) => {
+        onViewOnMap={(places, arrivalLocation) => {
           setItineraryModalOpen(false);
           // Pass null center so MapCanvas uses DEFAULT_CENTER; ItineraryMapLayer
-          // will call fitBounds once the map style loads.
-          onGoToMap(null, places);
+          // will fitBounds once geocoding resolves.
+          onGoToMap(null, places, arrivalLocation);
         }}
       />
 

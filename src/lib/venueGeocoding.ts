@@ -28,11 +28,11 @@ export async function geocodeVenue(
   }
 
   try {
-    const query = cityHint ? `${venueName}, ${cityHint}, Italy` : `${venueName}, Italy`;
+    const query = cityHint ? `${venueName}, ${cityHint}` : venueName;
     const encodedQuery = encodeURIComponent(query);
 
     const response = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedQuery}.json?country=IT&limit=1&access_token=${mapboxToken}`
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedQuery}.json?limit=1&access_token=${mapboxToken}`
     );
 
     if (!response.ok) {

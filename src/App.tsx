@@ -18,6 +18,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<AppPage>("loading");
   const [mapCenter, setMapCenter] = useState<{ lng: number; lat: number } | null>(null);
   const [pendingItineraryPlaces, setPendingItineraryPlaces] = useState<ExtractedPlace[]>([]);
+  const [pendingArrivalLocation, setPendingArrivalLocation] = useState<string>('');
 
   // 1️⃣ Get session on first load
   useEffect(() => {
@@ -82,9 +83,10 @@ export default function App() {
   if (currentPage === "initial") {
     return (
       <InitialPage
-        onGoToMap={(location, itineraryPlaces) => {
+        onGoToMap={(location, itineraryPlaces, arrivalLocation) => {
           setMapCenter(location);
           if (itineraryPlaces?.length) setPendingItineraryPlaces(itineraryPlaces);
+          if (arrivalLocation) setPendingArrivalLocation(arrivalLocation);
           setShowInitialPage(false);
         }}
       />
@@ -92,7 +94,7 @@ export default function App() {
   }
 
   if (currentPage === "map") {
-    return <MapView onBack={() => { setShowInitialPage(true); setPendingItineraryPlaces([]); }} initialCenter={mapCenter} initialItineraryPlaces={pendingItineraryPlaces} />;
+    return <MapView onBack={() => { setShowInitialPage(true); setPendingItineraryPlaces([]); setPendingArrivalLocation(''); }} initialCenter={mapCenter} initialItineraryPlaces={pendingItineraryPlaces} initialArrivalLocation={pendingArrivalLocation} />;
   }
 
   return <div>Unknown page state</div>;
