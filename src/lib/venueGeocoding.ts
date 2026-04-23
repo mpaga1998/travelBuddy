@@ -151,13 +151,11 @@ function isIOS(): boolean {
 }
 
 function openMapsUrl(url: string): void {
-  if (isIOS()) {
-    // window.open() does not reliably handle custom schemes on iOS;
-    // setting location.href works for both https:// and maps:// links.
-    window.location.href = url;
-  } else {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }
+  // Always open in a new tab/window. On iOS, window.open with a custom scheme
+  // (maps://) or Apple Maps URL causes iOS to hand off to the Maps app while
+  // keeping the current page alive. Using window.location.href would navigate
+  // away from the SPA, making it look like a redirect to the home page on return.
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 /**
