@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { saveItineraryToProfile } from './itineraryApi';
 import { supabase } from '../../lib/supabaseClient';
 import { useItineraryDraft } from './hooks/useItineraryDraft';
@@ -15,7 +15,6 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const draft = useItineraryDraft();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  // Incrementing this key remounts ItineraryForm, resetting all its internal state cheaply.
   const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
@@ -47,11 +46,11 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   };
 
   const handleSaveItinerary = async () => {
-    if (!currentUserId) { alert('âŒ User not authenticated'); return; }
+    if (!currentUserId) { alert('❌ User not authenticated'); return; }
     if (!draft.lastInput) return;
 
     const { lastInput } = draft;
-    const title = prompt('ðŸ“Œ Give your itinerary a title:', `${lastInput.arrival.location} Adventure`);
+    const title = prompt('📌 Give your itinerary a title:', `${lastInput.arrival.location} Adventure`);
     if (!title) return;
 
     setIsSaving(true);
@@ -70,13 +69,13 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
           interests: lastInput.interests,
         }
       );
-      alert('âœ¨ Done! Your custom itinerary has been saved to your profile');
+      alert('✨ Done! Your custom itinerary has been saved to your profile');
       handleReset();
       onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save itinerary';
-      console.error('âŒ Save error:', err);
-      alert(`âŒ ${message}`);
+      console.error('Save error:', err);
+      alert(`❌ ${message}`);
     } finally {
       setIsSaving(false);
     }
@@ -116,7 +115,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
         >
           <div style={{ flex: 1 }}>
             <h2 style={{ margin: 0, fontSize: isMobile ? 18 : 20, fontWeight: 700, color: '#111' }}>
-              âœˆï¸ Plan Your Itinerary
+              ✈️ Plan Your Itinerary
             </h2>
             <p style={{ margin: '6px 0 0 0', fontSize: isMobile ? 12 : 13, fontWeight: 600, color: '#666' }}>
               Trip Details
@@ -127,7 +126,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
             style={{ border: 'none', background: 'transparent', fontSize: 24, cursor: 'pointer', padding: '4px 8px', color: '#999', flexShrink: 0 }}
             aria-label="Close"
           >
-            âœ•
+            ✕
           </button>
         </div>
 
@@ -144,7 +143,6 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
 
           {step === 'loading' && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '40px 0' }}>
-              <div style={{ fontSize: 32 }}>âœ¨</div>
               <div style={{ fontSize: 16, fontWeight: 600, textAlign: 'center', color: '#111' }}>
                 Creating the best itinerary for you...
               </div>
@@ -185,7 +183,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                   fontWeight: 600, fontSize: 14, minHeight: 44, opacity: isSaving ? 0.6 : 1,
                 }}
               >
-                {isSaving ? 'ðŸ’¾ Saving...' : 'ðŸ“Œ Save to Profile'}
+                {isSaving ? '💾 Saving...' : '📌 Save to Profile'}
               </button>
               <button
                 onClick={handleReset}
@@ -195,7 +193,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
                   fontWeight: 600, fontSize: 14, minHeight: 44,
                 }}
               >
-                âœ¨ Create Another
+                Create Another
               </button>
             </>
           )}
@@ -216,5 +214,3 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
     </div>
   );
 }
-
-

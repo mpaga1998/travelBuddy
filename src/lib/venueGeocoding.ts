@@ -195,3 +195,47 @@ export async function openVenueInMaps(venueName: string, city: string): Promise<
 
   openMapsUrl(fallbackUrl);
 }
+
+/**
+ * Mobile-safe venue open that works within a user-gesture context.
+ *
+ * Mobile browsers block window.open inside async callbacks (popup blocker).
+ * This function opens the window synchronously with a Google Maps search URL,
+ * then async-upgrades it to a precise coordinates URL after geocoding.
+ *
+ * Call this directly from an onClick handler (not inside a promise chain).
+ */
+export function openVenueInMapsSync(venueName: string, city: string): void {
+  const apple = isAppleMapsPreferred();
+  const ios = isIOS();
+  const query = city ? `${venueName} ${city}` : venueName;
+  const encodedQuery = encodeURIComponent(query);
+
+  // Build the synchronous fallback URL (no geocoding needed).
+  const fallbackUrl = apple
+    ? (ios ? `maps://?q=${encodedQuery}` : `https://maps.apple.com/?q=${encodedQuery}`)
+    : `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
+
+  // Open synchronously inside the user gesture — this is allowed by all browsers.
+  const win = window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+
+  // Async-upgrade: geocode and navigate the already-open tab to a precise URL.
+  if (win) {
+    geocodeVenueDetailed(venueName, city)
+      .then((result) => {
+        if (result && !win.closed) {
+          const preciseUrl = apple
+            ? generateAppleMapsURL([result.lat, result.lng], venueName)
+            : generateGoogleMapsURL([result.lat, result.lng], venueName);
+          // On iOS, Apple Maps deep link must be opened fresh; close the fallback tab.
+          if (apple && ios) {
+            window.open(preciseUrl, '_blank', 'noopener,noreferrer');
+            win.close();
+          } else {
+            win.location.href = preciseUrl;
+          }
+        }
+      })
+      .catch(() => { /* keep fallback tab open */ });
+  }
+}

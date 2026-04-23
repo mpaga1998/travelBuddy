@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { openVenueInMapsSync } from '../../lib/venueGeocoding';
 
 export interface ItineraryPreviewProps {
   markdown: string;
@@ -114,13 +115,18 @@ export function ItineraryPreview({ markdown, isStreaming }: ItineraryPreviewProp
                 const match = hrefStr.match(/^mapbox:(.+)\|(.+)$/);
                 const decodedVenue = match ? decodeURIComponent(match[1]) : String(children);
                 const city = match ? match[2] : '';
+                const encodedQuery = encodeURIComponent(city ? `${decodedVenue} ${city}` : decodedVenue);
+                const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
                 return (
                   <a
-                    href="#"
-                    onClick={async (e) => {
+                    href={fallbackUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
                       e.preventDefault();
-                      const { openVenueInMaps } = await import('../../lib/venueGeocoding');
-                      await openVenueInMaps(decodedVenue, city);
+                      // openVenueInMapsSync calls window.open synchronously within
+                      // the user gesture, satisfying mobile popup blockers.
+                      openVenueInMapsSync(decodedVenue, city);
                     }}
                     style={{
                       color: '#0369a1',
