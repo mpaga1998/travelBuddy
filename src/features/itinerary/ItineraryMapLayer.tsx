@@ -7,25 +7,40 @@
  *   Server-supplied lat/lng from the extraction API are IGNORED because the
  *   server-side Mapbox token may not be available in production (VITE_MAPBOX_TOKEN
  *   is a build-time Vite variable, not a server-side runtime env var). Instead we
- *   re-geocode every venue client-side using geocodeVenue(name, arrivalLocation),
- *   which uses the browser's VITE_MAPBOX_TOKEN.
+ *   re-geocode every venue client-side using geocodeVenueDetailed(name, arrivalLocation),
+ *   which uses the browser's VITE_MAPBOX_TOKEN. City center coords are used as a
+ *   proximity bias so ambiguous names resolve to the correct city.
  *
  * Clustering:
  *   Uses Mapbox native GeoJSON clustering (same pattern as PinLayer).
  *   Clusters render as GL layers; individual unclustered pins render as
  *   HTML markers synced on every render frame.
+ *
+ * Click behaviour:
+ *   Clicking an itinerary pin opens the same PinPopup used by community pins,
+ *   with an isItineraryPin flag that swaps the badge and hides social actions.
+ *
+ * Logging:
+ *   Every step emits structured [ITINERARY-MAP] console logs so coordinate
+ *   issues can be diagnosed from browser DevTools without touching the server.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import mapboxgl, { Map as MapboxMap, GeoJSONSource } from 'mapbox-gl';
+import { createRoot, type Root } from 'react-dom/client';
 import type { ExtractedPlace } from './itineraryMapOverlay';
-import { dayColor, PLACE_TYPE_EMOJI } from './itineraryMapOverlay';
-import { geocodeVenue, generateGoogleMapsURL } from '../../lib/venueGeocoding';
+import { dayColor, PLACE_TYPE_EMOJI, placeTypeToCategory } from './itineraryMapOverlay';
+import { geocodeVenueDetailed, type GeocodingResult } from '../../lib/venueGeocoding';
+import { PinPopup } from '../map/PinPopup';
+import type { Pin } from '../pins/pinTypes';
+import { MOBILE_BREAKPOINT } from '../map/mapConstants';
 
 // Source / layer ids — must not collide with PinLayer ('pins', 'pins-clusters', …)
 const SRC = 'itinerary';
 const L_CLUSTERS = 'itinerary-clusters';
 const L_CLUSTER_COUNT = 'itinerary-cluster-count';
+
+const LOG = '[ITINERARY-MAP]';
 
 export interface ItineraryMapLayerProps {
   map: MapboxMap | null;
@@ -38,10 +53,61 @@ export interface ItineraryMapLayerProps {
   onGeocoding?: (loading: boolean) => void;
 }
 
-// Internal type: ExtractedPlace with guaranteed client-side coords
+// Internal type: ExtractedPlace with guaranteed client-side coords + audit fields
 interface GeocodedPlace extends ExtractedPlace {
   resolvedLat: number;
   resolvedLng: number;
+  resolvedPlaceName: string;
+  relevance: number;
+  usedFallback: 'none' | 'city' | 'server';
+}
+
+// ---------------------------------------------------------------------------
+// Pure helpers
+// ---------------------------------------------------------------------------
+
+/** Haversine great-circle distance in kilometres. */
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** Stable, reproducible id for an itinerary pin (DJB2 hash). */
+function stableId(venueName: string, cityHint: string): string {
+  let h = 5381;
+  const s = `${venueName}::${cityHint}`;
+  for (let i = 0; i < s.length; i++) h = (h * 33) ^ s.charCodeAt(i);
+  return `itinerary-${(h >>> 0).toString(16)}`;
+}
+
+/** Convert a geocoded itinerary place to a Pin shape for PinPopup. */
+function geocodedPlaceToPin(p: GeocodedPlace, cityHint: string): Pin {
+  return {
+    id: stableId(p.name, cityHint),
+    title: p.name,
+    description: p.context?.trim().slice(0, 300) ?? '',
+    category: placeTypeToCategory(p.type),
+    lat: p.resolvedLat,
+    lng: p.resolvedLng,
+    createdByLabel: 'Your itinerary',
+    createdByType: 'traveler',
+    createdById: 'itinerary',
+    createdByAge: null,
+    likesCount: 0,
+    dislikesCount: 0,
+    bookmarkCount: 0,
+    tips: [],
+    imageUrls: [],
+    createdAt: new Date().toISOString(),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -124,6 +190,93 @@ export function ItineraryMapLayer({
   // Stable ref so the render-frame handler always reads the latest geocoded list.
   const geocodedRef = useRef<GeocodedPlace[]>([]);
 
+  // Selected place drives the popup.
+  const [selectedPlace, setSelectedPlace] = useState<GeocodedPlace | null>(null);
+
+  // Popup DOM refs — mutated imperatively to match PinLayer pattern.
+  const popupRef = useRef<mapboxgl.Popup | null>(null);
+  const popupRootRef = useRef<Root | null>(null);
+
+  // ---- Popup lifecycle (mirrors PinLayer) ---------------------------------
+  useEffect(() => {
+    // Clean up any previous popup immediately.
+    if (popupRef.current) {
+      popupRef.current.remove();
+      popupRef.current = null;
+    }
+    if (popupRootRef.current) {
+      popupRootRef.current.unmount();
+      popupRootRef.current = null;
+    }
+
+    if (!map || !selectedPlace) return;
+
+    const place = selectedPlace;
+
+    map.easeTo({
+      center: [place.resolvedLng, place.resolvedLat],
+      duration: 400,
+      padding: { top: 180, bottom: 80, left: 40, right: 40 },
+    });
+
+    // Mirror PinLayer: open popup after the camera animation settles.
+    const timer = window.setTimeout(() => {
+      const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+      const container = document.createElement('div');
+      const pin = geocodedPlaceToPin(place, arrivalLocation);
+
+      const popup = new mapboxgl.Popup({
+        closeButton: true,
+        closeOnClick: false,
+        maxWidth: isMobile ? `${Math.min(window.innerWidth * 0.9, 360)}px` : '400px',
+        offset: [0, -10] as [number, number],
+        anchor: 'bottom',
+        focusAfterOpen: false,
+        className: 'pin-popup',
+      })
+        .setLngLat([place.resolvedLng, place.resolvedLat])
+        .setDOMContent(container)
+        .addTo(map);
+
+      popup.on('close', () => setSelectedPlace(null));
+      popupRef.current = popup;
+
+      const root = createRoot(container);
+      popupRootRef.current = root;
+      root.render(
+        <PinPopup
+          pin={pin}
+          currentUserId={null}
+          isBookmarkedByUser={false}
+          onShowTips={() => {}}
+          onShowImages={() => {}}
+          isItineraryPin={true}
+        />,
+      );
+    }, 400);
+
+    return () => {
+      window.clearTimeout(timer);
+      if (popupRef.current) {
+        popupRef.current.remove();
+        popupRef.current = null;
+      }
+      if (popupRootRef.current) {
+        popupRootRef.current.unmount();
+        popupRootRef.current = null;
+      }
+    };
+  }, [map, selectedPlace, arrivalLocation]);
+
+  // Unmount cleanup for popup refs.
+  useEffect(() => {
+    return () => {
+      if (popupRef.current) { popupRef.current.remove(); popupRef.current = null; }
+      if (popupRootRef.current) { popupRootRef.current.unmount(); popupRootRef.current = null; }
+    };
+  }, []);
+
+  // ---- Main geocoding + GL layer effect -----------------------------------
   useEffect(() => {
     if (!map || !places.length || !arrivalLocation) return;
 
@@ -170,11 +323,9 @@ export function ItineraryMapLayer({
           const el = buildMarkerEl(place, seq);
           el.addEventListener('click', (ev) => {
             ev.stopPropagation();
-            const url = generateGoogleMapsURL(
-              [place.resolvedLat, place.resolvedLng],
-              place.name
-            );
-            if (url) window.open(url, '_blank', 'noopener,noreferrer');
+            // Always read from ref so we get the freshest GeocodedPlace.
+            const freshPlace = geocodedRef.current[seq - 1];
+            if (freshPlace) setSelectedPlace(freshPlace);
           });
           marker = new mapboxgl.Marker({ element: el }).setLngLat(coords);
           localMarkers.set(seq, marker);
@@ -266,46 +417,177 @@ export function ItineraryMapLayer({
       updateMarkers();
     };
 
-    // ---- Async geocoding ---------------------------------------------------
+    // ---- Async geocoding + logging pipeline --------------------------------
     const run = async () => {
       onGeocoding?.(true);
       try {
-        // Geocode the city once to use as fallback for failed individual venues.
-        const cityResult = await geocodeVenue(arrivalLocation);
+        console.info(`${LOG} start`, {
+          arrivalLocation,
+          placeCount: places.length,
+          venues: places.map((p) => ({ name: p.name, day: p.day, type: p.type })),
+        });
+
+        // Step 1: Geocode the city for fallback coords + proximity bias.
+        const cityResult = await geocodeVenueDetailed(arrivalLocation);
         if (cancelled) return;
-        const cityCoords = cityResult
-          ? { lat: cityResult[0], lng: cityResult[1] }
+
+        const cityCoords: { lat: number; lng: number } | null = cityResult
+          ? { lat: cityResult.lat, lng: cityResult.lng }
           : null;
 
-        // Deduplicate venue names so each unique name makes only one API call.
+        console.info(`${LOG} city geocode`, {
+          query: arrivalLocation,
+          resolvedLat: cityResult?.lat ?? null,
+          resolvedLng: cityResult?.lng ?? null,
+          resolvedPlaceName: cityResult?.placeName ?? null,
+          relevance: cityResult?.relevance ?? null,
+          warning: cityCoords === null
+            ? 'CITY GEOCODE FAILED — no proximity bias, no city fallback'
+            : null,
+        });
+
+        // Step 2: Deduplicate venue names so each unique name makes exactly one API call.
         const uniqueNames = [...new Set(places.map((p) => p.name))];
-        const cache = new Map<string, { lat: number; lng: number }>();
+        const cache = new Map<string, GeocodingResult>();
 
         await Promise.all(
           uniqueNames.map(async (name) => {
-            const r = await geocodeVenue(name, arrivalLocation);
-            if (r) {
-              cache.set(name, { lat: r[0], lng: r[1] });
-            } else {
-              console.warn(`[ItineraryMapLayer] geocoding failed for "${name}"`);
+            if (!name) {
+              console.warn(`${LOG} geocode request: SKIPPED — empty venue name`);
+              return;
             }
-          })
+
+            // Build a loggable URL (access_token redacted).
+            const logQuery = arrivalLocation ? `${name}, ${arrivalLocation}` : name;
+            const proximityStr = cityCoords
+              ? `${cityCoords.lng},${cityCoords.lat}`
+              : '(none — city geocode failed)';
+            const logUrl =
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/` +
+              `${encodeURIComponent(logQuery)}.json` +
+              `?limit=1&proximity=${proximityStr}&access_token=REDACTED`;
+
+            console.info(`${LOG} geocode request`, {
+              venueName: name,
+              cityHint: arrivalLocation || '(none)',
+              proximityCoords: cityCoords,
+              requestUrl: logUrl,
+            });
+
+            const r = await geocodeVenueDetailed(name, arrivalLocation, cityCoords ?? undefined);
+
+            if (r) {
+              cache.set(name, r);
+              console.info(`${LOG} geocode response`, {
+                venueName: name,
+                resolvedLat: r.lat,
+                resolvedLng: r.lng,
+                resolvedPlaceName: r.placeName,
+                relevance: r.relevance,
+                usedFallback: false,
+              });
+            } else {
+              console.warn(`${LOG} geocode response: NO MATCH`, {
+                venueName: name,
+                cityHint: arrivalLocation || '(none)',
+                note: 'Venue not found in Mapbox index. Will fall back to city coords.',
+              });
+            }
+          }),
         );
 
         if (cancelled) return;
 
+        // Step 3: Build GeocodedPlace array with per-place fallback tracking.
         const geocoded: GeocodedPlace[] = places.map((p) => {
           const coords = cache.get(p.name);
-          if (coords) return { ...p, resolvedLat: coords.lat, resolvedLng: coords.lng };
-          if (cityCoords) {
-            console.warn(`[ItineraryMapLayer] using city fallback for "${p.name}"`);
-            return { ...p, resolvedLat: cityCoords.lat, resolvedLng: cityCoords.lng };
+          if (coords) {
+            return {
+              ...p,
+              resolvedLat: coords.lat,
+              resolvedLng: coords.lng,
+              resolvedPlaceName: coords.placeName,
+              relevance: coords.relevance,
+              usedFallback: 'none' as const,
+            };
           }
-          // Last resort: server-supplied coords (may be wrong, but keeps the pin visible).
-          console.warn(`[ItineraryMapLayer] no coords for "${p.name}", using server coords`);
-          return { ...p, resolvedLat: p.lat, resolvedLng: p.lng };
+          if (cityCoords) {
+            return {
+              ...p,
+              resolvedLat: cityCoords.lat,
+              resolvedLng: cityCoords.lng,
+              resolvedPlaceName: arrivalLocation,
+              relevance: 0,
+              usedFallback: 'city' as const,
+            };
+          }
+          // Last resort: server-supplied coords (may be wrong but keeps pin visible).
+          return {
+            ...p,
+            resolvedLat: p.lat,
+            resolvedLng: p.lng,
+            resolvedPlaceName: '(server coords — may be inaccurate)',
+            relevance: 0,
+            usedFallback: 'server' as const,
+          };
         });
 
+        // Step 4: Summary log.
+        const geocodedOk = geocoded.filter((p) => p.usedFallback === 'none').length;
+        const fellBackToCity = geocoded.filter((p) => p.usedFallback === 'city').length;
+        const failedCount = geocoded.filter((p) => p.usedFallback === 'server').length;
+
+        const distances = cityCoords
+          ? geocoded
+              .filter((p) => p.usedFallback !== 'server')
+              .map((p) =>
+                haversineKm(p.resolvedLat, p.resolvedLng, cityCoords.lat, cityCoords.lng),
+              )
+          : [];
+        const avgDist =
+          distances.length > 0
+            ? Number((distances.reduce((a, b) => a + b, 0) / distances.length).toFixed(2))
+            : null;
+
+        console.info(`${LOG} final summary`, {
+          totalVenues: geocoded.length,
+          geocodedOk,
+          fellBackToCity,
+          failed: failedCount,
+          avgDistanceFromCityCenterKm: avgDist,
+        });
+
+        // Step 5: Anomaly detection — flag anything > 50 km from the city centre.
+        if (cityCoords) {
+          for (const p of geocoded) {
+            const dist = haversineKm(
+              p.resolvedLat,
+              p.resolvedLng,
+              cityCoords.lat,
+              cityCoords.lng,
+            );
+            if (dist > 50) {
+              console.warn(`${LOG} ANOMALY: pin > 50 km from city centre`, {
+                venueName: p.name,
+                resolvedLat: p.resolvedLat,
+                resolvedLng: p.resolvedLng,
+                resolvedPlaceName: p.resolvedPlaceName,
+                distanceKm: Number(dist.toFixed(2)),
+                usedFallback: p.usedFallback,
+                relevance: p.relevance,
+                cityCenter: cityCoords,
+                hypothesis:
+                  p.relevance < 0.5
+                    ? 'Low relevance — Mapbox picked a weak match. Very common name or missing city hint.'
+                    : p.usedFallback === 'city'
+                    ? 'City fallback used (venue had no Mapbox match).'
+                    : 'Despite a high-relevance match the place is far away — check if this is a real venue at this location.',
+              });
+            }
+          }
+        }
+
+        // Step 6: Install GL layers.
         if (map.isStyleLoaded()) {
           installLayers(geocoded);
         } else {
@@ -322,6 +604,9 @@ export function ItineraryMapLayer({
     // ---- Cleanup -----------------------------------------------------------
     return () => {
       cancelled = true;
+      // Close any open popup for this itinerary run.
+      setSelectedPlace(null);
+
       try {
         if (loadHandler) map.off('load', loadHandler);
         map.off('render', updateMarkers);
@@ -345,5 +630,3 @@ export function ItineraryMapLayer({
 
   return null;
 }
-
-

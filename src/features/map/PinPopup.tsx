@@ -10,15 +10,20 @@ export type PinPopupProps = {
   /** True if the pin is in the user's bookmark set (parent's source of truth). */
   isBookmarkedByUser: boolean;
   /** Fired on heart/broken-heart. Parent handles the API call + count refresh. */
-  onReact: (kind: "like" | "dislike") => void | Promise<void>;
+  onReact?: (kind: "like" | "dislike") => void | Promise<void>;
   /** Fired on bookmark button. Parent calls useBookmarks.toggle(pin.id). */
-  onToggleBookmark: () => void | Promise<void>;
+  onToggleBookmark?: () => void | Promise<void>;
   /** Fired when the user wants to see the tips popover. */
   onShowTips: (tips: string[]) => void;
   /** Fired on the main image click — parent opens the lightbox. */
   onShowImages: (urls: string[]) => void;
   /** Fired on Delete (only rendered when pin belongs to current user). */
-  onRequestDelete: () => void;
+  onRequestDelete?: () => void;
+  /**
+   * When true, shows a "From your itinerary" badge and hides social/bookmark/delete
+   * actions. The pin is ephemeral — no server round-trips are needed.
+   */
+  isItineraryPin?: boolean;
 };
 
 /**
@@ -38,6 +43,7 @@ export function PinPopup({
   onShowTips,
   onShowImages,
   onRequestDelete,
+  isItineraryPin = false,
 }: PinPopupProps) {
   const isMobile = typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT;
 
@@ -48,6 +54,11 @@ export function PinPopup({
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
 
   useEffect(() => {
+    // Itinerary pins are ephemeral — skip the server round-trip.
+    if (isItineraryPin) {
+      setBookmarkedConfirmed(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -60,7 +71,7 @@ export function PinPopup({
     return () => {
       cancelled = true;
     };
-  }, [pin.id]);
+  }, [pin.id, isItineraryPin]);
 
   const bookmarked = bookmarkedConfirmed ?? isBookmarkedByUser;
 
@@ -141,34 +152,53 @@ export function PinPopup({
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-          <span
-            style={{
-              padding: "4px 8px",
-              borderRadius: 999,
-              background: "rgba(37,99,235,0.12)",
-              fontSize: 12,
-            }}
-          >
-            {pin.createdByType === "hostel"
-              ? `Recommended by ${pin.createdByLabel}`
-              : `Pinned by ${pin.createdByLabel}`}
-          </span>
+          {isItineraryPin ? (
+            <span
+              style={{
+                padding: "4px 8px",
+                borderRadius: 999,
+                background: "rgba(16,185,129,0.15)",
+                color: "#065f46",
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              📋 From your itinerary
+            </span>
+          ) : (
+            <span
+              style={{
+                padding: "4px 8px",
+                borderRadius: 999,
+                background: "rgba(37,99,235,0.12)",
+                fontSize: 12,
+              }}
+            >
+              {pin.createdByType === "hostel"
+                ? `Recommended by ${pin.createdByLabel}`
+                : `Pinned by ${pin.createdByLabel}`}
+            </span>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-          <button
-            onClick={(e) => { e.stopPropagation(); onReact("like"); }}
-            style={pillButtonStyle({ flex: "1 1 100px" })}
-          >
-            ❤️ <span style={{ marginLeft: 4 }}>{pin.likesCount}</span>
-          </button>
+          {!isItineraryPin && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onReact?.("like"); }}
+              style={pillButtonStyle({ flex: "1 1 100px" })}
+            >
+              ❤️ <span style={{ marginLeft: 4 }}>{pin.likesCount}</span>
+            </button>
+          )}
 
-          <button
-            onClick={(e) => { e.stopPropagation(); onReact("dislike"); }}
-            style={pillButtonStyle({ flex: "1 1 100px" })}
-          >
-            💔 <span style={{ marginLeft: 4 }}>{pin.dislikesCount}</span>
-          </button>
+          {!isItineraryPin && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onReact?.("dislike"); }}
+              style={pillButtonStyle({ flex: "1 1 100px" })}
+            >
+              💔 <span style={{ marginLeft: 4 }}>{pin.dislikesCount}</span>
+            </button>
+          )}
 
           {pin.tips && pin.tips.length > 0 && (
             <button
@@ -183,13 +213,13 @@ export function PinPopup({
             </button>
           )}
 
-          <button
+          {!isItineraryPin && <button
             onClick={async (e) => {
               e.stopPropagation();
               if (bookmarkBusy) return;
               setBookmarkBusy(true);
               try {
-                await onToggleBookmark();
+                await onToggleBookmark?.();
                 // Flip the confirmed state optimistically — parent will have
                 // updated its set by now, but we drive our button off this.
                 setBookmarkedConfirmed((prev) => !(prev ?? isBookmarkedByUser));
@@ -217,7 +247,7 @@ export function PinPopup({
               : bookmarked
                 ? "🔖 Bookmarked"
                 : "🔖 Bookmark"}
-          </button>
+          </button>}
 
           <button
             onClick={(e) => {
@@ -229,9 +259,9 @@ export function PinPopup({
             📍 Maps
           </button>
 
-          {isOwnPin && (
+          {!isItineraryPin && isOwnPin && (
             <button
-              onClick={(e) => { e.stopPropagation(); onRequestDelete(); }}
+              onClick={(e) => { e.stopPropagation(); onRequestDelete?.(); }}
               style={{
                 padding: "8px 10px",
                 borderRadius: 10,

@@ -86,6 +86,13 @@ export async function extractItineraryPlaces(
   arrivalLocation: string,
   itineraryId?: string,
 ): Promise<ExtractedPlace[]> {
+  console.info('[ITINERARY-MAP] extractItineraryPlaces called', {
+    markdownLength: markdown.length,
+    markdownPreview: markdown.slice(0, 500),
+    arrivalLocation,
+    itineraryId: itineraryId ?? null,
+  });
+
   const { data, error: sessionError } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (sessionError || !token) throw new Error('Not signed in');
@@ -108,5 +115,19 @@ export async function extractItineraryPlaces(
   }
 
   const json = await response.json() as { places?: ExtractedPlace[] };
-  return json.places ?? [];
+  const places = json.places ?? [];
+
+  console.info('[ITINERARY-MAP] server returned places', {
+    count: places.length,
+    places: places.map((p) => ({
+      name: p.name,
+      day: p.day,
+      type: p.type,
+      context: p.context?.slice(0, 100) ?? '',
+      serverLat: p.lat,
+      serverLng: p.lng,
+    })),
+  });
+
+  return places;
 }
