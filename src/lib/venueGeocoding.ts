@@ -127,3 +127,73 @@ export function generateAppleMapsURL(
 
   return '';
 }
+
+/**
+ * Returns true when the user is on iOS or Mac Safari — i.e., Apple Maps is preferred.
+ */
+function isAppleMapsPreferred(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  // iOS devices
+  if (/iPad|iPhone|iPod/.test(ua)) return true;
+  // macOS Safari (not wrapped in Chromium/Edge)
+  if (
+    navigator.platform?.startsWith('Mac') &&
+    /Safari/.test(ua) &&
+    !/Chrome|Chromium|Edg/.test(ua)
+  ) return true;
+  return false;
+}
+
+function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+}
+
+function openMapsUrl(url: string): void {
+  if (isIOS()) {
+    // window.open() does not reliably handle custom schemes on iOS;
+    // setting location.href works for both https:// and maps:// links.
+    window.location.href = url;
+  } else {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+}
+
+/**
+ * Platform-aware venue open:
+ * - iOS / Mac Safari  → Apple Maps (maps:// on iOS, https://maps.apple.com on desktop)
+ * - Everything else   → Google Maps search
+ *
+ * Attempts geocoding first for a precise coordinates URL.
+ * Falls back to a search-by-name URL when geocoding fails or returns nothing.
+ */
+export async function openVenueInMaps(venueName: string, city: string): Promise<void> {
+  const apple = isAppleMapsPreferred();
+  const ios = isIOS();
+  const query = city ? `${venueName} ${city}` : venueName;
+
+  try {
+    const result = await geocodeVenueDetailed(venueName, city);
+
+    if (result) {
+      const url = apple
+        ? generateAppleMapsURL([result.lat, result.lng], venueName)
+        : generateGoogleMapsURL([result.lat, result.lng], venueName);
+      openMapsUrl(url);
+      return;
+    }
+  } catch {
+    // fall through to search fallback
+  }
+
+  // Fallback: open a search URL without coordinates
+  const encodedQuery = encodeURIComponent(query);
+  const fallbackUrl = apple
+    ? (ios
+        ? `maps://?q=${encodedQuery}`
+        : `https://maps.apple.com/?q=${encodedQuery}`)
+    : `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
+
+  openMapsUrl(fallbackUrl);
+}

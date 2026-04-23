@@ -10,8 +10,6 @@ import {
 } from "../pins/pinApi";
 
 import { ItineraryModal } from "../itinerary/ItineraryModal";
-import { ItineraryMapLayer } from "../itinerary/ItineraryMapLayer";
-import type { ExtractedPlace } from "../itinerary/itineraryMapOverlay";
 import { supabase } from "../../lib/supabaseClient";
 import { getLocationNameFromCoordinates } from "../../lib/mapbox";
 
@@ -38,8 +36,6 @@ type DraftPin = {
 type MapViewProps = {
   onBack?: () => void;
   initialCenter?: { lng: number; lat: number } | null;
-  initialItineraryPlaces?: ExtractedPlace[];
-  initialArrivalLocation?: string;
 };
 
 /**
@@ -58,7 +54,7 @@ type MapViewProps = {
  * has one owner. Ready for 2.2 (native clustering) which only touches
  * PinLayer.
  */
-export function MapView({ onBack, initialCenter, initialItineraryPlaces = [], initialArrivalLocation = '' }: MapViewProps = {}) {
+export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   const mapRef = useRef<MapboxMap | null>(null);
   const isMobile = useIsMobile();
 
@@ -93,9 +89,6 @@ export function MapView({ onBack, initialCenter, initialItineraryPlaces = [], in
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftPin | null>(null);
   const [itineraryModalOpen, setItineraryModalOpen] = useState(false);
-  const [itineraryPlaces, setItineraryPlaces] = useState<ExtractedPlace[]>(initialItineraryPlaces);
-  const [itineraryArrivalLocation, setItineraryArrivalLocation] = useState<string>(initialArrivalLocation);
-  const [isGeocodingItinerary, setIsGeocodingItinerary] = useState(false);
   const [tipsViewerOpen, setTipsViewerOpen] = useState(false);
   const [viewerTips, setViewerTips] = useState<string[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -358,58 +351,7 @@ export function MapView({ onBack, initialCenter, initialItineraryPlaces = [], in
             <ItineraryModal
               open={itineraryModalOpen}
               onClose={() => setItineraryModalOpen(false)}
-              onViewOnMap={(places, arrivalLoc) => {
-                setItineraryPlaces(places);
-                setItineraryArrivalLocation(arrivalLoc ?? '');
-                setItineraryModalOpen(false);
-              }}
             />
-          )}
-
-          {itineraryPlaces.length > 0 && (
-            <>
-              <ItineraryMapLayer
-                map={mapRef.current}
-                places={itineraryPlaces}
-                arrivalLocation={itineraryArrivalLocation}
-                onGeocoding={setIsGeocodingItinerary}
-              />
-              {isGeocodingItinerary && (
-                <div style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                  background: 'rgba(255,255,255,0.55)', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  zIndex: 10, pointerEvents: 'none',
-                }}>
-                  <div style={{
-                    background: 'white', borderRadius: 12, padding: '12px 20px',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-                    fontSize: 14, fontWeight: 600, color: '#333',
-                  }}>Placing pins…</div>
-                </div>
-              )}
-              {/* Dismiss overlay button */}
-              <button
-                onClick={() => setItineraryPlaces([])}
-                style={{
-                  position: 'absolute',
-                  top: 12,
-                  right: 12,
-                  padding: '6px 12px',
-                  borderRadius: 8,
-                  border: 'none',
-                  background: 'rgba(255,255,255,0.95)',
-                  color: '#111',
-                  fontWeight: 600,
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  zIndex: 10,
-                }}
-              >
-                ✕ Clear itinerary
-              </button>
-            </>
           )}
 
           {tipsViewerOpen && viewerTips.length > 0 && (

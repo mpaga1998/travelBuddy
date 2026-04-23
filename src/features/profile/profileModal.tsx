@@ -986,23 +986,20 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
                                 href="#"
                                 onClick={async (e) => {
                                   e.preventDefault();
-                                  try {
-                                    const { geocodeVenue, generateGoogleMapsURL } = await import("../../lib/venueGeocoding");
-                                    const coords = await geocodeVenue(decodedVenue, city);
-                                    const mapsUrl = generateGoogleMapsURL(coords, decodedVenue);
-                                    if (mapsUrl) {
-                                      window.open(mapsUrl, "_blank");
-                                    }
-                                  } catch (error) {
-                                    console.error("Failed to geocode:", error);
-                                    window.open(`https://www.google.com/maps/search/${encodeURIComponent(decodedVenue)}`, "_blank");
-                                  }
+                                  const { openVenueInMaps } = await import("../../lib/venueGeocoding");
+                                  await openVenueInMaps(decodedVenue, city || '');
                                 }}
-                                style={{ color: "#0066cc", textDecoration: "none", cursor: "pointer" }}
-                                onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
-                                onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                                style={{
+                                  color: "#0369a1",
+                                  textDecoration: "underline",
+                                  textDecorationStyle: "dotted",
+                                  textUnderlineOffset: "2px",
+                                  cursor: "pointer",
+                                }}
+                                onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.textDecorationStyle = "solid")}
+                                onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.textDecorationStyle = "dotted")}
                               >
-                                {linkText}
+                                📍 {linkText}
                               </a>
                             );
                           }

@@ -4,10 +4,8 @@ import { ItineraryModal } from "../itinerary/ItineraryModal";
 import { ProfileModal } from "../profile/profileModal";
 import { getMyProfile } from "../profile/profileApi";
 
-import type { ExtractedPlace } from '../itinerary/itineraryMapOverlay';
-
 interface InitialPageProps {
-  onGoToMap: (location: { lng: number; lat: number } | null, itineraryPlaces?: ExtractedPlace[], arrivalLocation?: string) => void;
+  onGoToMap: (location: { lng: number; lat: number } | null) => void;
 }
 
 interface Suggestion {
@@ -554,12 +552,6 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
       <ItineraryModal
         open={itineraryModalOpen}
         onClose={() => setItineraryModalOpen(false)}
-        onViewOnMap={(places, arrivalLocation) => {
-          setItineraryModalOpen(false);
-          // Pass null center so MapCanvas uses DEFAULT_CENTER; ItineraryMapLayer
-          // will fitBounds once geocoding resolves.
-          onGoToMap(null, places, arrivalLocation);
-        }}
       />
 
       {/* Profile Modal */}

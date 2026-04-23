@@ -3,14 +3,11 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { ItineraryInput } from './types';
 import { generateItinerary, saveItineraryToProfile } from './itineraryApi';
-import { extractItineraryPlaces, type ExtractedPlace } from './itineraryMapOverlay';
 import { supabase } from '../../lib/supabaseClient';
 
 interface ItineraryModalProps {
   open: boolean;
   onClose: () => void;
-  /** Called when user clicks "View on map". Places and arrivalLocation are passed to the parent map view. */
-  onViewOnMap?: (places: ExtractedPlace[], arrivalLocation: string) => void;
 }
 
 interface LocationSuggestion {
@@ -44,13 +41,12 @@ const INTEREST_OPTIONS = [
   'Adventure',
 ];
 
-export function ItineraryModal({ open, onClose, onViewOnMap }: ItineraryModalProps) {
+export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const [step, setStep] = useState<'form' | 'loading' | 'streaming' | 'result'>('form');
   const [error, setError] = useState<string | null>(null);
   const [itinerary, setItinerary] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isExtractingPlaces, setIsExtractingPlaces] = useState(false);
 
   // Form state
   const [arrivalDate, setArrivalDate] = useState('');
@@ -365,27 +361,6 @@ export function ItineraryModal({ open, onClose, onViewOnMap }: ItineraryModalPro
       alert(`❌ ${message}`);
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleViewOnMap = async () => {
-    if (!onViewOnMap) return;
-    setIsExtractingPlaces(true);
-    try {
-      const places = await extractItineraryPlaces(itinerary, arrivalLocation);
-      if (!places.length) {
-        alert('No named places could be extracted from this itinerary.');
-        return;
-      }
-      onViewOnMap(places, arrivalLocation);
-      resetForm();
-      onClose();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to extract places';
-      console.error('❌ View on map error:', err);
-      alert(`❌ ${message}`);
-    } finally {
-      setIsExtractingPlaces(false);
     }
   };
 
@@ -1272,8 +1247,8 @@ export function ItineraryModal({ open, onClose, onViewOnMap }: ItineraryModalPro
                       <td style={{ border: '1px solid #e5e7eb', padding: '6px 10px' }} {...props} />
                     ),
                     a: ({ node: _n, href, children, ...props }: any) => {
-                      // Preserve the on-demand geocoding behavior for mapbox: links
-                      // (the prompt may emit these for venue names).
+                      // mapbox: links are venue links emitted by the model.
+                      // Open in the platform's native maps app via openVenueInMaps.
                       if (href?.startsWith('mapbox:')) {
                         const match = href.match(/^mapbox:(.+)\|(.+)$/);
                         const decodedVenue = match ? decodeURIComponent(match[1]) : String(children);
@@ -1283,24 +1258,24 @@ export function ItineraryModal({ open, onClose, onViewOnMap }: ItineraryModalPro
                             href="#"
                             onClick={async (e) => {
                               e.preventDefault();
-                              try {
-                                const { geocodeVenue, generateGoogleMapsURL } = await import(
-                                  '../../lib/venueGeocoding'
-                                );
-                                const coords = await geocodeVenue(decodedVenue, city);
-                                const mapsUrl = generateGoogleMapsURL(coords, decodedVenue);
-                                if (mapsUrl) window.open(mapsUrl, '_blank');
-                              } catch (err) {
-                                console.error('Failed to geocode:', err);
-                                window.open(
-                                  `https://www.google.com/maps/search/${encodeURIComponent(decodedVenue)}`,
-                                  '_blank'
-                                );
-                              }
+                              const { openVenueInMaps } = await import('../../lib/venueGeocoding');
+                              await openVenueInMaps(decodedVenue, city);
                             }}
-                            style={{ color: '#0066cc', textDecoration: 'none', cursor: 'pointer' }}
+                            style={{
+                              color: '#0369a1',
+                              textDecoration: 'underline',
+                              textDecorationStyle: 'dotted',
+                              textUnderlineOffset: '2px',
+                              cursor: 'pointer',
+                            }}
+                            onMouseEnter={(e) => {
+                              (e.currentTarget as HTMLAnchorElement).style.textDecorationStyle = 'solid';
+                            }}
+                            onMouseLeave={(e) => {
+                              (e.currentTarget as HTMLAnchorElement).style.textDecorationStyle = 'dotted';
+                            }}
                           >
-                            {children}
+                            📍 {children}
                           </a>
                         );
                       }
@@ -1337,30 +1312,9 @@ export function ItineraryModal({ open, onClose, onViewOnMap }: ItineraryModalPro
         >
           {step === 'result' && (
             <>
-              {onViewOnMap && (
-                <button
-                  onClick={handleViewOnMap}
-                  disabled={isExtractingPlaces || isSaving}
-                  style={{
-                    flex: 1,
-                    padding: '12px 16px',
-                    borderRadius: 10,
-                    border: 'none',
-                    background: isExtractingPlaces ? '#e5e7eb' : '#0ea5e9',
-                    color: isExtractingPlaces ? '#111' : 'white',
-                    cursor: (isExtractingPlaces || isSaving) ? 'not-allowed' : 'pointer',
-                    fontWeight: 600,
-                    fontSize: 14,
-                    minHeight: 44,
-                    opacity: (isExtractingPlaces || isSaving) ? 0.6 : 1,
-                  }}
-                >
-                  {isExtractingPlaces ? '🗺️ Mapping…' : '📍 View on map'}
-                </button>
-              )}
               <button
                 onClick={handleSaveItinerary}
-                disabled={isSaving || isExtractingPlaces}
+                disabled={isSaving}
                 style={{
                   flex: 1,
                   padding: '12px 16px',
