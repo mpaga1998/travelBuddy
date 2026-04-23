@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -104,10 +108,10 @@ button {
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
-  
+
   /* Prevent tap highlight on mobile */
   -webkit-tap-highlight-color: transparent;
-  
+
   /* Ensure minimum touch target size (44px recommended by Apple) */
   min-height: 44px;
   min-width: 44px;
@@ -134,7 +138,7 @@ select {
   padding: 10px 12px;
   font-family: inherit;
   font-size: 16px; /* Prevent zoom on iOS */
-  
+
   /* Remove default styling on iOS */
   -webkit-appearance: none;
   appearance: none;
