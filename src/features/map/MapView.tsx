@@ -334,14 +334,6 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
             onRequestDelete={handleRequestDelete}
           />
 
-          {loading && (
-            <div
-              className={`absolute top-3 left-3 px-2.5 py-2 rounded-[10px] bg-white/90 border border-black/[0.08] shadow-[0_6px_18px_rgba(0,0,0,0.08)] ${isMobile ? "text-[13px]" : "text-sm"}`}
-            >
-              Loading pins…
-            </div>
-          )}
-
           {!loading && limitReached && (
             <div
               className={`absolute top-3 left-3 px-2.5 py-2 rounded-[10px] bg-white/90 border border-black/[0.08] shadow-[0_6px_18px_rgba(0,0,0,0.08)] ${isMobile ? "text-[13px]" : "text-sm"} text-gray-600`}
