@@ -70,6 +70,7 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
       return;
     }
     reload(getBoundsWithBuffer(map) ?? undefined);
+  }, [reload, mapType, map]);
 
   // Debounced moveend listener — only active when map is available and not in
   // bookmarked mode (bookmarked pins must always be fully visible).
@@ -83,6 +84,7 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         reload(getBoundsWithBuffer(map) ?? undefined);
+      }, DEBOUNCE_MS);
     };
 
     map.on("moveend", onMoveEnd);
