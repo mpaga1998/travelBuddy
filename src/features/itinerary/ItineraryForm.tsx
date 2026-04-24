@@ -32,6 +32,39 @@ const INTEREST_OPTIONS = [
   'Adventure',
 ] as const;
 
+// Shared input styles — same visual treatment across every text field in the form.
+const inputClass =
+  'w-full px-3 py-2.5 rounded-[10px] border-2 border-black/25 text-sm box-border min-h-[44px] bg-white text-[#111]';
+// Subtle-bordered input variant used by attractions textarea + notes textarea + custom-interest input.
+const subtleInputClass =
+  'w-full px-3 py-2.5 rounded-[10px] border border-black/[0.18] text-sm font-[inherit] box-border';
+// Section heading label (emoji + category title).
+const sectionLabelClass = 'text-[13px] font-bold block mb-3 text-[#111]';
+// Inline "sub-label" above a field (e.g. Arrival Date).
+const subLabelClass = 'text-[11px] font-semibold block mb-1.5 text-[#111]';
+// Time-of-day pill button (morning/afternoon/night).
+function timePillClass(active: boolean) {
+  return `flex-1 px-1 py-2 rounded-md border-2 border-black/20 text-xs font-semibold cursor-pointer transition-colors ${
+    active ? 'bg-[#0066cc] text-white' : 'bg-gray-100 text-[#111]'
+  }`;
+}
+// Selectable-option pill (travel pace, budget).
+function optionPillClass(active: boolean) {
+  return `px-3 py-2.5 rounded-[10px] cursor-pointer text-[13px] min-h-[44px] ${
+    active
+      ? 'border-2 border-blue-600 bg-blue-50 font-semibold text-blue-600'
+      : 'border border-black/[0.18] bg-white font-medium text-[#111]'
+  }`;
+}
+// Interest-chip pill (rounded-full). Shared between preset + custom chips.
+function chipClass(active: boolean, extra = '') {
+  return `px-3 py-2 rounded-full cursor-pointer text-xs whitespace-nowrap ${
+    active
+      ? 'border-2 border-blue-600 bg-blue-100 font-semibold text-blue-600'
+      : 'border border-black/[0.18] bg-white font-medium text-[#111]'
+  } ${extra}`;
+}
+
 export interface ItineraryFormProps {
   onSubmit: (input: ItineraryInput) => void;
   error: string | null;
@@ -222,22 +255,7 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
     suggestions: LocationSuggestion[];
     onSelect: (place_name: string) => void;
   }) => (
-    <div
-      style={{
-        position: 'absolute',
-        top: '100%',
-        left: 0,
-        right: 0,
-        marginTop: 4,
-        background: 'white',
-        border: '1px solid rgba(0,0,0,0.15)',
-        borderRadius: 10,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-        zIndex: 10,
-        maxHeight: 200,
-        overflow: 'auto',
-      }}
-    >
+    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-black/15 rounded-[10px] shadow-[0_4px_12px_rgba(0,0,0,0.1)] z-10 max-h-[200px] overflow-auto">
       {suggestions.map((s) => (
         <button
           key={s.id}
@@ -245,21 +263,7 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
           onMouseDown={(e) => e.preventDefault()}
           onTouchStart={(e) => e.preventDefault()}
           onClick={() => onSelect(s.place_name)}
-          style={{
-            display: 'block',
-            width: '100%',
-            padding: '12px',
-            border: 'none',
-            background: 'transparent',
-            textAlign: 'left',
-            cursor: 'pointer',
-            fontSize: 13,
-            color: '#111',
-            borderBottom: '1px solid rgba(0,0,0,0.08)',
-            outline: 'none',
-          }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#f3f4f6'; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+          className="block w-full p-3 border-none bg-transparent hover:bg-gray-100 text-left cursor-pointer text-[13px] text-[#111] border-b border-black/[0.08] last:border-b-0 outline-none"
         >
           🌍 {s.place_name}
         </button>
@@ -267,71 +271,40 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
     </div>
   );
 
-  // ── Shared input style ────────────────────────────────────────────────────
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '10px 12px',
-    borderRadius: 10,
-    border: '2px solid rgba(0,0,0,0.25)',
-    fontSize: 14,
-    boxSizing: 'border-box',
-    minHeight: 44,
-    backgroundColor: '#fff',
-    color: '#111',
-  };
-
   // ── Render ────────────────────────────────────────────────────────────────
 
+  const twoColGrid = `grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`;
+  const threeColGrid = `grid gap-2 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`;
+
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {error && (
-        <div
-          style={{
-            padding: '12px 14px',
-            borderRadius: 10,
-            background: '#fee2e2',
-            color: '#991b1b',
-            fontSize: 14,
-            border: '1px solid #fecaca',
-          }}
-        >
+        <div className="px-3.5 py-3 rounded-[10px] bg-red-100 text-red-900 text-sm border border-red-200">
           ❌ {error}
         </div>
       )}
 
       {/* When are you traveling? */}
       <div>
-        <label style={{ fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 12, color: '#111' }}>
-          📅 When are you traveling?
-        </label>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+        <label className={sectionLabelClass}>📅 When are you traveling?</label>
+        <div className={twoColGrid}>
           {/* Arrival date + time */}
           <div>
-            <label style={{ fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, color: '#111' }}>
-              Arrival Date
-            </label>
+            <label className={subLabelClass}>Arrival Date</label>
             <input
               type="date"
               value={arrivalDate}
               onChange={(e) => setArrivalDate(e.target.value)}
               required
-              style={{ ...inputStyle, colorScheme: 'light', marginBottom: 8 }}
+              className={`${inputClass} mb-2 [color-scheme:light]`}
             />
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div className="flex gap-1.5">
               {(['morning', 'afternoon', 'night'] as const).map((time) => (
                 <button
                   key={time}
                   type="button"
                   onClick={() => setArrivalTime(time)}
-                  style={{
-                    flex: 1, padding: '8px 4px', borderRadius: 6,
-                    border: '2px solid rgba(0,0,0,0.2)', fontSize: 12, fontWeight: 600,
-                    cursor: 'pointer',
-                    backgroundColor: arrivalTime === time ? '#0066cc' : '#f5f5f5',
-                    color: arrivalTime === time ? '#fff' : '#111',
-                    transition: 'all 0.2s',
-                  }}
+                  className={timePillClass(arrivalTime === time)}
                 >
                   {time.charAt(0).toUpperCase() + time.slice(1)}
                 </button>
@@ -340,30 +313,21 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
           </div>
           {/* Departure date + time */}
           <div>
-            <label style={{ fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, color: '#111' }}>
-              Departure Date
-            </label>
+            <label className={subLabelClass}>Departure Date</label>
             <input
               type="date"
               value={departureDate}
               onChange={(e) => setDepartureDate(e.target.value)}
               required
-              style={{ ...inputStyle, colorScheme: 'light', marginBottom: 8 }}
+              className={`${inputClass} mb-2 [color-scheme:light]`}
             />
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div className="flex gap-1.5">
               {(['morning', 'afternoon', 'night'] as const).map((time) => (
                 <button
                   key={time}
                   type="button"
                   onClick={() => setDepartureTime(time)}
-                  style={{
-                    flex: 1, padding: '8px 4px', borderRadius: 6,
-                    border: '2px solid rgba(0,0,0,0.2)', fontSize: 12, fontWeight: 600,
-                    cursor: 'pointer',
-                    backgroundColor: departureTime === time ? '#0066cc' : '#f5f5f5',
-                    color: departureTime === time ? '#fff' : '#111',
-                    transition: 'all 0.2s',
-                  }}
+                  className={timePillClass(departureTime === time)}
                 >
                   {time.charAt(0).toUpperCase() + time.slice(1)}
                 </button>
@@ -375,15 +339,11 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
 
       {/* Where are you going? */}
       <div>
-        <label style={{ fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 12, color: '#111' }}>
-          📍 Where are you going?
-        </label>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+        <label className={sectionLabelClass}>📍 Where are you going?</label>
+        <div className={twoColGrid}>
           {/* Arrival location */}
-          <div style={{ position: 'relative' }} ref={arrivalRef}>
-            <label style={{ fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, color: '#111' }}>
-              Arrival Location
-            </label>
+          <div className="relative" ref={arrivalRef}>
+            <label className={subLabelClass}>Arrival Location</label>
             <input
               type="text"
               value={arrivalLocation}
@@ -392,7 +352,7 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
               onBlur={() => setIsArrivalFocused(false)}
               placeholder="e.g., Barcelona, Spain"
               required
-              style={inputStyle}
+              className={inputClass}
             />
             {showArrivalSuggestions && arrivalSuggestions.length > 0 && isArrivalFocused && (
               <SuggestionDropdown
@@ -402,10 +362,8 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
             )}
           </div>
           {/* Departure location */}
-          <div style={{ position: 'relative' }} ref={departureRef}>
-            <label style={{ fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, color: '#111' }}>
-              Departure Location
-            </label>
+          <div className="relative" ref={departureRef}>
+            <label className={subLabelClass}>Departure Location</label>
             <input
               type="text"
               value={departureLocation}
@@ -414,7 +372,7 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
               onBlur={() => setIsDepartureFocused(false)}
               placeholder="e.g., Barcelona, Spain"
               required
-              style={inputStyle}
+              className={inputClass}
             />
             {showDepartureSuggestions && departureSuggestions.length > 0 && isDepartureFocused && (
               <SuggestionDropdown
@@ -428,12 +386,10 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
 
       {/* Stops */}
       <div>
-        <label style={{ fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 12, color: '#111' }}>
-          🛑 Stops Along the Way (optional)
-        </label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ position: 'relative' }} ref={stopRef}>
-            <div style={{ display: 'flex', gap: 8 }}>
+        <label className={sectionLabelClass}>🛑 Stops Along the Way (optional)</label>
+        <div className="flex flex-col gap-2">
+          <div className="relative" ref={stopRef}>
+            <div className="flex gap-2">
               <input
                 type="text"
                 value={currentStop}
@@ -441,7 +397,7 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
                 onFocus={() => { setIsStopFocused(true); currentStop.trim() && setShowStopSuggestions(true); }}
                 onBlur={() => setIsStopFocused(false)}
                 placeholder="e.g., Valencia, Spain"
-                style={inputStyle}
+                className={inputClass}
               />
               <button
                 type="button"
@@ -452,11 +408,7 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
                     setShowStopSuggestions(false);
                   }
                 }}
-                style={{
-                  padding: '10px 12px', borderRadius: 10, border: 'none',
-                  background: '#2563eb', color: 'white', cursor: 'pointer',
-                  fontSize: 13, fontWeight: 600, minHeight: 44, minWidth: 44, flexShrink: 0,
-                }}
+                className="px-3 py-2.5 rounded-[10px] border-none bg-blue-600 text-white cursor-pointer text-[13px] font-semibold min-h-[44px] min-w-[44px] shrink-0"
               >
                 +
               </button>
@@ -469,30 +421,20 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
             )}
           </div>
           {stops.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="flex flex-col gap-1.5">
               {stops.map((stop, index) => (
                 <div
                   key={index}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '10px 12px', background: '#f3f4f6',
-                    borderRadius: 8, border: '1px solid rgba(0,0,0,0.1)',
-                  }}
+                  className="flex items-center justify-between px-3 py-2.5 bg-gray-100 rounded-lg border border-black/10"
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#666' }}>#{index + 1}</span>
-                    <span style={{ fontSize: 13, color: '#111' }}>🌍 {stop}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-[#666]">#{index + 1}</span>
+                    <span className="text-[13px] text-[#111]">🌍 {stop}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setStops((prev) => prev.filter((_, i) => i !== index))}
-                    style={{
-                      padding: '4px 8px', borderRadius: 6, border: 'none',
-                      background: 'transparent', color: '#dc2626', cursor: 'pointer',
-                      fontSize: 12, fontWeight: 600, outline: 'none',
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#fee2e2'; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                    className="px-2 py-1 rounded-md border-none bg-transparent hover:bg-red-100 text-red-600 cursor-pointer text-xs font-semibold outline-none transition-colors"
                   >
                     ✕ Remove
                   </button>
@@ -505,41 +447,26 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
 
       {/* Attractions */}
       <div>
-        <label style={{ fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 12, color: '#111' }}>
-          🎯 Places to visit (optional)
-        </label>
+        <label className={sectionLabelClass}>🎯 Places to visit (optional)</label>
         <textarea
           value={attractions}
           onChange={(e) => setAttractions(e.target.value)}
           placeholder="e.g., Sagrada Familia, Park Güell, Gothic Quarter (separate by comma)"
           rows={3}
-          style={{
-            width: '100%', padding: '10px 12px', borderRadius: 10,
-            border: '1px solid rgba(0,0,0,0.18)', fontSize: 14, fontFamily: 'inherit',
-            boxSizing: 'border-box', resize: 'vertical', minHeight: 80,
-            backgroundColor: 'white', color: '#111',
-          }}
+          className={`${subtleInputClass} resize-y min-h-[80px] bg-white text-[#111]`}
         />
       </div>
 
       {/* Travel Pace */}
       <div>
-        <label style={{ fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 12, color: '#111' }}>
-          ⚡ Travel Pace
-        </label>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 8 }}>
+        <label className={sectionLabelClass}>⚡ Travel Pace</label>
+        <div className={threeColGrid}>
           {TRAVEL_PACE_OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => setTravelPace(option.value)}
-              style={{
-                padding: '10px 12px', borderRadius: 10, cursor: 'pointer', fontSize: 13, minHeight: 44,
-                border: travelPace === option.value ? '2px solid #2563eb' : '1px solid rgba(0,0,0,0.18)',
-                background: travelPace === option.value ? '#eff6ff' : 'white',
-                fontWeight: travelPace === option.value ? 600 : 500,
-                color: travelPace === option.value ? '#2563eb' : '#111',
-              }}
+              className={optionPillClass(travelPace === option.value)}
             >
               {option.label}
             </button>
@@ -549,22 +476,14 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
 
       {/* Budget */}
       <div>
-        <label style={{ fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 12, color: '#111' }}>
-          💰 Budget Level
-        </label>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 8 }}>
+        <label className={sectionLabelClass}>💰 Budget Level</label>
+        <div className={threeColGrid}>
           {BUDGET_OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => setBudget(option.value)}
-              style={{
-                padding: '10px 12px', borderRadius: 10, cursor: 'pointer', fontSize: 13, minHeight: 44,
-                border: budget === option.value ? '2px solid #2563eb' : '1px solid rgba(0,0,0,0.18)',
-                background: budget === option.value ? '#eff6ff' : 'white',
-                fontWeight: budget === option.value ? 600 : 500,
-                color: budget === option.value ? '#2563eb' : '#111',
-              }}
+              className={optionPillClass(budget === option.value)}
             >
               {option.label}
             </button>
@@ -574,10 +493,8 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
 
       {/* Interests */}
       <div>
-        <label style={{ fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 12, color: '#111' }}>
-          ❤️ Interests (optional)
-        </label>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+        <label className={sectionLabelClass}>❤️ Interests (optional)</label>
+        <div className="flex gap-2 flex-wrap mb-3">
           {INTEREST_OPTIONS.map((interest) => (
             <button
               key={interest}
@@ -587,13 +504,7 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
                   prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
                 )
               }
-              style={{
-                padding: '8px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap',
-                border: selectedInterests.includes(interest) ? '2px solid #2563eb' : '1px solid rgba(0,0,0,0.18)',
-                background: selectedInterests.includes(interest) ? '#dbeafe' : 'white',
-                fontWeight: selectedInterests.includes(interest) ? 600 : 500,
-                color: selectedInterests.includes(interest) ? '#2563eb' : '#111',
-              }}
+              className={chipClass(selectedInterests.includes(interest))}
             >
               {interest}
             </button>
@@ -603,18 +514,14 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
               key={interest}
               type="button"
               onClick={() => handleRemoveInterest(interest)}
-              style={{
-                padding: '8px 12px', borderRadius: 20, border: '2px solid #2563eb',
-                background: '#dbeafe', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                color: '#2563eb', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px',
-              }}
+              className={chipClass(true, 'flex items-center gap-1.5')}
             >
               {interest}
-              <span style={{ fontSize: 14, fontWeight: 700, marginLeft: 2 }}>×</span>
+              <span className="text-sm font-bold ml-0.5">×</span>
             </button>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="flex gap-2">
           <input
             type="text"
             value={customInterestInput}
@@ -623,18 +530,12 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
               if (e.key === 'Enter') { e.preventDefault(); handleAddCustomInterest(); }
             }}
             placeholder="Add other interests..."
-            style={{
-              flex: 1, padding: '10px 12px', borderRadius: 10,
-              border: '1px solid rgba(0,0,0,0.18)', fontSize: 13, fontFamily: 'inherit', boxSizing: 'border-box',
-            }}
+            className={`${subtleInputClass} flex-1 text-[13px]`}
           />
           <button
             type="button"
             onClick={handleAddCustomInterest}
-            style={{
-              padding: '10px 16px', borderRadius: 10, border: '1px solid rgba(0,0,0,0.18)',
-              background: '#f3f4f6', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: '#111',
-            }}
+            className="px-4 py-2.5 rounded-[10px] border border-black/[0.18] bg-gray-100 cursor-pointer text-[13px] font-medium text-[#111]"
           >
             Add
           </button>
@@ -643,30 +544,20 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
 
       {/* Notes */}
       <div>
-        <label style={{ fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 12, color: '#111' }}>
-          📝 Additional Notes (optional)
-        </label>
+        <label className={sectionLabelClass}>📝 Additional Notes (optional)</label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="e.g., traveling with family, prefer walkable areas, budget constraints..."
           rows={2}
-          style={{
-            width: '100%', padding: '10px 12px', borderRadius: 10,
-            border: '1px solid rgba(0,0,0,0.18)', fontSize: 14, fontFamily: 'inherit',
-            boxSizing: 'border-box', resize: 'vertical', minHeight: 60,
-            backgroundColor: 'white', color: '#111',
-          }}
+          className={`${subtleInputClass} resize-y min-h-[60px] bg-white text-[#111]`}
         />
       </div>
 
       {/* Submit */}
       <button
         type="submit"
-        style={{
-          padding: '12px 16px', borderRadius: 12, border: 'none', background: '#2563eb',
-          color: 'white', cursor: 'pointer', fontWeight: 700, fontSize: 16, marginTop: 8, minHeight: 48,
-        }}
+        className="px-4 py-3 rounded-xl border-none bg-blue-600 text-white cursor-pointer font-bold text-base mt-2 min-h-[48px]"
       >
         Generate Itinerary ✨
       </button>
