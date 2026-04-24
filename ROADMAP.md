@@ -5,7 +5,7 @@ Do phases top-to-bottom; each assumes the previous is done.
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Progress:** 13 / 50 steps complete — **Phase 1 ✅ · Phase 2 mostly done (2.5 deferred)**
+**Progress:** 14 / 50 steps complete — **Phase 1 ✅ · Phase 2 ✅**
 
 ---
 
@@ -34,7 +34,7 @@ So future changes don't require rewriting 1,800-line files.
 - [x] **2.2** Native clustering shipped in `PinLayer`. Replaced per-pin `mapboxgl.Marker` elements with a single GeoJSON source (`cluster: true`, `clusterRadius: 50`, `clusterMaxZoom: 14`). Four GL layers: cluster circle (graduated color/size by `point_count`), cluster count label, unclustered point circle (blue / black-for-hostels, keeps the 2.1 look), emoji symbol layer. Cluster click calls `getClusterExpansionZoom` + `easeTo`; point click looks the pin up by id from a ref and delegates to `onSelect` so the popup lifecycle is unchanged. Removes the ~2k-pin DOM wall.
 - [x] **2.3** Split `ItineraryModal.tsx` (1,393 lines) into: form component (`ItineraryForm.tsx`), preview/render component (`ItineraryPreview.tsx`), save-to-profile flow, and `useItineraryDraft` hook. Also fixed the venue-link bug: react-markdown v9 was stripping our custom `mapbox:` URL scheme — added `urlTransform={(url) => url}` in `ItineraryPreview` so the link component can route via `openVenueInMapsSync`.
 - [x] **2.4** Split `profileModal.tsx` (1,414 → 346-line shell) into `tabs/` subcomponents: `ProfileInfoTab.tsx` (avatar upload + form + password reset + sign-out), `BookmarkedPinsTab.tsx` (saved pins grid + detail view), `SavedItinerariesTab.tsx` (saved itineraries list + markdown detail view). Shared style helpers in `tabs/profileStyles.ts` + `tabs/Field.tsx`. Each tab owns its own data load + error state; the shell only handles open/close, base-profile load, and tab routing.
-- [ ] **2.5** Extract inline styles. Move to Tailwind utility classes or CSS modules. Unblocks a design refresh later. **Status:** deferred — needs `npm install -D tailwindcss@^3 postcss autoprefixer` on the Windows dev machine first (the Linux sandbox can't reach npmjs.org). Once installed, next steps are (1) `npx tailwindcss init -p`, (2) configure `content: ['./index.html','./src/**/*.{ts,tsx}']`, (3) add `@tailwind base/components/utilities` to `src/index.css`, (4) migrate inline styles in feature files.
+- [x] **2.5** Extract inline styles. Done in two phases: **2.5a** installed Tailwind v3.4.19 + PostCSS + autoprefixer, generated `tailwind.config.js` (content globs for `index.html` + `src/**/*.{ts,tsx}`), wired `@tailwind base/components/utilities` into `src/index.css`. **2.5b** migrated ~258 inline `style={...}` props across 11 feature files to Tailwind utility classes in 11 atomic commits: `MapCanvas` (1), `LoadingPage` (5), `AuthPage` (7), `ItineraryModal` (15), `ItineraryPreview` (17), `PinPopup` (20), `FilterBar` (27 → 1 kept for per-tab dynamic bg color), `MapView` (41, kept one global `<style>` block for Mapbox popup selectors + imperative lightbox DOM mutations), `InitialPage` (31), `SavedItinerariesTab` (41), `ItineraryForm` (53). Extracted shared className helpers (`topRoundBtnClass`, `copyBtnClass`/`deleteBtnClass`, `pillBtnClass`, `ageRangeBtnClass`, input/label/chip helpers in ItineraryForm) to avoid repeating long utility lists. `hover:`/`active:` variants replaced imperative `onMouseEnter`/`onMouseLeave` handlers throughout. Unblocks the design refresh.
 - [x] **2.6** Added error boundaries around each top-level feature. New `src/components/FeatureErrorBoundary.tsx` — reusable class component with `featureName`, optional `onError` sink, dev-only error message, and a reset button. Wrapped in `App.tsx` (Home page, Map page), `InitialPage.tsx` (ItineraryModal, ProfileModal — conditional-mount so boundary resets on re-open), and `MapView.tsx` (ItineraryModal — same conditional-mount pattern). One crashed feature no longer blanks the whole app.
 
 ## Phase 3 — Data + UX at scale
@@ -86,42 +86,4 @@ Can happen in parallel with earlier phases, but must be decided before fundraisi
 - [ ] **7.1** Pick a niche and commit. Candidates: backpacker/hostel 18-35 (half-built already), solo-travel safety + community, long-term nomad routes. Rewrite landing page and empty states around it.
 - [ ] **7.2** Reshape onboarding for the wedge. E.g. backpacker-focused signup asks "what region next?" and seeds map + suggests people to follow.
 - [ ] **7.3** Seed content in chosen wedge. Manually add 100-300 high-quality pins in target region(s) before launch. A community map with zero pins is dead on arrival.
-- [ ] **7.4** Unit economics doc. Avg OpenAI cost/active user/month. Free tier cap. Where paid starts. One page for the investor deck.
-
-## Phase 8 — Launch prep
-
-- [ ] **8.1** Deploy backend. Railway / Fly / Render for Express. Vercel for frontend. Env vars via hosting dashboard, never in git.
-- [ ] **8.2** Fix CORS. Replace hardcoded `localhost:5173` / ngrok URL with `process.env.ALLOWED_ORIGINS` (comma-separated).
-- [ ] **8.3** Real README. Setup, env vars, local run, tests, deployment. New engineer productive in 30 min.
-- [ ] **8.4** Custom domain + HTTPS.
-- [ ] **8.5** Legal pages. Privacy policy, ToS, cookie notice. Termly or iubenda generates acceptable boilerplate.
-- [ ] **8.6** App store prep (if mobile). PWA install prompts, or wrap in Expo / React Native shell.
-
-## Phase 9 — Polish
-
-- [ ] **9.1** Design system. shadcn/ui (free, good) or similar. Replace inline-styled buttons/inputs/modals.
-- [ ] **9.2** Accessibility pass. ARIA labels on icon buttons, keyboard nav in modals, visible focus states, contrast audit.
-- [ ] **9.3** Empty states everywhere. "You haven't X yet — here's how to start" with CTAs.
-- [ ] **9.4** Performance pass. Lighthouse run, fix obvious wins (lazy-load itinerary modal, memoize marker list, etc.).
-
----
-
-## Rough effort estimates
-
-| Phase | Effort | Blocking for launch? |
-|-------|--------|----------------------|
-| 1. Security | ~1 week | **Complete ✅** |
-| 2. Refactor | ~1 week | No, but everything later gets slower without it |
-| 3. Scale | ~3 days | Only if you expect >1k pins at launch |
-| 4. Moderation | ~1 week | Yes for public launch |
-| 5. Community | 2-3 weeks | Yes if pitching "community app" |
-| 6. Observability + testing | ~1 week | Yes before paid users |
-| 7. Product wedge | Ongoing | Yes before fundraising |
-| 8. Launch prep | ~3 days | Yes obviously |
-| 9. Polish | Ongoing | No |
-
-**Non-negotiable before any real user:** ~~Phase 1~~ (done) + Phase 4.
-
----
-
-*Last updated: 2026-04-23 (Phase 2.3 / 2.4 / 2.6 shipped — ItineraryModal + profileModal split + feature error boundaries; 2.5 Tailwind migration deferred pending npm install on Windows)*
+- [ ] **7.4** Unit economics doc. Avg OpenAI cos
