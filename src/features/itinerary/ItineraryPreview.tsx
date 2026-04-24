@@ -11,45 +11,12 @@ export function ItineraryPreview({ markdown, isStreaming }: ItineraryPreviewProp
   return (
     <div>
       {isStreaming && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '10px 14px',
-            marginBottom: 12,
-            background: '#eff6ff',
-            border: '1px solid #bfdbfe',
-            borderRadius: 8,
-            color: '#1d4ed8',
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
-          <div
-            style={{
-              width: 14,
-              height: 14,
-              border: '2px solid #bfdbfe',
-              borderTop: '2px solid #1d4ed8',
-              borderRadius: '50%',
-              animation: 'spin 0.9s linear infinite',
-              flexShrink: 0,
-            }}
-          />
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5 mb-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-[13px] font-semibold">
+          <div className="w-3.5 h-3.5 border-2 border-blue-200 border-t-blue-700 rounded-full animate-spin shrink-0" />
           <span>Writing your itinerary…</span>
         </div>
       )}
-      <div
-        className="itinerary-markdown"
-        style={{
-          fontSize: 14,
-          lineHeight: 1.6,
-          color: '#333',
-          fontFamily: '"Segoe UI", system-ui, sans-serif',
-          paddingBottom: 20,
-        }}
-      >
+      <div className="itinerary-markdown text-sm leading-relaxed text-[#333] font-['Segoe_UI',system-ui,sans-serif] pb-5">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           // react-markdown 9 sanitizes URLs by default and strips any scheme
@@ -61,58 +28,45 @@ export function ItineraryPreview({ markdown, isStreaming }: ItineraryPreviewProp
           urlTransform={(url) => url}
           components={{
             h1: ({ node: _n, ...props }) => (
-              <h1 style={{ marginTop: 28, marginBottom: 14, fontSize: 20, fontWeight: 700 }} {...props} />
+              <h1 className="mt-7 mb-3.5 text-xl font-bold" {...props} />
             ),
             h2: ({ node: _n, ...props }) => (
-              <h2 style={{ marginTop: 24, marginBottom: 12, fontSize: 18, fontWeight: 700 }} {...props} />
+              <h2 className="mt-6 mb-3 text-lg font-bold" {...props} />
             ),
             h3: ({ node: _n, ...props }) => (
-              <h3 style={{ marginTop: 20, marginBottom: 10, fontSize: 16, fontWeight: 700 }} {...props} />
+              <h3 className="mt-5 mb-2.5 text-base font-bold" {...props} />
             ),
             p: ({ node: _n, ...props }) => (
-              <p style={{ marginTop: 0, marginBottom: 10 }} {...props} />
+              <p className="mt-0 mb-2.5" {...props} />
             ),
             ul: ({ node: _n, ...props }) => (
-              <ul style={{ marginTop: 4, marginBottom: 10, paddingLeft: 20 }} {...props} />
+              <ul className="mt-1 mb-2.5 pl-5 list-disc" {...props} />
             ),
             ol: ({ node: _n, ...props }) => (
-              <ol style={{ marginTop: 4, marginBottom: 10, paddingLeft: 20 }} {...props} />
+              <ol className="mt-1 mb-2.5 pl-5 list-decimal" {...props} />
             ),
             li: ({ node: _n, ...props }) => (
-              <li style={{ marginBottom: 4 }} {...props} />
+              <li className="mb-1" {...props} />
             ),
             blockquote: ({ node: _n, ...props }) => (
               <blockquote
-                style={{
-                  borderLeft: '4px solid #bfdbfe',
-                  background: '#eff6ff',
-                  margin: '10px 0',
-                  padding: '8px 12px',
-                  color: '#1e3a8a',
-                  borderRadius: 4,
-                }}
+                className="border-l-4 border-blue-200 bg-blue-50 my-2.5 px-3 py-2 text-blue-900 rounded"
                 {...props}
               />
             ),
             table: ({ node: _n, ...props }) => (
-              <div style={{ overflowX: 'auto', margin: '12px 0' }}>
-                <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }} {...props} />
+              <div className="overflow-x-auto my-3">
+                <table className="border-collapse w-full text-[13px]" {...props} />
               </div>
             ),
             th: ({ node: _n, ...props }) => (
               <th
-                style={{
-                  border: '1px solid #e5e7eb',
-                  padding: '6px 10px',
-                  background: '#f9fafb',
-                  textAlign: 'left',
-                  fontWeight: 600,
-                }}
+                className="border border-gray-200 px-2.5 py-1.5 bg-gray-50 text-left font-semibold"
                 {...props}
               />
             ),
             td: ({ node: _n, ...props }) => (
-              <td style={{ border: '1px solid #e5e7eb', padding: '6px 10px' }} {...props} />
+              <td className="border border-gray-200 px-2.5 py-1.5" {...props} />
             ),
             a: ({ node: _n, href, children, ...props }) => {
               const hrefStr = href;
@@ -135,19 +89,7 @@ export function ItineraryPreview({ markdown, isStreaming }: ItineraryPreviewProp
                       // the user gesture, satisfying mobile popup blockers.
                       openVenueInMapsSync(decodedVenue, city);
                     }}
-                    style={{
-                      color: '#0369a1',
-                      textDecoration: 'underline',
-                      textDecorationStyle: 'dotted',
-                      textUnderlineOffset: '2px',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLAnchorElement).style.textDecorationStyle = 'solid';
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLAnchorElement).style.textDecorationStyle = 'dotted';
-                    }}
+                    className="text-sky-700 underline decoration-dotted underline-offset-2 cursor-pointer hover:decoration-solid"
                   >
                     📍 {children}
                   </a>
@@ -158,7 +100,7 @@ export function ItineraryPreview({ markdown, isStreaming }: ItineraryPreviewProp
                   href={hrefStr}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: '#0066cc', textDecoration: 'none' }}
+                  className="text-blue-700 no-underline"
                   {...props}
                 >
                   {children}
