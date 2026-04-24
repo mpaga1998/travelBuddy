@@ -51,17 +51,46 @@ export type PinBounds = {
   north: number;
 };
 
-export async function listPins(bounds?: PinBounds): Promise<{ pins: Pin[]; limitReached: boolean }> {
+export type PinFilters = {
+  bounds?: PinBounds;
+  /** Filter to a single category. Omit or pass undefined for all categories. */
+  category?: PinCategory;
+  /**
+   * Filter by creator type (traveler | hostel). Omit for both.
+   * Implemented via profiles.role with an INNER join so the parent row is
+   * excluded when the profile doesn't match — safe because every pin requires
+   * an authenticated user who has a profile row.
+   */
+  creatorType?: "traveler" | "hostel";
+  // NOTE: ageRanges is intentionally absent. Age is computed from profiles.dob
+  // in the mapping layer — there is no created_by_age column in the database.
+  // Age filtering stays in the client-side useMemo inside useMapPins.
+};
+
+// Base SELECT for queries without a creatorType filter (LEFT JOIN on profiles
+// so pins with no profile are still returned — defensive).
+const SELECT_DEFAULT = `
+  id, title, description, category, lat, lng, created_at, created_by, bookmark_count,
+  tips, image_urls,
+  profiles:created_by (id, username, role, hostel_name, dob),
+  reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
+`;
+
+// When filtering by role we need an INNER JOIN so PostgREST uses the
+// profiles.role filter to exclude parent rows, not just the embedded result.
+const SELECT_INNER = `
+  id, title, description, category, lat, lng, created_at, created_by, bookmark_count,
+  tips, image_urls,
+  profiles:created_by!inner (id, username, role, hostel_name, dob),
+  reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
+`;
+
+export async function listPins(opts: PinFilters = {}): Promise<{ pins: Pin[]; limitReached: boolean }> {
+  const { bounds, category, creatorType } = opts;
+
   let query = supabase
     .from("pins")
-    .select(
-      `
-      id, title, description, category, lat, lng, created_at, created_by, bookmark_count,
-      tips, image_urls,
-      profiles:created_by (id, username, role, hostel_name, dob),
-      reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
-    `
-    )
+    .select(creatorType ? SELECT_INNER : SELECT_DEFAULT)
     .order("created_at", { ascending: false })
     .limit(500);
 
@@ -71,6 +100,14 @@ export async function listPins(bounds?: PinBounds): Promise<{ pins: Pin[]; limit
       .lte("lat", bounds.north)
       .gte("lng", bounds.west)
       .lte("lng", bounds.east);
+  }
+
+  if (category) {
+    query = query.eq("category", category);
+  }
+
+  if (creatorType) {
+    query = query.eq("profiles.role", creatorType);
   }
 
   const { data, error } = await query;

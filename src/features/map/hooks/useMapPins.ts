@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MapboxMap } from "mapbox-gl";
 import type { Pin, PinCategory } from "../../pins/pinTypes";
-import { listPins, type PinBounds } from "../../pins/pinApi";
+import { listPins, type PinBounds, type PinFilters } from "../../pins/pinApi";
 import { isAgeInSelectedRanges, type MapType } from "../mapConstants";
 
 /**
@@ -45,15 +45,32 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
   const [activeCategory, setActiveCategory] = useState<PinCategory | "all">("all");
   const [selectedAgeRanges, setSelectedAgeRanges] = useState<string[]>([]);
 
-  // Keep a ref so the moveend closure always reads the latest mapType without
-  // re-registering the listener on every filter change.
+  // Refs so the moveend/debounce closures always read the latest filter values
+  // without needing to re-register listeners on every state change.
   const mapTypeRef = useRef(mapType);
   useEffect(() => { mapTypeRef.current = mapType; }, [mapType]);
+
+  const activeCategoryRef = useRef(activeCategory);
+  useEffect(() => { activeCategoryRef.current = activeCategory; }, [activeCategory]);
 
   const reload = useCallback(async (bounds?: PinBounds) => {
     setLoading(true);
     try {
-      const { pins: data, limitReached: lr } = await listPins(bounds);
+      const mt = mapTypeRef.current;
+      const cat = activeCategoryRef.current;
+
+      const filters: PinFilters = { bounds };
+      if (mt !== "bookmarked") {
+        // Push category and creatorType to the SQL query to reduce data transfer.
+        // Age ranges are intentionally excluded here — there is no created_by_age
+        // column in the database; age is derived from profiles.dob in the mapping
+        // layer. Age filtering remains in the client-side useMemo below.
+        if (cat !== "all") filters.category = cat;
+        if (mt === "travelers") filters.creatorType = "traveler";
+        else if (mt === "hostels") filters.creatorType = "hostel";
+      }
+
+      const { pins: data, limitReached: lr } = await listPins(filters);
       setPins(data);
       setLimitReached(lr);
     } finally {
@@ -61,7 +78,10 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
     }
   }, []);
 
-  // Initial load + reload when mapType or map instance changes.
+  // Re-fetch when mapType, activeCategory, or map instance changes.
+  // activeCategory is listed so the effect re-runs when the category chip
+  // changes; by the time reload() executes, activeCategoryRef has been synced
+  // (React runs effects in declaration order within the same render).
   useEffect(() => {
     if (mapType === "bookmarked" || !map) {
       // Bookmarked mode: fetch without bounds so off-screen bookmarks appear.
@@ -70,7 +90,7 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
       return;
     }
     reload(getBoundsWithBuffer(map) ?? undefined);
-  }, [reload, mapType, map]);
+  }, [reload, mapType, activeCategory, map]);
 
   // Debounced moveend listener — only active when map is available and not in
   // bookmarked mode (bookmarked pins must always be fully visible).
@@ -94,18 +114,16 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
     };
   }, [map, reload]);
 
+  // category and creatorType are now applied server-side in listPins.
+  // This memo only handles:
+  //   • bookmarked mode (pin-id set membership, purely client-side)
+  //   • age ranges (no DB column — derived from profiles.dob at query time)
   const filteredPins = useMemo(() => {
     return pins.filter((p) => {
       if (mapType === "bookmarked") return bookmarkedPinIds.has(p.id);
-
-      const okCat = activeCategory === "all" ? true : p.category === activeCategory;
-      const okAge = isAgeInSelectedRanges(p.createdByAge, selectedAgeRanges);
-      const okType = mapType === "travelers"
-        ? p.createdByType === "traveler"
-        : p.createdByType === "hostel";
-      return okCat && okAge && okType;
+      return isAgeInSelectedRanges(p.createdByAge, selectedAgeRanges);
     });
-  }, [pins, activeCategory, selectedAgeRanges, mapType, bookmarkedPinIds]);
+  }, [pins, selectedAgeRanges, mapType, bookmarkedPinIds]);
 
   return {
     pins,
