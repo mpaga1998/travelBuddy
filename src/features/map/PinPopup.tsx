@@ -26,6 +26,13 @@ export type PinPopupProps = {
   isItineraryPin?: boolean;
 };
 
+// Shared pill-button class. Accepts an extra string to compose variants
+// (e.g. tip button uses a yellow palette). Kept as a helper so the class
+// list doesn't need to be repeated on every button.
+function pillBtnClass(extra = "") {
+  return `flex-[1_1_100px] px-2.5 py-2 rounded-[10px] border border-black/[0.18] bg-white cursor-pointer font-extrabold text-[#111] text-[13px] outline-none ${extra}`;
+}
+
 /**
  * React replacement for the old HTML-string popup. Same visual layout,
  * but buttons are real React handlers and the bookmark-loading state
@@ -85,95 +92,45 @@ export function PinPopup({
       onClick={stop}
       onMouseDown={stop}
       onTouchStart={stop}
-      style={{
-        width: "100%",
-        maxWidth: "100%",
-        minWidth: isMobile ? 0 : 360,
-        color: "#111",
-        fontFamily: "system-ui, Arial",
-        fontSize: isMobile ? 13 : 14,
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
+      className={`w-full max-w-full text-[#111] font-sans flex flex-col overflow-hidden ${isMobile ? "min-w-0 text-[13px]" : "min-w-[360px] text-sm"}`}
     >
       {pin.imageUrls && pin.imageUrls.length > 0 && (
         <div
-          style={{
-            position: "relative",
-            width: "100%",
-            overflow: "hidden",
-            borderRadius: "8px 8px 0 0",
-            flexShrink: 0,
-            cursor: "pointer",
-          }}
+          className="relative w-full overflow-hidden rounded-t-lg shrink-0 cursor-pointer"
           onClick={(e) => { e.stopPropagation(); onShowImages(pin.imageUrls ?? []); }}
         >
           <img
             src={pin.imageUrls[0]}
-            style={{
-              width: "100%",
-              height: isMobile ? 120 : 140,
-              objectFit: "cover",
-              display: "block",
-            }}
+            className={`w-full object-cover block ${isMobile ? "h-[120px]" : "h-[140px]"}`}
           />
           {pin.imageUrls.length > 1 && (
-            <div
-              style={{
-                position: "absolute",
-                bottom: 8,
-                right: 8,
-                background: "rgba(0,0,0,0.7)",
-                color: "white",
-                padding: "4px 8px",
-                borderRadius: 6,
-                fontWeight: "bold",
-                fontSize: 12,
-              }}
-            >
+            <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded-md font-bold text-xs">
               +{pin.imageUrls.length - 1}
             </div>
           )}
         </div>
       )}
 
-      <div style={{ padding: 12, overflowY: "auto", flex: 1, wordWrap: "break-word" }}>
-        <div style={{ fontWeight: 800, marginBottom: 6, fontSize: isMobile ? 15 : 16 }}>
+      <div className="p-3 overflow-y-auto flex-1 break-words">
+        <div className={`font-extrabold mb-1.5 ${isMobile ? "text-[15px]" : "text-base"}`}>
           {categoryEmoji(pin.category)} {pin.title}
         </div>
 
-        <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 10 }}>
+        <div className="text-[13px] opacity-90 mb-2.5">
           {pin.description?.trim() ? (
             pin.description
           ) : (
-            <i style={{ opacity: 0.7 }}>No description</i>
+            <i className="opacity-70">No description</i>
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+        <div className="flex gap-2 flex-wrap mb-2.5">
           {isItineraryPin ? (
-            <span
-              style={{
-                padding: "4px 8px",
-                borderRadius: 999,
-                background: "rgba(16,185,129,0.15)",
-                color: "#065f46",
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            >
+            <span className="px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-800 text-xs font-semibold">
               📋 From your itinerary
             </span>
           ) : (
-            <span
-              style={{
-                padding: "4px 8px",
-                borderRadius: 999,
-                background: "rgba(37,99,235,0.12)",
-                fontSize: 12,
-              }}
-            >
+            <span className="px-2 py-1 rounded-full bg-blue-600/[0.12] text-xs">
               {pin.createdByType === "hostel"
                 ? `Recommended by ${pin.createdByLabel}`
                 : `Pinned by ${pin.createdByLabel}`}
@@ -181,80 +138,66 @@ export function PinPopup({
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+        <div className="flex gap-1.5 flex-wrap mt-2">
           {!isItineraryPin && (
             <button
               onClick={(e) => { e.stopPropagation(); onReact?.("like"); }}
-              style={pillButtonStyle({ flex: "1 1 100px" })}
+              className={pillBtnClass()}
             >
-              ❤️ <span style={{ marginLeft: 4 }}>{pin.likesCount}</span>
+              ❤️ <span className="ml-1">{pin.likesCount}</span>
             </button>
           )}
 
           {!isItineraryPin && (
             <button
               onClick={(e) => { e.stopPropagation(); onReact?.("dislike"); }}
-              style={pillButtonStyle({ flex: "1 1 100px" })}
+              className={pillBtnClass()}
             >
-              💔 <span style={{ marginLeft: 4 }}>{pin.dislikesCount}</span>
+              💔 <span className="ml-1">{pin.dislikesCount}</span>
             </button>
           )}
 
           {pin.tips && pin.tips.length > 0 && (
             <button
               onClick={(e) => { e.stopPropagation(); onShowTips(pin.tips ?? []); }}
-              style={pillButtonStyle({
-                flex: "1 1 140px",
-                background: "#fffaeb",
-                color: "#b8860b",
-              })}
+              className={pillBtnClass("!bg-[#fffaeb] !text-[#b8860b] flex-[1_1_140px]")}
             >
               💡 Tips ({pin.tips.length})
             </button>
           )}
 
-          {!isItineraryPin && <button
-            onClick={async (e) => {
-              e.stopPropagation();
-              if (bookmarkBusy) return;
-              setBookmarkBusy(true);
-              try {
-                await onToggleBookmark?.();
-                // Flip the confirmed state optimistically — parent will have
-                // updated its set by now, but we drive our button off this.
-                setBookmarkedConfirmed((prev) => !(prev ?? isBookmarkedByUser));
-              } finally {
-                setBookmarkBusy(false);
-              }
-            }}
-            disabled={bookmarkBusy || bookmarkedConfirmed === null}
-            style={{
-              flex: "1 1 100px",
-              padding: "8px 10px",
-              borderRadius: 10,
-              border: "2px solid #16a34a",
-              background: bookmarked ? "#16a34a" : "white",
-              color: bookmarked ? "white" : "#111",
-              cursor: bookmarkBusy ? "wait" : "pointer",
-              fontWeight: 800,
-              fontSize: 13,
-              outline: "none",
-              transition: "all 0.2s",
-            }}
-          >
-            {bookmarkedConfirmed === null
-              ? "⏳ Loading..."
-              : bookmarked
-                ? "🔖 Bookmarked"
-                : "🔖 Bookmark"}
-          </button>}
+          {!isItineraryPin && (
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (bookmarkBusy) return;
+                setBookmarkBusy(true);
+                try {
+                  await onToggleBookmark?.();
+                  // Flip the confirmed state optimistically — parent will have
+                  // updated its set by now, but we drive our button off this.
+                  setBookmarkedConfirmed((prev) => !(prev ?? isBookmarkedByUser));
+                } finally {
+                  setBookmarkBusy(false);
+                }
+              }}
+              disabled={bookmarkBusy || bookmarkedConfirmed === null}
+              className={`flex-[1_1_100px] px-2.5 py-2 rounded-[10px] border-2 border-green-600 font-extrabold text-[13px] outline-none transition-all ${bookmarkBusy ? "cursor-wait" : "cursor-pointer"} ${bookmarked ? "bg-green-600 text-white" : "bg-white text-[#111]"}`}
+            >
+              {bookmarkedConfirmed === null
+                ? "⏳ Loading..."
+                : bookmarked
+                  ? "🔖 Bookmarked"
+                  : "🔖 Bookmark"}
+            </button>
+          )}
 
           <button
             onClick={(e) => {
               e.stopPropagation();
               window.open(getMapsUrl(pin.lat, pin.lng, pin.title), "_blank");
             }}
-            style={pillButtonStyle({ flex: "1 1 120px" })}
+            className={pillBtnClass("flex-[1_1_120px]")}
           >
             📍 Maps
           </button>
@@ -262,16 +205,7 @@ export function PinPopup({
           {!isItineraryPin && isOwnPin && (
             <button
               onClick={(e) => { e.stopPropagation(); onRequestDelete?.(); }}
-              style={{
-                padding: "8px 10px",
-                borderRadius: 10,
-                border: "none",
-                background: "#dc2626",
-                color: "white",
-                cursor: "pointer",
-                fontWeight: 800,
-                outline: "none",
-              }}
+              className="px-2.5 py-2 rounded-[10px] border-none bg-red-600 text-white cursor-pointer font-extrabold outline-none"
             >
               Delete
             </button>
@@ -280,20 +214,4 @@ export function PinPopup({
       </div>
     </div>
   );
-}
-
-function pillButtonStyle(override: React.CSSProperties = {}): React.CSSProperties {
-  return {
-    flex: 1,
-    padding: "8px 10px",
-    borderRadius: 10,
-    border: "1px solid rgba(0,0,0,0.18)",
-    background: "white",
-    cursor: "pointer",
-    fontWeight: 800,
-    color: "#111",
-    fontSize: 13,
-    outline: "none",
-    ...override,
-  };
 }
