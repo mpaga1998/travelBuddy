@@ -19,8 +19,9 @@ import { isAgeInSelectedRanges, type MapType } from "../mapConstants";
 const VIEWPORT_BUFFER = 0.2; // fraction of visible span to pad on each edge
 const DEBOUNCE_MS = 400;
 
-function getBoundsWithBuffer(map: MapboxMap): PinBounds {
+function getBoundsWithBuffer(map: MapboxMap): PinBounds | null {
   const b = map.getBounds();
+  if (!b) return null;
   const west = b.getWest();
   const east = b.getEast();
   const south = b.getSouth();
@@ -68,8 +69,7 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
       reload();
       return;
     }
-    reload(getBoundsWithBuffer(map));
-  }, [reload, mapType, map]);
+    reload(getBoundsWithBuffer(map) ?? undefined);
 
   // Debounced moveend listener — only active when map is available and not in
   // bookmarked mode (bookmarked pins must always be fully visible).
@@ -82,8 +82,7 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
       if (mapTypeRef.current === "bookmarked") return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
-        reload(getBoundsWithBuffer(map));
-      }, DEBOUNCE_MS);
+        reload(getBoundsWithBuffer(map) ?? undefined);
     };
 
     map.on("moveend", onMoveEnd);
