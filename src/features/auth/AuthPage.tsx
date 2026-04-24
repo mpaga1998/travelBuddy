@@ -1,6 +1,19 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 
+const inputClass =
+  "px-3 py-2.5 rounded-[10px] border border-black/20 outline-none text-slate-900 bg-white";
+
+const secondaryBtnClass =
+  "px-3 py-2.5 rounded-[10px] border border-black/20 bg-white text-slate-900 font-bold cursor-pointer";
+
+function primaryBtnClass(disabled: boolean): string {
+  return [
+    "px-3 py-2.5 rounded-[10px] border-none text-white font-extrabold",
+    disabled ? "bg-black/25 cursor-not-allowed" : "bg-slate-900 cursor-pointer",
+  ].join(" ");
+}
+
 export function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
 
@@ -72,7 +85,7 @@ export function AuthPage() {
         email: cleanEmail,
         password: cleanPassword,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,  // Redirect to home after email confirmation
+          emailRedirectTo: `${window.location.origin}/`, // Redirect to home after email confirmation
           data: {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
@@ -101,37 +114,26 @@ export function AuthPage() {
   }
 
   return (
-    <div
-      style={{
-        maxWidth: "min(420px, 100vw - 20px)",
-        margin: "40px auto",
-        padding: "16px",
-        background: "white",
-        borderRadius: 12,
-        border: "1px solid rgba(0,0,0,0.12)",
-        boxShadow: "0 18px 48px rgba(0,0,0,0.10)",
-        color: "#111",
-      }}
-    >
-      <h2 style={{ margin: 0 }}>{mode === "signin" ? "Sign in" : "Create account"}</h2>
+    <div className="max-w-[min(420px,100vw-20px)] mx-auto my-10 p-4 bg-white rounded-xl border border-black/[0.12] shadow-[0_18px_48px_rgba(0,0,0,0.10)] text-slate-900">
+      <h2 className="m-0">{mode === "signin" ? "Sign in" : "Create account"}</h2>
 
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 10, marginTop: 12 }}>
+      <form onSubmit={handleSubmit} className="grid gap-2.5 mt-3">
         {mode === "signup" && (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div className="grid grid-cols-2 gap-2.5">
               <input
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="First name"
                 autoComplete="given-name"
-                style={inputStyle}
+                className={inputClass}
               />
               <input
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Last name"
                 autoComplete="family-name"
-                style={inputStyle}
+                className={inputClass}
               />
             </div>
 
@@ -140,8 +142,8 @@ export function AuthPage() {
               value={dob}
               onChange={(e) => setDob(e.target.value)}
               placeholder="Date of birth"
-              style={inputStyle}
-              max={new Date().toISOString().split('T')[0]}
+              className={inputClass}
+              max={new Date().toISOString().split("T")[0]}
             />
 
             <input
@@ -149,7 +151,7 @@ export function AuthPage() {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Username"
               autoComplete="username"
-              style={inputStyle}
+              className={inputClass}
             />
           </>
         )}
@@ -159,7 +161,7 @@ export function AuthPage() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
           autoComplete="email"
-          style={inputStyle}
+          className={inputClass}
         />
 
         <input
@@ -168,13 +170,13 @@ export function AuthPage() {
           placeholder="Password"
           type="password"
           autoComplete={mode === "signin" ? "current-password" : "new-password"}
-          style={inputStyle}
+          className={inputClass}
         />
 
-        {err && <div style={{ color: "crimson", fontSize: 13 }}>{err}</div>}
-        {msg && <div style={{ color: "green", fontSize: 13 }}>{msg}</div>}
+        {err && <div className="text-[crimson] text-[13px]">{err}</div>}
+        {msg && <div className="text-green-700 text-[13px]">{msg}</div>}
 
-        <button type="submit" disabled={busy} style={primaryBtnStyle(busy)}>
+        <button type="submit" disabled={busy} className={primaryBtnClass(busy)}>
           {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Sign up"}
         </button>
 
@@ -187,46 +189,15 @@ export function AuthPage() {
             setDob("");
             setPassword("");
           }}
-          style={secondaryBtnStyle}
+          className={secondaryBtnClass}
         >
           {mode === "signin" ? "Create an account" : "I already have an account"}
         </button>
       </form>
 
-      <div style={{ marginTop: 10, fontSize: 12, opacity: 0.75 }}>
-        If you don’t receive the confirmation email, check spam/junk.
+      <div className="mt-2.5 text-xs opacity-75">
+        If you don't receive the confirmation email, check spam/junk.
       </div>
     </div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "1px solid rgba(0,0,0,0.2)",
-  outline: "none",
-  color: "#111",
-  background: "white",
-};
-
-function primaryBtnStyle(disabled: boolean): React.CSSProperties {
-  return {
-    padding: "10px 12px",
-    borderRadius: 10,
-    border: "none",
-    background: disabled ? "rgba(0,0,0,0.25)" : "#111",
-    color: "white",
-    fontWeight: 800,
-    cursor: disabled ? "not-allowed" : "pointer",
-  };
-}
-
-const secondaryBtnStyle: React.CSSProperties = {
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "1px solid rgba(0,0,0,0.2)",
-  background: "white",
-  color: "#111",
-  fontWeight: 700,
-  cursor: "pointer",
-};
