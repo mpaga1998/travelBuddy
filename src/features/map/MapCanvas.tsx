@@ -106,4 +106,7 @@ export function MapCanvas({
   }, []);
 
   // Use w-full/h-full (not absolute/inset) so Mapbox resolves a real size from
-  
+  // the parent's flex track immediately — `absolute inset-0` on a grid/flex
+  // child can compute to 0×0 at mount time on mobile, giving you a black canvas.
+  return <div ref={containerRef} className="w-full h-full" />;
+}
