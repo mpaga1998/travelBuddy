@@ -10,6 +10,7 @@ import {
 } from '../profileApi';
 import { Field } from './Field';
 import { inputClass, smallBtn, primaryBtn, dangerBtn } from './profileStyles';
+import { useConfirm } from '../../../components/ConfirmDialog';
 
 export interface ProfileInfoTabProps {
   isMobile: boolean;
@@ -58,6 +59,8 @@ export function ProfileInfoTab({
   const initials =
     `${(firstName?.[0] ?? '').toUpperCase()}${(lastName?.[0] ?? '').toUpperCase()}` || '🙂';
 
+  const confirm = useConfirm();
+
   async function onSave() {
     setErr(null);
     setMsg(null);
@@ -79,9 +82,12 @@ export function ProfileInfoTab({
         return;
       }
       if (age > 100) {
-        const confirmed = window.confirm(
-          `Wow, ${age} years old? You're basically a legend! 🎉 Continue anyway?`,
-        );
+        const confirmed = await confirm({
+          title: `${age} years old? 🎉`,
+          message: "That's a remarkable age — double-check your date of birth, or continue if it's correct.",
+          confirmLabel: 'Continue',
+          cancelLabel: 'Let me fix it',
+        });
         if (!confirmed) return;
       }
     }

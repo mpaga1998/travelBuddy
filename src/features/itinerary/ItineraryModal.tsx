@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { saveItineraryToProfile } from './itineraryApi';
 import { supabase } from '../../lib/supabaseClient';
 import { useItineraryDraft } from './hooks/useItineraryDraft';
 import { ItineraryForm } from './ItineraryForm';
 import { ItineraryPreview } from './ItineraryPreview';
+import { usePrompt } from '../../components/PromptDialog';
 import type { ItineraryInput } from './types';
 
 interface ItineraryModalProps {
@@ -13,6 +15,7 @@ interface ItineraryModalProps {
 
 export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const draft = useItineraryDraft();
+  const prompt = usePrompt();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [formKey, setFormKey] = useState(0);
@@ -46,11 +49,21 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   };
 
   const handleSaveItinerary = async () => {
-    if (!currentUserId) { alert('❌ User not authenticated'); return; }
+    if (!currentUserId) {
+      toast.error('You need to sign in first to save itineraries.');
+      return;
+    }
     if (!draft.lastInput) return;
 
     const { lastInput } = draft;
-    const title = prompt('📌 Give your itinerary a title:', `${lastInput.arrival.location} Adventure`);
+    const title = await prompt({
+      title: '📌 Name your itinerary',
+      message: 'Give it a memorable title so you can find it again later.',
+      defaultValue: `${lastInput.arrival.location} Adventure`,
+      placeholder: 'e.g. Lisbon long weekend',
+      confirmLabel: 'Save',
+      maxLength: 80,
+    });
     if (!title) return;
 
     setIsSaving(true);
@@ -69,13 +82,13 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
           interests: lastInput.interests,
         }
       );
-      alert('✨ Done! Your custom itinerary has been saved to your profile');
+      toast.success('Itinerary saved to your profile');
       handleReset();
       onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save itinerary';
       console.error('Save error:', err);
-      alert(`❌ ${message}`);
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }

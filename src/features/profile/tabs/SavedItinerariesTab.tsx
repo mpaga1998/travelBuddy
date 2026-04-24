@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
 import { deleteItinerary, getMyItineraries, type SavedItinerary } from '../profileApi';
+import { useConfirm } from '../../../components/ConfirmDialog';
 
 // No props — the modal shell's header owns "back to menu" navigation. We used
 // to take an `onBackToMenu` prop and render our own back button above the list,
@@ -39,17 +41,27 @@ export function SavedItinerariesTab() {
     })();
   }, []);
 
+  const confirm = useConfirm();
+
   async function onDeleteItinerary(itineraryId: string) {
-    if (!window.confirm('🗑️ Are you sure you want to delete this itinerary?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Delete this itinerary?',
+      message: "You can't undo this — the saved itinerary will be gone for good.",
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    });
+    if (!ok) return;
 
     try {
       await deleteItinerary(itineraryId);
       setSavedItineraries(savedItineraries.filter((it) => it.id !== itineraryId));
+      toast.success('Itinerary deleted');
       setMsg('Itinerary deleted.');
     } catch (e: any) {
-      setErr(e?.message ?? 'Failed to delete itinerary');
+      const message = e?.message ?? 'Failed to delete itinerary';
+      toast.error(message);
+      setErr(message);
     }
   }
 
@@ -100,7 +112,7 @@ export function SavedItinerariesTab() {
           <button
             onClick={() => {
               navigator.clipboard.writeText(selectedItinerary.markdown_content);
-              alert('✅ Itinerary copied to clipboard!');
+              toast.success('Copied to clipboard');
             }}
             className={copyBtnClass}
           >
@@ -183,7 +195,7 @@ export function SavedItinerariesTab() {
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(itinerary.markdown_content);
-                    alert('✅ Itinerary copied to clipboard!');
+                    toast.success('Copied to clipboard');
                   }}
                   className={copyBtnClass}
                 >
