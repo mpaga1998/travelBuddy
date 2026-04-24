@@ -41,8 +41,8 @@ So future changes don't require rewriting 1,800-line files.
 
 So the app doesn't die at 10k pins.
 
-- [ ] **3.1** Bounding-box pin queries. `listPins()` accepts viewport bounds; fetch only pins in view plus buffer. Debounced re-fetch on pan/zoom end.
-- [ ] **3.2** Server-side filtering. Move category / age / creator-type filters to SQL instead of fetching everything and filtering client-side.
+- [x] **3.1** Bounding-box pin queries. `listPins()` accepts viewport bounds; fetch only pins in view plus buffer. Debounced re-fetch on pan/zoom end.
+- [x] **3.2** Server-side filtering. Move category / age / creator-type filters to SQL instead of fetching everything and filtering client-side.
 - [ ] **3.3** Replace `alert()` with toasts. Install `sonner` or `react-hot-toast`. Every `alert(...)` and `confirm(...)` becomes a toast/modal.
 - [ ] **3.4** Add loading skeletons for map, profile, itinerary views. Replace "Loading…" text.
 - [ ] **3.5** Image handling. Enforce ~5MB max upload, use Supabase image transformation URLs for thumbnails, add client-side compression before upload.
