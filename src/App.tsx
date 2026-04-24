@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { Toaster } from "sonner";
 import { supabase } from "./lib/supabaseClient";
 import { ensureProfile } from "./lib/ensureProfile";
 
@@ -8,6 +9,8 @@ import { LoadingPage } from "./features/auth/LoadingPage";
 import { InitialPage } from "./features/auth/InitialPage";
 import { MapView } from "./features/map/MapView";
 import { FeatureErrorBoundary } from "./components/FeatureErrorBoundary";
+import { ConfirmDialogProvider } from "./components/ConfirmDialog";
+import { PromptDialogProvider } from "./components/PromptDialog";
 
 type AppPage = "loading" | "auth" | "initial" | "map";
 
@@ -69,35 +72,48 @@ export default function App() {
     }
   };
 
-  // Render based on current page
-  if (currentPage === "loading") {
-    return <LoadingPage onLoadingComplete={handleLoadingComplete} />;
-  }
+  // The Toaster + confirm/prompt providers wrap every page so toast() and
+  // useConfirm()/usePrompt() work from anywhere in the tree, including deep
+  // children mounted inside modals.
+  return (
+    <ConfirmDialogProvider>
+      <PromptDialogProvider>
+        <Toaster position="top-center" richColors closeButton />
+        {renderPage()}
+      </PromptDialogProvider>
+    </ConfirmDialogProvider>
+  );
 
-  if (currentPage === "auth") {
-    return <AuthPage />;
-  }
+  function renderPage() {
+    if (currentPage === "loading") {
+      return <LoadingPage onLoadingComplete={handleLoadingComplete} />;
+    }
 
-  if (currentPage === "initial") {
-    return (
-      <FeatureErrorBoundary featureName="Home">
-        <InitialPage
-          onGoToMap={(location) => {
-            setMapCenter(location);
-            setShowInitialPage(false);
-          }}
-        />
-      </FeatureErrorBoundary>
-    );
-  }
+    if (currentPage === "auth") {
+      return <AuthPage />;
+    }
 
-  if (currentPage === "map") {
-    return (
-      <FeatureErrorBoundary featureName="Map">
-        <MapView onBack={() => { setShowInitialPage(true); }} initialCenter={mapCenter} />
-      </FeatureErrorBoundary>
-    );
-  }
+    if (currentPage === "initial") {
+      return (
+        <FeatureErrorBoundary featureName="Home">
+          <InitialPage
+            onGoToMap={(location) => {
+              setMapCenter(location);
+              setShowInitialPage(false);
+            }}
+          />
+        </FeatureErrorBoundary>
+      );
+    }
 
-  return <div>Unknown page state</div>;
+    if (currentPage === "map") {
+      return (
+        <FeatureErrorBoundary featureName="Map">
+          <MapView onBack={() => { setShowInitialPage(true); }} initialCenter={mapCenter} />
+        </FeatureErrorBoundary>
+      );
+    }
+
+    return <div>Unknown page state</div>;
+  }
 }
