@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "rm -f package-lock.json && npm install",
   "functions": {
     "api/itinerary.ts": {
       "maxDuration": 60
