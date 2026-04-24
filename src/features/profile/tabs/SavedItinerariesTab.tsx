@@ -1,10 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { deleteItinerary, getMyItineraries, type SavedItinerary } from '../profileApi';
 
-export interface SavedItinerariesTabProps {
-  /** Called when the user asks to go back to the top-level menu. */
-  onBackToMenu: () => void;
-}
+// No props — the modal shell's header owns "back to menu" navigation. We used
+// to take an `onBackToMenu` prop and render our own back button above the list,
+// which stacked two "← Back" controls on screen.
 
 // Shared action-button classes. Copy = neutral, Delete = destructive red.
 const copyBtnClass =
@@ -16,7 +15,7 @@ const deleteBtnClass =
  * Itineraries tab. Loads the user's saved itineraries on mount, renders the
  * list, and drills into a detail view with the formatted markdown on click.
  */
-export function SavedItinerariesTab({ onBackToMenu }: SavedItinerariesTabProps) {
+export function SavedItinerariesTab() {
   const [savedItineraries, setSavedItineraries] = useState<SavedItinerary[]>([]);
   const [loadingItineraries, setLoadingItineraries] = useState(true);
   const [selectedItinerary, setSelectedItinerary] = useState<SavedItinerary | null>(null);
@@ -123,13 +122,6 @@ export function SavedItinerariesTab({ onBackToMenu }: SavedItinerariesTabProps) 
 
   return (
     <div className="flex-1 overflow-auto p-4 flex flex-col">
-      <button
-        onClick={onBackToMenu}
-        className="bg-none border-none cursor-pointer text-lg text-purple-600 font-semibold mb-3 p-0 text-left"
-      >
-        ← Back to Menu
-      </button>
-
       <h2 className="text-xl font-bold text-[#111] mb-4">
         🎒 My Saved Itineraries
       </h2>
@@ -352,3 +344,4 @@ function renderInlineMarkdown(text: string): ReactNode[] {
     });
   });
 }
+                                                                                                                                                                                  

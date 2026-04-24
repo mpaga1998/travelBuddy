@@ -123,7 +123,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
         ) : selectedSection === 'saved' ? (
           <BookmarkedPinsTab isMobile={isMobile} />
         ) : selectedSection === 'itineraries' ? (
-          <SavedItinerariesTab onBackToMenu={() => setSelectedSection('menu')} />
+          <SavedItinerariesTab />
         ) : null}
       </div>
     </div>
@@ -247,3 +247,4 @@ function ErrorScreen({ message }: { message: string }) {
     </div>
   );
 }
+                                                
