@@ -290,7 +290,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
         }
       `}</style>
 
-      <div className="grid grid-rows-[auto_1fr] h-screen">
+      <div className="flex flex-col h-screen">
         <FilterBar
           onBack={onBack}
           onLogoClick={() => {
@@ -304,7 +304,10 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
           setSelectedAgeRanges={setSelectedAgeRanges}
         />
 
-        <div className="relative h-full">
+        {/* min-h-0 is required — without it a flex child refuses to shrink
+            below its content's intrinsic size, and the absolute/inset-0 map
+            container below ends up 0px tall on mobile. */}
+        <div className="relative flex-1 min-h-0">
           <MapCanvas
             initialCenter={initialCenter}
             onMapReady={handleMapReady}

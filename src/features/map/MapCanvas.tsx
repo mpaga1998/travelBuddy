@@ -105,5 +105,5 @@ export function MapCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return <div ref={containerRef} className="absolute inset-0" />;
-}
+  // Use w-full/h-full (not absolute/inset) so Mapbox resolves a real size from
+  
