@@ -86,44 +86,27 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   return (
     <div
       onClick={handleClose}
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-        display: 'flex', alignItems: isMobile ? 'flex-end' : 'center',
-        justifyContent: 'center', padding: isMobile ? 0 : 16, zIndex: 1001,
-      }}
+      className={`fixed inset-0 bg-black/40 flex justify-center z-[1001] ${isMobile ? 'items-end p-0' : 'items-center p-4'}`}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: isMobile ? '100%' : 'min(600px, 100%)',
-          background: 'white',
-          borderRadius: isMobile ? '16px 16px 0 0' : 16,
-          maxHeight: isMobile ? '90vh' : 'auto',
-          overflow: 'auto',
-          boxShadow: '0 18px 48px rgba(0,0,0,0.22)',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
+        className={`bg-white shadow-[0_18px_48px_rgba(0,0,0,0.22)] flex flex-col ${isMobile ? 'w-full rounded-t-2xl max-h-[90vh] overflow-auto' : 'w-[min(600px,100%)] rounded-2xl overflow-auto'}`}
       >
         {/* Header */}
         <div
-          style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-            padding: isMobile ? '16px' : '20px', borderBottom: '1px solid rgba(0,0,0,0.08)',
-            flexShrink: 0, gap: 12,
-          }}
+          className={`flex justify-between items-start border-b border-black/[0.08] flex-shrink-0 gap-3 ${isMobile ? 'p-4' : 'p-5'}`}
         >
-          <div style={{ flex: 1 }}>
-            <h2 style={{ margin: 0, fontSize: isMobile ? 18 : 20, fontWeight: 700, color: '#111' }}>
+          <div className="flex-1">
+            <h2 className={`m-0 font-bold text-slate-900 ${isMobile ? 'text-lg' : 'text-xl'}`}>
               ✈️ Plan Your Itinerary
             </h2>
-            <p style={{ margin: '6px 0 0 0', fontSize: isMobile ? 12 : 13, fontWeight: 600, color: '#666' }}>
+            <p className={`mt-1.5 font-semibold text-gray-500 ${isMobile ? 'text-xs' : 'text-[13px]'}`}>
               Trip Details
             </p>
           </div>
           <button
             onClick={handleClose}
-            style={{ border: 'none', background: 'transparent', fontSize: 24, cursor: 'pointer', padding: '4px 8px', color: '#999', flexShrink: 0 }}
+            className="border-none bg-transparent text-2xl cursor-pointer px-2 py-1 text-gray-400 flex-shrink-0"
             aria-label="Close"
           >
             ✕
@@ -131,7 +114,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? '16px' : '20px' }}>
+        <div className={`flex-1 overflow-auto ${isMobile ? 'p-4' : 'p-5'}`}>
           {step === 'form' && (
             <ItineraryForm
               key={formKey}
@@ -142,18 +125,11 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
           )}
 
           {step === 'loading' && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '40px 0' }}>
-              <div style={{ fontSize: 16, fontWeight: 600, textAlign: 'center', color: '#111' }}>
+            <div className="flex flex-col items-center gap-4 py-10">
+              <div className="text-base font-semibold text-center text-slate-900">
                 Creating the best itinerary for you...
               </div>
-              <div
-                style={{
-                  width: 40, height: 40,
-                  border: '4px solid #e5e7eb', borderTop: '4px solid #2563eb',
-                  borderRadius: '50%', animation: 'spin 1s linear infinite',
-                }}
-              />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin" />
             </div>
           )}
 
@@ -164,34 +140,20 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
 
         {/* Footer */}
         <div
-          style={{
-            display: 'flex', gap: 12,
-            padding: isMobile ? '16px' : '20px',
-            borderTop: '1px solid rgba(0,0,0,0.08)', flexShrink: 0,
-          }}
+          className={`flex gap-3 border-t border-black/[0.08] flex-shrink-0 ${isMobile ? 'p-4' : 'p-5'}`}
         >
           {step === 'result' && (
             <>
               <button
                 onClick={handleSaveItinerary}
                 disabled={isSaving}
-                style={{
-                  flex: 1, padding: '12px 16px', borderRadius: 10,
-                  border: '1px solid rgba(0,0,0,0.18)',
-                  background: isSaving ? '#e5e7eb' : 'white', color: '#111',
-                  cursor: isSaving ? 'not-allowed' : 'pointer',
-                  fontWeight: 600, fontSize: 14, minHeight: 44, opacity: isSaving ? 0.6 : 1,
-                }}
+                className={`flex-1 px-4 py-3 rounded-[10px] border border-black/[0.18] text-slate-900 font-semibold text-sm min-h-[44px] ${isSaving ? 'bg-gray-200 cursor-not-allowed opacity-60' : 'bg-white cursor-pointer'}`}
               >
                 {isSaving ? '💾 Saving...' : '📌 Save to Profile'}
               </button>
               <button
                 onClick={handleReset}
-                style={{
-                  flex: 1, padding: '12px 16px', borderRadius: 10, border: 'none',
-                  background: '#2563eb', color: 'white', cursor: 'pointer',
-                  fontWeight: 600, fontSize: 14, minHeight: 44,
-                }}
+                className="flex-1 px-4 py-3 rounded-[10px] border-none bg-blue-600 text-white cursor-pointer font-semibold text-sm min-h-[44px]"
               >
                 Create Another
               </button>
@@ -199,13 +161,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
           )}
           <button
             onClick={handleClose}
-            style={{
-              flex: step === 'form' ? 1 : undefined,
-              padding: '12px 16px', borderRadius: 10,
-              border: step === 'form' ? 'none' : '1px solid rgba(0,0,0,0.18)',
-              background: step === 'form' ? '#f3f4f6' : 'white',
-              color: '#111', cursor: 'pointer', fontWeight: 600, fontSize: 14, minHeight: 44,
-            }}
+            className={`px-4 py-3 rounded-[10px] text-slate-900 cursor-pointer font-semibold text-sm min-h-[44px] ${step === 'form' ? 'flex-1 border-none bg-gray-100' : 'border border-black/[0.18] bg-white'}`}
           >
             {step === 'form' ? 'Cancel' : 'Close'}
           </button>
