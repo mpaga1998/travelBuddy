@@ -246,10 +246,17 @@ export function PinLayer({
     if (!selectedPin) return;
     const pin = selectedPin;
 
+    // On mobile the popup (hero image + title + 3 button rows) can be
+    // ~600px tall, so reserve most of the viewport above the pin. 180px was
+    // fine on desktop but clipped the popup against the FilterBar on phones.
+    const isMobileForPan = window.innerWidth < MOBILE_BREAKPOINT;
+    const panTopPadding = isMobileForPan
+      ? Math.min(window.innerHeight * 0.55, 520)
+      : 180;
     map.easeTo({
       center: [pin.lng, pin.lat],
       duration: 400,
-      padding: { top: 180, bottom: 80, left: 40, right: 40 },
+      padding: { top: panTopPadding, bottom: 80, left: 40, right: 40 },
     });
 
     const timer = window.setTimeout(() => {
