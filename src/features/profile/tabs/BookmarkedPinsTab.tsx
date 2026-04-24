@@ -34,108 +34,51 @@ export function BookmarkedPinsTab({ isMobile }: BookmarkedPinsTabProps) {
 
   if (selectedPin) {
     return (
-      <div
-        style={{
-          flex: 1,
-          overflow: 'auto',
-          padding: 16,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+      <div className="flex-1 overflow-auto p-4 flex flex-col">
         <button
           onClick={() => setSelectedPin(null)}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: 18,
-            color: '#2563eb',
-            fontWeight: 600,
-            marginBottom: 12,
-            padding: 0,
-            textAlign: 'left',
-          }}
+          className="bg-transparent border-none cursor-pointer text-lg text-blue-600 font-semibold mb-3 p-0 text-left"
         >
           ← Back
         </button>
 
         {selectedPin.images && selectedPin.images.length > 0 && (
-          <div
-            style={{
-              width: '100%',
-              height: 200,
-              borderRadius: 12,
-              overflow: 'hidden',
-              marginBottom: 16,
-              background: '#f3f4f6',
-            }}
-          >
+          <div className="w-full h-[200px] rounded-xl overflow-hidden mb-4 bg-gray-100">
             <img
               src={selectedPin.images[0]}
               alt={selectedPin.title}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              className="w-full h-full object-cover"
             />
           </div>
         )}
 
         <div
-          style={{
-            fontSize: isMobile ? 18 : 20,
-            fontWeight: 700,
-            color: '#111',
-            marginBottom: 8,
-          }}
+          className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-slate-900 mb-2`}
         >
           {selectedPin.title}
         </div>
 
         {selectedPin.category && (
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: '#0066cc',
-              background: 'rgba(0, 102, 204, 0.1)',
-              borderRadius: 6,
-              padding: '4px 10px',
-              width: 'fit-content',
-              textTransform: 'capitalize',
-              marginBottom: 12,
-            }}
-          >
+          <div className="text-xs font-semibold text-[#0066cc] bg-[#0066cc]/10 rounded-md px-2.5 py-1 w-fit capitalize mb-3">
             {selectedPin.category}
           </div>
         )}
 
         {selectedPin.description && (
-          <div style={{ fontSize: 14, color: '#333', lineHeight: 1.6, marginBottom: 16 }}>
+          <div className="text-sm text-slate-700 leading-relaxed mb-4">
             {selectedPin.description}
           </div>
         )}
 
-        <div
-          style={{
-            display: 'flex',
-            gap: 16,
-            flexWrap: 'wrap',
-            marginBottom: 16,
-            paddingTop: 12,
-            borderTop: '1px solid rgba(0,0,0,0.08)',
-          }}
-        >
+        <div className="flex gap-4 flex-wrap mb-4 pt-3 border-t border-black/[0.08]">
           {selectedPin.bookmark_count > 0 && (
-            <div
-              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, color: '#666' }}
-            >
+            <div className="flex items-center gap-1 text-sm text-slate-500">
               <span>🔖</span>
               <span>{selectedPin.bookmark_count} bookmarks</span>
             </div>
           )}
           {selectedPin.likes_count > 0 && (
-            <div
-              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, color: '#666' }}
-            >
+            <div className="flex items-center gap-1 text-sm text-slate-500">
               <span>❤️</span>
               <span>{selectedPin.likes_count} likes</span>
             </div>
@@ -150,54 +93,20 @@ export function BookmarkedPinsTab({ isMobile }: BookmarkedPinsTabProps) {
                 '_blank',
               )
             }
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              borderRadius: 10,
-              border: '2px solid #2563eb',
-              background: 'white',
-              cursor: 'pointer',
-              fontSize: 14,
-              fontWeight: 600,
-              color: '#2563eb',
-              marginBottom: 16,
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              (e.target as HTMLElement).style.background = 'rgba(37, 99, 235, 0.05)';
-            }}
-            onMouseLeave={(e) => {
-              (e.target as HTMLElement).style.background = 'white';
-            }}
+            className="w-full px-4 py-3 rounded-[10px] border-2 border-blue-600 bg-white cursor-pointer text-sm font-semibold text-blue-600 mb-4 transition-colors hover:bg-blue-600/5"
           >
             📍 Open in Maps
           </button>
         )}
 
         {selectedPin.tips && selectedPin.tips.length > 0 && (
-          <div style={{ marginTop: 12 }}>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: '#666',
-                marginBottom: 8,
-                textTransform: 'uppercase',
-              }}
-            >
-              Tips
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div className="mt-3">
+            <div className="text-xs font-semibold text-slate-500 mb-2 uppercase">Tips</div>
+            <div className="flex flex-col gap-1">
               {selectedPin.tips.map((tip: string, idx: number) => (
                 <div
                   key={idx}
-                  style={{
-                    fontSize: 13,
-                    color: '#555',
-                    padding: '6px 8px',
-                    background: 'rgba(0,0,0,0.04)',
-                    borderRadius: 6,
-                  }}
+                  className="text-[13px] text-slate-600 px-2 py-1.5 bg-black/[0.04] rounded-md"
                 >
                   • {tip}
                 </div>
@@ -211,51 +120,19 @@ export function BookmarkedPinsTab({ isMobile }: BookmarkedPinsTabProps) {
 
   if (loadingBookmarks) {
     return (
-      <div
-        style={{
-          flex: 1,
-          overflow: 'auto',
-          padding: 16,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 16,
-        }}
-      >
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            border: '3px solid #e5e7eb',
-            borderTop: '3px solid #2563eb',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-          }}
-        />
-        <div style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>Loading saved pins…</div>
+      <div className="flex-1 overflow-auto p-4 flex flex-col items-center justify-center gap-4">
+        <div className="w-10 h-10 border-[3px] border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+        <div className="text-[13px] text-slate-500 font-medium">Loading saved pins…</div>
       </div>
     );
   }
 
   if (bookmarkedPins.length === 0) {
     return (
-      <div
-        style={{
-          flex: 1,
-          overflow: 'auto',
-          padding: 16,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 12,
-          color: '#666',
-        }}
-      >
-        <div style={{ fontSize: 32 }}>🔖</div>
-        <div style={{ fontSize: 14, fontWeight: 500 }}>No saved pins yet</div>
-        <div style={{ fontSize: 12, opacity: 0.75, textAlign: 'center' }}>
+      <div className="flex-1 overflow-auto p-4 flex flex-col items-center justify-center gap-3 text-slate-500">
+        <div className="text-3xl">🔖</div>
+        <div className="text-sm font-medium">No saved pins yet</div>
+        <div className="text-xs opacity-75 text-center">
           Bookmark pins from the map to save them here
         </div>
       </div>
@@ -263,51 +140,26 @@ export function BookmarkedPinsTab({ isMobile }: BookmarkedPinsTabProps) {
   }
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+    <div className="flex-1 overflow-auto p-4">
       <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
-          gap: isMobile ? 12 : 16,
-        }}
+        className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-3 gap-4'}`}
       >
         {bookmarkedPins.map((pin) => (
           <div
             key={pin.id}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              borderRadius: 12,
-              border: '1px solid rgba(0,0,0,0.08)',
-              overflow: 'hidden',
-              background: 'white',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              minHeight: isMobile ? 140 : 160,
-              touchAction: 'manipulation',
-            }}
+            className={`flex flex-col rounded-xl border border-black/[0.08] overflow-hidden bg-white cursor-pointer transition-all shadow-[0_2px_8px_rgba(0,0,0,0.08)] ${isMobile ? 'min-h-[140px]' : 'min-h-[160px]'} touch-manipulation`}
             onClick={() => setSelectedPin(pin)}
             role="button"
             tabIndex={0}
           >
             <div
-              style={{
-                flex: 1,
-                background: '#f3f4f6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: isMobile ? 28 : 32,
-                overflow: 'hidden',
-                position: 'relative',
-              }}
+              className={`flex-1 bg-gray-100 flex items-center justify-center ${isMobile ? 'text-[28px]' : 'text-[32px]'} overflow-hidden relative`}
             >
               {pin.images && pin.images.length > 0 ? (
                 <img
                   src={pin.images[0]}
                   alt={pin.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  className="w-full h-full object-cover"
                   onError={(e) => {
                     console.error(
                       `❌ Failed to load image for pin "${pin.title}": ${pin.images[0]}`,
@@ -323,46 +175,21 @@ export function BookmarkedPinsTab({ isMobile }: BookmarkedPinsTabProps) {
               )}
             </div>
 
-            <div
-              style={{
-                padding: isMobile ? 10 : 12,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 4,
-              }}
-            >
+            <div className={`${isMobile ? 'p-2.5' : 'p-3'} flex flex-col gap-1`}>
               <div
-                style={{
-                  fontSize: isMobile ? 12 : 13,
-                  fontWeight: 600,
-                  color: '#111',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
+                className={`${isMobile ? 'text-xs' : 'text-[13px]'} font-semibold text-slate-900 overflow-hidden text-ellipsis whitespace-nowrap`}
               >
                 {pin.title}
               </div>
 
               {pin.category && (
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 500,
-                    color: '#0066cc',
-                    background: 'rgba(0, 102, 204, 0.1)',
-                    borderRadius: 4,
-                    padding: '2px 6px',
-                    width: 'fit-content',
-                    textTransform: 'capitalize',
-                  }}
-                >
+                <div className="text-[10px] font-medium text-[#0066cc] bg-[#0066cc]/10 rounded px-1.5 py-0.5 w-fit capitalize">
                   {pin.category}
                 </div>
               )}
 
               {pin.bookmark_count > 0 && (
-                <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>
+                <div className="text-[10px] text-slate-500 mt-0.5">
                   🔖 {pin.bookmark_count}
                 </div>
               )}

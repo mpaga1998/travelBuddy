@@ -74,30 +74,11 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
   return (
     <div
       onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.35)',
-        display: 'flex',
-        alignItems: isMobile ? 'flex-end' : 'center',
-        justifyContent: 'center',
-        padding: isMobile ? 0 : 16,
-        zIndex: 50,
-      }}
+      className={`fixed inset-0 bg-black/35 flex justify-center z-50 ${isMobile ? 'items-end p-0' : 'items-center p-4'}`}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: isMobile ? '100%' : 'min(720px, 100%)',
-          background: 'white',
-          borderRadius: isMobile ? '16px 16px 0 0' : 16,
-          padding: 0,
-          boxShadow: '0 18px 48px rgba(0,0,0,0.22)',
-          color: '#111',
-          maxHeight: isMobile ? '90vh' : 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
+        className={`bg-white p-0 shadow-[0_18px_48px_rgba(0,0,0,0.22)] text-slate-900 flex flex-col ${isMobile ? 'w-full rounded-t-2xl max-h-[90vh]' : 'w-[min(720px,100%)] rounded-2xl'}`}
       >
         <ModalHeader
           selectedSection={selectedSection}
@@ -146,52 +127,20 @@ function ModalHeader({
   onClose: () => void;
 }) {
   return (
-    <div
-      style={{
-        padding: 16,
-        borderBottom: '1px solid rgba(0,0,0,0.08)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 12,
-        flexShrink: 0,
-      }}
-    >
+    <div className="p-4 border-b border-black/[0.08] flex justify-between items-center gap-3 flex-shrink-0">
       {selectedSection === 'menu' ? (
-        <div style={{ fontWeight: 800, fontSize: 16 }}>Menu</div>
+        <div className="font-extrabold text-base">Menu</div>
       ) : (
         <button
           onClick={onBackToMenu}
-          style={{
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            fontSize: 16,
-            fontWeight: 600,
-            color: '#2563eb',
-            padding: '4px 8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-          }}
+          className="border-none bg-transparent cursor-pointer text-base font-semibold text-blue-600 px-2 py-1 flex items-center gap-1"
         >
           ← Back
         </button>
       )}
       <button
         onClick={onClose}
-        style={{
-          border: 'none',
-          background: 'transparent',
-          fontSize: 24,
-          cursor: 'pointer',
-          padding: '4px 8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#111',
-          lineHeight: '1',
-        }}
+        className="border-none bg-transparent text-2xl cursor-pointer px-2 py-1 flex items-center justify-center text-slate-900 leading-none"
         aria-label="Close"
       >
         ✕
@@ -236,40 +185,18 @@ function MenuScreen({ onPick }: { onPick: (s: Section) => void }) {
   ];
 
   return (
-    <div
-      style={{
-        flex: 1,
-        overflow: 'auto',
-        padding: 32,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 20,
-      }}
-    >
+    <div className="flex-1 overflow-auto p-8 flex flex-col items-center justify-center gap-5">
       {items.map((item) => (
-        <div
-          key={item.section}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}
-        >
-          <div style={{ fontSize: 48, marginBottom: 0 }}>{item.emoji}</div>
+        <div key={item.section} className="flex flex-col items-center gap-4">
+          <div className="text-5xl">{item.emoji}</div>
           <button
             onClick={() => onPick(item.section)}
             onTouchStart={(e) => e.preventDefault()}
             type="button"
+            className="w-full max-w-[300px] px-6 py-5 rounded-2xl bg-white cursor-pointer text-base font-bold transition-all"
             style={{
-              width: '100%',
-              maxWidth: 300,
-              padding: '20px 24px',
-              borderRadius: 16,
               border: `2px solid ${item.color}`,
-              background: 'white',
-              cursor: 'pointer',
-              fontSize: 16,
-              fontWeight: 700,
               color: item.color,
-              transition: 'all 0.2s',
               boxShadow: item.shadow,
             }}
             onMouseEnter={(e) => {
@@ -290,56 +217,20 @@ function MenuScreen({ onPick }: { onPick: (s: Section) => void }) {
 function LoadingScreen({ isMobile }: { isMobile: boolean }) {
   return (
     <div
-      style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 16,
-        padding: 32,
-        minHeight: isMobile ? 300 : 400,
-      }}
+      className={`flex-1 flex flex-col items-center justify-center gap-4 p-8 ${isMobile ? 'min-h-[300px]' : 'min-h-[400px]'}`}
     >
-      <div
-        style={{
-          width: 48,
-          height: 48,
-          border: '4px solid #e5e7eb',
-          borderTop: '4px solid #2563eb',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-        }}
-      />
-      <div style={{ fontSize: 14, color: '#666', fontWeight: 500 }}>Loading profile…</div>
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+      <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+      <div className="text-sm text-slate-500 font-medium">Loading profile…</div>
     </div>
   );
 }
 
 function ErrorScreen({ message }: { message: string }) {
   return (
-    <div
-      style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 12,
-        padding: 32,
-        textAlign: 'center',
-      }}
-    >
-      <div style={{ fontSize: 36 }}>⚠️</div>
-      <div style={{ fontSize: 14, color: '#991b1b', fontWeight: 600 }}>
-        Couldn't load your profile
-      </div>
-      <div style={{ fontSize: 13, color: '#666', maxWidth: 320 }}>{message}</div>
+    <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center">
+      <div className="text-4xl">⚠️</div>
+      <div className="text-sm text-red-900 font-semibold">Couldn't load your profile</div>
+      <div className="text-[13px] text-slate-500 max-w-[320px]">{message}</div>
     </div>
   );
 }
