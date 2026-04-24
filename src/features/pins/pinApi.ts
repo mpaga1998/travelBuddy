@@ -44,8 +44,15 @@ function safeCategory(raw: string): PinCategory {
   return ALLOWED_CATEGORIES.includes(raw as PinCategory) ? (raw as PinCategory) : "other";
 }
 
-export async function listPins(): Promise<Pin[]> {
-  const { data, error } = await supabase
+export type PinBounds = {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+};
+
+export async function listPins(bounds?: PinBounds): Promise<{ pins: Pin[]; limitReached: boolean }> {
+  let query = supabase
     .from("pins")
     .select(
       `
@@ -55,13 +62,25 @@ export async function listPins(): Promise<Pin[]> {
       reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
     `
     )
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (bounds) {
+    query = query
+      .gte("lat", bounds.south)
+      .lte("lat", bounds.north)
+      .gte("lng", bounds.west)
+      .lte("lng", bounds.east);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
 
   const rows = (data ?? []) as unknown as DbPinRow[];
+  const limitReached = rows.length === 500;
 
-  return rows.map((row) => {
+  const mapped = rows.map((row) => {
     const counts = row.reaction_counts?.[0] ?? null;
 
     return {
@@ -88,6 +107,8 @@ export async function listPins(): Promise<Pin[]> {
       bookmarkCount: row.bookmark_count ?? 0,
     };
   });
+
+  return { pins: mapped, limitReached };
 }
 
 export async function uploadPinImage(file: File): Promise<string> {

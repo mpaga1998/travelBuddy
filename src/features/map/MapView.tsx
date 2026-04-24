@@ -61,6 +61,8 @@ type MapViewProps = {
  */
 export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   const mapRef = useRef<MapboxMap | null>(null);
+  // Separate state so useMapPins can react when the map becomes available.
+  const [mapInstance, setMapInstance] = useState<MapboxMap | null>(null);
   const isMobile = useIsMobile();
 
   // --- Auth (just the id — we don't need profile here) --------------------
@@ -81,6 +83,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   const {
     filteredPins,
     loading,
+    limitReached,
     reload,
     mapType,
     setMapType,
@@ -88,7 +91,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     setActiveCategory,
     selectedAgeRanges,
     setSelectedAgeRanges,
-  } = useMapPins(bookmarkedPinIds);
+  } = useMapPins(bookmarkedPinIds, mapInstance);
 
   // --- Selection + draft + modals ----------------------------------------
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
@@ -118,6 +121,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   // --- Map callbacks ------------------------------------------------------
   const handleMapReady = useCallback((map: MapboxMap) => {
     mapRef.current = map;
+    setMapInstance(map);
   }, []);
 
   const handleMapClick = useCallback(async (lngLat: mapboxgl.LngLat) => {
@@ -335,6 +339,14 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
               className={`absolute top-3 left-3 px-2.5 py-2 rounded-[10px] bg-white/90 border border-black/[0.08] shadow-[0_6px_18px_rgba(0,0,0,0.08)] ${isMobile ? "text-[13px]" : "text-sm"}`}
             >
               Loading pins…
+            </div>
+          )}
+
+          {!loading && limitReached && (
+            <div
+              className={`absolute top-3 left-3 px-2.5 py-2 rounded-[10px] bg-white/90 border border-black/[0.08] shadow-[0_6px_18px_rgba(0,0,0,0.08)] ${isMobile ? "text-[13px]" : "text-sm"} text-gray-600`}
+            >
+              Showing 500 nearest pins — zoom in to see more
             </div>
           )}
 
