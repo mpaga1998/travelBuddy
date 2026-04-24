@@ -17,6 +17,15 @@ export type FilterBarProps = {
   setSelectedAgeRanges: (r: string[]) => void;
 };
 
+// Shared age-range pill class. Active state toggles color + border weight.
+function ageRangeBtnClass(active: boolean, extra = "") {
+  return `px-3 py-2 rounded-[10px] cursor-pointer text-[13px] min-h-[44px] whitespace-nowrap outline-none ${
+    active
+      ? "border-2 border-blue-600 bg-blue-50 font-semibold text-blue-600"
+      : "border border-black/[0.18] bg-white font-medium text-[#111]"
+  } ${extra}`;
+}
+
 /**
  * Top bar + filters. Controlled component — filter state lives in the parent
  * (useMapPins) so the actual pin query can derive from it.
@@ -46,40 +55,17 @@ export function FilterBar({
   };
 
   return (
-    <div
-      style={{
-        borderBottom: "1px solid rgba(0,0,0,0.08)",
-        background: "white",
-        color: "#111",
-      }}
-    >
+    <div className="border-b border-black/[0.08] bg-white text-[#111]">
       <div
-        style={{
-          display: "flex",
-          gap: isMobile ? 8 : 12,
-          alignItems: "center",
-          padding: isMobile ? "8px 10px" : "10px 12px",
-          maxWidth: isMobile ? "100%" : 1100,
-          margin: "0 auto",
-          flexWrap: "nowrap",
-          justifyContent: isMobile ? "space-between" : "flex-start",
-        }}
+        className={`flex items-center flex-nowrap mx-auto ${
+          isMobile
+            ? "gap-2 px-2.5 py-2 max-w-full justify-between"
+            : "gap-3 px-3 py-2.5 max-w-[1100px] justify-start"
+        }`}
       >
         <button
           onClick={onBack}
-          style={{
-            border: "none",
-            background: "transparent",
-            cursor: onBack ? "pointer" : "default",
-            padding: "8px 10px",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            fontWeight: 600,
-            fontSize: 14,
-            color: "#111",
-            outline: "none",
-          }}
+          className={`border-none bg-transparent px-2.5 py-2 flex items-center gap-1.5 font-semibold text-sm text-[#111] outline-none ${onBack ? "cursor-pointer" : "cursor-default"}`}
           aria-label="Back"
         >
           ↩️ Back
@@ -88,41 +74,26 @@ export function FilterBar({
         <button
           onClick={onLogoClick}
           title="Click to recenter on north"
-          style={{
-            position: isMobile ? "absolute" : "relative",
-            left: isMobile ? "50%" : "auto",
-            transform: isMobile ? "translateX(-50%)" : "none",
-            fontWeight: 700,
-            whiteSpace: "nowrap",
-            fontSize: isMobile ? 14 : 16,
-            border: "none",
-            background: "transparent",
-            cursor: "pointer",
-            padding: "4px 8px",
-            outline: "none",
-            color: "#111",
-          }}
+          className={`font-bold whitespace-nowrap border-none bg-transparent cursor-pointer px-2 py-1 outline-none text-[#111] ${
+            isMobile
+              ? "absolute left-1/2 -translate-x-1/2 text-sm"
+              : "relative text-base"
+          }`}
         >
           🎒 travelBuddy
         </button>
 
-        {!isMobile && <div style={{ flex: 1 }} />}
+        {!isMobile && <div className="flex-1" />}
 
         {!isMobile && (
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div className="flex gap-2 items-center">
             <MapTypeToggle mapType={mapType} setMapType={setMapType} />
 
             {mapType !== "bookmarked" && (
               <select
                 value={activeCategory}
                 onChange={(e) => setActiveCategory(e.target.value as PinCategory | "all")}
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                  minWidth: 170,
-                  fontSize: 14,
-                }}
+                className="px-2.5 py-2 rounded-[10px] border border-black/[0.18] min-w-[170px] text-sm"
               >
                 <option value="all">All</option>
                 {CATEGORIES.map((c) => (
@@ -136,26 +107,14 @@ export function FilterBar({
         )}
 
         {!isMobile && mapType === "travelers" && (
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="flex gap-2">
             {AGE_RANGES.map((range) => {
               const active = selectedAgeRanges.includes(range.value);
               return (
                 <button
                   key={range.value}
                   onClick={() => toggleAge(range.value)}
-                  style={{
-                    padding: "8px 12px",
-                    borderRadius: 10,
-                    border: active ? "2px solid #2563eb" : "1px solid rgba(0,0,0,0.18)",
-                    background: active ? "#eff6ff" : "white",
-                    cursor: "pointer",
-                    fontSize: 13,
-                    fontWeight: active ? 600 : 500,
-                    color: active ? "#2563eb" : "#111",
-                    minHeight: 44,
-                    whiteSpace: "nowrap",
-                    outline: "none",
-                  }}
+                  className={ageRangeBtnClass(active)}
                 >
                   {range.label}
                 </button>
@@ -164,32 +123,18 @@ export function FilterBar({
           </div>
         )}
 
-        <div style={{ flex: 1 }} />
+        <div className="flex-1" />
 
         {isMobile && (
           <button
             onClick={() => setMobileMenuOpen((o) => !o)}
             aria-label="Filters"
             title="Filters"
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 8,
-              border: "1px solid rgba(0,0,0,0.18)",
-              background: "white",
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 4,
-              padding: 6,
-              position: "relative",
-            }}
+            className="w-11 h-11 rounded-lg border border-black/[0.18] bg-white cursor-pointer flex flex-col items-center justify-center gap-1 p-1.5 relative"
           >
-            <div style={{ width: 20, height: 2, background: "#111", borderRadius: 1 }} />
-            <div style={{ width: 20, height: 2, background: "#111", borderRadius: 1 }} />
-            <div style={{ width: 20, height: 2, background: "#111", borderRadius: 1 }} />
+            <div className="w-5 h-0.5 bg-[#111] rounded-[1px]" />
+            <div className="w-5 h-0.5 bg-[#111] rounded-[1px]" />
+            <div className="w-5 h-0.5 bg-[#111] rounded-[1px]" />
           </button>
         )}
       </div>
@@ -223,38 +168,25 @@ function MapTypeToggle({
   setMapType: (t: MapType) => void;
   full?: boolean;
 }) {
-  const pill = (t: MapType, activeBg: string, label: string, title: string) => (
-    <button
-      onClick={() => setMapType(t)}
-      title={title}
-      style={{
-        flex: full ? 1 : undefined,
-        padding: full ? "8px 12px" : "6px 12px",
-        border: "none",
-        background: mapType === t ? activeBg : "transparent",
-        color: mapType === t ? "white" : "#111",
-        cursor: "pointer",
-        fontSize: full ? 13 : 14,
-        fontWeight: mapType === t ? 600 : 500,
-        borderRadius: 8,
-        transition: "all 0.2s ease",
-        outline: "none",
-      }}
-    >
-      {label}
-    </button>
-  );
+  // The active background color is per-tab, so we keep it as inline style.
+  const pill = (t: MapType, activeBg: string, label: string, title: string) => {
+    const isActive = mapType === t;
+    return (
+      <button
+        onClick={() => setMapType(t)}
+        title={title}
+        className={`border-none cursor-pointer rounded-lg outline-none transition-all ${
+          full ? "px-3 py-2 text-[13px]" : "px-3 py-1.5 text-sm"
+        } ${full ? "flex-1" : ""} ${isActive ? "text-white font-semibold" : "bg-transparent text-[#111] font-medium"}`}
+        style={isActive ? { background: activeBg } : undefined}
+      >
+        {label}
+      </button>
+    );
+  };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        borderRadius: 10,
-        border: "1px solid rgba(0,0,0,0.18)",
-        background: "white",
-        padding: 2,
-      }}
-    >
+    <div className="flex rounded-[10px] border border-black/[0.18] bg-white p-0.5">
       {pill("travelers", "#2563eb", "👥 Travelers", "Show pins from travelers")}
       {pill("hostels", "#111", "🏫 Hostels", "Show pins from hostels")}
       {pill("bookmarked", "#16a34a", "🔖 Your Map", "Show your bookmarked pins")}
@@ -282,78 +214,35 @@ function MobileFilterDrawer({
   return (
     <div
       onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.4)",
-        zIndex: 100,
-      }}
+      className="fixed inset-0 bg-black/40 z-[100]"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "white",
-          borderBottomLeftRadius: 12,
-          borderBottomRightRadius: 12,
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-        }}
+        className="bg-white rounded-b-xl flex flex-col gap-2.5"
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "12px 12px 0 12px",
-          }}
-        >
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>Filters</span>
+        <div className="flex justify-between items-center px-3 pt-3">
+          <span className="text-sm font-semibold text-[#111]">Filters</span>
           <button
             onClick={onClose}
             aria-label="Close"
-            style={{
-              border: "none",
-              background: "transparent",
-              fontSize: 24,
-              cursor: "pointer",
-              padding: "4px 8px",
-              minHeight: 44,
-              minWidth: 44,
-              outline: "none",
-            }}
+            className="border-none bg-transparent text-2xl cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] outline-none"
           >
             ✕
           </button>
         </div>
 
-        <div style={{ padding: "0 12px" }}>
-          <div style={{ marginBottom: 10 }}>
+        <div className="px-3">
+          <div className="mb-2.5">
             <MapTypeToggle mapType={mapType} setMapType={setMapType} full />
           </div>
         </div>
 
         {mapType === "travelers" && (
-          <div
-            style={{
-              padding: "0 12px 12px 12px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
-          >
+          <div className="px-3 pb-3 flex flex-col gap-2.5">
             <select
               value={activeCategory}
               onChange={(e) => setActiveCategory(e.target.value as PinCategory | "all")}
-              style={{
-                padding: 12,
-                borderRadius: 10,
-                border: "1px solid rgba(0,0,0,0.18)",
-                fontSize: 14,
-                width: "100%",
-                boxSizing: "border-box",
-                minHeight: 44,
-              }}
+              className="p-3 rounded-[10px] border border-black/[0.18] text-sm w-full box-border min-h-[44px]"
             >
               <option value="all">All Categories</option>
               {CATEGORIES.map((c) => (
@@ -363,27 +252,14 @@ function MobileFilterDrawer({
               ))}
             </select>
 
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div className="flex gap-2 flex-wrap">
               {AGE_RANGES.map((range) => {
                 const active = selectedAgeRanges.includes(range.value);
                 return (
                   <button
                     key={range.value}
                     onClick={() => toggleAge(range.value)}
-                    style={{
-                      padding: "8px 12px",
-                      borderRadius: 10,
-                      border: active ? "2px solid #2563eb" : "1px solid rgba(0,0,0,0.18)",
-                      background: active ? "#eff6ff" : "white",
-                      cursor: "pointer",
-                      fontSize: 13,
-                      fontWeight: active ? 600 : 500,
-                      color: active ? "#2563eb" : "#111",
-                      minHeight: 44,
-                      flex: "1 1 auto",
-                      minWidth: "calc(50% - 4px)",
-                      outline: "none",
-                    }}
+                    className={ageRangeBtnClass(active, "flex-[1_1_auto] min-w-[calc(50%-4px)]")}
                   >
                     {range.label}
                   </button>
