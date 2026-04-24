@@ -24,6 +24,10 @@ import { useMapPins } from "./hooks/useMapPins";
 
 const ITINERARY_FEATURE_ENABLED = true;
 
+// Shared input class for text/textarea/select in the draft modal.
+const draftInputClass =
+  "px-3.5 py-3 rounded-xl border border-black/[0.18] text-base min-h-[44px]";
+
 type DraftPin = {
   lat: number;
   lng: number;
@@ -200,6 +204,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   }
 
   // --- Lightbox (kept imperative for now; 2.x can lift into a component) --
+  // NOTE: uses DOM elements with Object.assign(el.style, …), not JSX style props.
   function showImageLightbox(urls: string[]) {
     if (!urls.length) return;
     let currentIndex = 0;
@@ -274,6 +279,8 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   // =======================================================================
   return (
     <>
+      {/* Global styles targeting Mapbox's popup wrapper — we can't reach those
+          nodes with Tailwind since they're created by mapbox-gl itself. */}
       <style>{`
         .pin-popup.mapboxgl-popup { padding: 16px !important; }
         .pin-popup.mapboxgl-popup .mapboxgl-popup-content {
@@ -283,7 +290,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
         }
       `}</style>
 
-      <div style={{ display: "grid", gridTemplateRows: "auto 1fr", height: "100vh" }}>
+      <div className="grid grid-rows-[auto_1fr] h-screen">
         <FilterBar
           onBack={onBack}
           onLogoClick={() => {
@@ -297,7 +304,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
           setSelectedAgeRanges={setSelectedAgeRanges}
         />
 
-        <div style={{ position: "relative", height: "100%" }}>
+        <div className="relative h-full">
           <MapCanvas
             initialCenter={initialCenter}
             onMapReady={handleMapReady}
@@ -322,17 +329,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
 
           {loading && (
             <div
-              style={{
-                position: "absolute",
-                top: 12,
-                left: 12,
-                padding: "8px 10px",
-                borderRadius: 10,
-                background: "rgba(255,255,255,0.92)",
-                border: "1px solid rgba(0,0,0,0.08)",
-                boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
-                fontSize: isMobile ? 13 : 14,
-              }}
+              className={`absolute top-3 left-3 px-2.5 py-2 rounded-[10px] bg-white/90 border border-black/[0.08] shadow-[0_6px_18px_rgba(0,0,0,0.08)] ${isMobile ? "text-[13px]" : "text-sm"}`}
             >
               Loading pins…
             </div>
@@ -399,52 +396,30 @@ function DraftModal({
   return (
     <div
       onClick={() => setDraft(null)}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.25)",
-        display: "flex",
-        alignItems: isMobile ? "flex-end" : "center",
-        justifyContent: "center",
-        padding: isMobile ? 0 : 16,
-        zIndex: 1000,
-      }}
+      className={`fixed inset-0 bg-black/25 flex justify-center z-[1000] ${isMobile ? "items-end p-0" : "items-center p-4"}`}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: isMobile ? "100%" : "min(520px, 100%)",
-          background: "white",
-          borderRadius: isMobile ? "16px 16px 0 0" : 16,
-          padding: isMobile ? "16px 16px 80px 16px" : 16,
-          boxShadow: "0 18px 48px rgba(0,0,0,0.22)",
-          maxHeight: isMobile ? "90vh" : "auto",
-          overflow: isMobile ? "auto" : "visible",
-        }}
+        className={`bg-white shadow-[0_18px_48px_rgba(0,0,0,0.22)] ${
+          isMobile
+            ? "w-full rounded-t-2xl px-4 pt-4 pb-20 max-h-[90vh] overflow-auto"
+            : "w-[min(520px,100%)] rounded-2xl p-4 overflow-visible"
+        }`}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ fontWeight: 700, fontSize: 16 }}>Add a pin</div>
+        <div className="flex justify-between gap-3">
+          <div className="font-bold text-base">Add a pin</div>
           <button
             onClick={() => setDraft(null)}
             aria-label="Close"
-            style={{
-              border: "none",
-              background: "transparent",
-              fontSize: 18,
-              cursor: "pointer",
-              padding: isMobile ? 8 : 4,
-              width: isMobile ? 44 : 32,
-              height: isMobile ? 44 : 32,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            className={`border-none bg-transparent text-lg cursor-pointer flex items-center justify-center ${
+              isMobile ? "p-2 w-11 h-11" : "p-1 w-8 h-8"
+            }`}
           >
             ✕
           </button>
         </div>
 
-        <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+        <div className="mt-2.5 grid gap-2.5">
           <input
             value={draft.title}
             onChange={(e) => setDraft({ ...draft, title: e.target.value })}
@@ -452,13 +427,7 @@ function DraftModal({
             autoCorrect="off"
             autoCapitalize="sentences"
             spellCheck
-            style={{
-              padding: "12px 14px",
-              borderRadius: 12,
-              border: "1px solid rgba(0,0,0,0.18)",
-              fontSize: 16,
-              minHeight: 44,
-            }}
+            className={draftInputClass}
           />
 
           <textarea
@@ -469,24 +438,13 @@ function DraftModal({
             autoCorrect="off"
             autoCapitalize="sentences"
             spellCheck
-            style={{
-              padding: "12px 14px",
-              borderRadius: 12,
-              border: "1px solid rgba(0,0,0,0.18)",
-              resize: "vertical",
-              fontSize: 16,
-              fontFamily: "inherit",
-              minHeight: 100,
-            }}
+            className={`${draftInputClass} resize-y font-[inherit] min-h-[100px]`}
           />
 
           <div>
-            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8 }}>💡 Tips (Max 5)</div>
+            <div className="text-xs opacity-80 mb-2">💡 Tips (Max 5)</div>
             {draft.tips.map((tip, idx) => (
-              <div
-                key={idx}
-                style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}
-              >
+              <div key={idx} className="flex gap-2 mb-2 items-start">
                 <textarea
                   value={tip}
                   onChange={(e) => {
@@ -496,33 +454,15 @@ function DraftModal({
                   }}
                   placeholder={`Tip ${idx + 1}`}
                   rows={2}
-                  style={{
-                    padding: "12px 14px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(0,0,0,0.18)",
-                    resize: "vertical",
-                    flex: 1,
-                    fontSize: 16,
-                    fontFamily: "inherit",
-                    minHeight: 80,
-                  }}
+                  className={`${draftInputClass} resize-y flex-1 font-[inherit] min-h-[80px]`}
                 />
                 {draft.tips.length > 1 && (
                   <button
                     onClick={() => setDraft({ ...draft, tips: draft.tips.filter((_, i) => i !== idx) })}
                     title="Remove this tip"
-                    style={{
-                      padding: isMobile ? "10px 12px" : "10px 8px",
-                      borderRadius: 8,
-                      border: "1px solid rgba(220,38,38,0.35)",
-                      background: "rgba(220,38,38,0.08)",
-                      color: "#991b1b",
-                      cursor: "pointer",
-                      fontWeight: "bold",
-                      marginTop: 10,
-                      fontSize: 14,
-                      minHeight: 44,
-                    }}
+                    className={`rounded-lg border border-red-600/[0.35] bg-red-600/[0.08] text-red-900 cursor-pointer font-bold mt-2.5 text-sm min-h-[44px] ${
+                      isMobile ? "px-3 py-2.5" : "px-2 py-2.5"
+                    }`}
                   >
                     ✕
                   </button>
@@ -532,18 +472,7 @@ function DraftModal({
             {draft.tips.length < 5 && (
               <button
                 onClick={() => setDraft({ ...draft, tips: [...draft.tips, ""] })}
-                style={{
-                  padding: 12,
-                  borderRadius: 12,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                  background: "#f5f5f5",
-                  color: "#111",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  width: "100%",
-                  fontSize: 14,
-                  minHeight: 44,
-                }}
+                className="p-3 rounded-xl border border-black/[0.18] bg-gray-100 text-[#111] cursor-pointer font-semibold w-full text-sm min-h-[44px]"
               >
                 + Add another tip
               </button>
@@ -551,25 +480,7 @@ function DraftModal({
           </div>
 
           <div>
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "12px 14px",
-                borderRadius: 12,
-                border: "1px solid rgba(0,0,0,0.18)",
-                background: "#e8e8e8",
-                cursor: "pointer",
-                fontWeight: 600,
-                userSelect: "none",
-                color: "#111",
-                fontSize: 14,
-                width: "100%",
-                boxSizing: "border-box",
-                minHeight: 44,
-              }}
-            >
+            <label className="flex items-center justify-center px-3.5 py-3 rounded-xl border border-black/[0.18] bg-[#e8e8e8] cursor-pointer font-semibold select-none text-[#111] text-sm w-full box-border min-h-[44px]">
               📷 Add pictures ({draft.images.length}/5)
               <input
                 type="file"
@@ -580,50 +491,23 @@ function DraftModal({
                   const combined = [...draft.images, ...newImages].slice(-5);
                   setDraft({ ...draft, images: combined });
                 }}
-                style={{ display: "none" }}
+                className="hidden"
               />
             </label>
 
             {draft.images.length > 0 && (
-              <div style={{ display: "flex", gap: 8, marginTop: 10, overflow: "hidden" }}>
+              <div className="flex gap-2 mt-2.5 overflow-hidden">
                 {draft.images.map((file, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      position: "relative",
-                      width: 80,
-                      height: 80,
-                      borderRadius: 8,
-                      overflow: "hidden",
-                      flexShrink: 0,
-                    }}
-                  >
+                  <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0">
                     <img
                       src={URL.createObjectURL(file)}
                       alt={`preview-${idx}`}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      className="w-full h-full object-cover"
                     />
                     <button
                       onClick={() => setDraft({ ...draft, images: draft.images.filter((_, i) => i !== idx) })}
                       title="Remove image"
-                      style={{
-                        position: "absolute",
-                        top: 2,
-                        right: 2,
-                        width: 20,
-                        height: 20,
-                        borderRadius: "50%",
-                        background: "rgba(0,0,0,0.6)",
-                        color: "white",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 12,
-                        fontWeight: "bold",
-                      }}
+                      className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white border-none cursor-pointer p-0 flex items-center justify-center text-xs font-bold"
                     >
                       ✕
                     </button>
@@ -636,13 +520,7 @@ function DraftModal({
           <select
             value={draft.category}
             onChange={(e) => setDraft({ ...draft, category: e.target.value as PinCategory })}
-            style={{
-              padding: "12px 14px",
-              borderRadius: 12,
-              border: "1px solid rgba(0,0,0,0.18)",
-              minHeight: 44,
-              fontSize: 16,
-            }}
+            className={draftInputClass}
           >
             {CATEGORIES.map((c) => (
               <option key={c.value} value={c.value}>
@@ -651,25 +529,18 @@ function DraftModal({
             ))}
           </select>
 
-          <div style={{ fontSize: 12, opacity: 0.75 }}>
+          <div className="text-xs opacity-75">
             Location: {draft.lat.toFixed(5)}, {draft.lng.toFixed(5)}
           </div>
 
           <button
             onClick={onSubmit}
             disabled={!draft.title.trim()}
-            style={{
-              marginTop: 6,
-              padding: "12px 16px",
-              borderRadius: 12,
-              border: "none",
-              cursor: draft.title.trim() ? "pointer" : "not-allowed",
-              background: draft.title.trim() ? "#111" : "rgba(0,0,0,0.25)",
-              color: "white",
-              fontWeight: 700,
-              minHeight: 44,
-              fontSize: 16,
-            }}
+            className={`mt-1.5 px-4 py-3 rounded-xl border-none text-white font-bold min-h-[44px] text-base ${
+              draft.title.trim()
+                ? "cursor-pointer bg-[#111]"
+                : "cursor-not-allowed bg-black/25"
+            }`}
           >
             Create pin
           </button>
@@ -691,85 +562,31 @@ function TipsViewer({
   return (
     <div
       onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 10000,
-        padding: 16,
-      }}
+      className="fixed inset-0 flex items-center justify-center z-[10000] p-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "#fff9e6",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.6)",
-          borderRadius: 4,
-          padding: 20,
-          maxWidth: isMobile ? "85vw" : 380,
-          width: "100%",
-          position: "relative",
-          transform: "rotate(-2deg)",
-          fontFamily: "'Segoe UI', Arial, sans-serif",
-          color: "#333",
-        }}
+        className={`bg-[#fff9e6] shadow-[0_10px_40px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.6)] rounded p-5 w-full relative -rotate-2 font-['Segoe_UI',Arial,sans-serif] text-[#333] ${
+          isMobile ? "max-w-[85vw]" : "max-w-[380px]"
+        }`}
       >
         <button
           onClick={onClose}
           aria-label="Close"
-          style={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-            border: "none",
-            background: "transparent",
-            fontSize: 20,
-            cursor: "pointer",
-            padding: "4px 8px",
-            color: "#999",
-            fontWeight: "bold",
-          }}
+          className="absolute top-2 right-2 border-none bg-transparent text-xl cursor-pointer px-2 py-1 text-[#999] font-bold"
         >
           ✕
         </button>
 
-        <div
-          style={{
-            fontWeight: 700,
-            fontSize: 16,
-            marginBottom: 14,
-            paddingRight: 24,
-            color: "#222",
-          }}
-        >
+        <div className="font-bold text-base mb-3.5 pr-6 text-[#222]">
           💡 Tips
         </div>
 
-        <ul
-          style={{
-            listStyle: "none",
-            padding: 0,
-            margin: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: 10,
-          }}
-        >
+        <ul className="list-none p-0 m-0 flex flex-col gap-2.5">
           {tips.map((tip, idx) => (
-            <li
-              key={idx}
-              style={{
-                display: "flex",
-                gap: 10,
-                fontSize: 13,
-                lineHeight: 1.5,
-                color: "#333",
-              }}
-            >
-              <span style={{ fontWeight: "bold", flexShrink: 0 }}>•</span>
-              <span style={{ wordBreak: "break-word" }}>{tip}</span>
+            <li key={idx} className="flex gap-2.5 text-[13px] leading-normal text-[#333]">
+              <span className="font-bold shrink-0">•</span>
+              <span className="break-words">{tip}</span>
             </li>
           ))}
         </ul>
@@ -788,63 +605,29 @@ function DeleteConfirm({
   return (
     <div
       onClick={onCancel}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.35)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-        zIndex: 9999,
-      }}
+      className="fixed inset-0 bg-black/35 flex items-center justify-center p-4 z-[9999]"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "min(400px, 100%)",
-          background: "white",
-          borderRadius: 16,
-          padding: 24,
-          boxShadow: "0 18px 48px rgba(0,0,0,0.22)",
-          color: "#111",
-          textAlign: "center",
-        }}
+        className="w-[min(400px,100%)] bg-white rounded-2xl p-6 shadow-[0_18px_48px_rgba(0,0,0,0.22)] text-[#111] text-center"
       >
-        <div style={{ fontSize: 32, marginBottom: 12 }}>🗑️</div>
-        <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 8, lineHeight: 1.4 }}>
+        <div className="text-[32px] mb-3">🗑️</div>
+        <div className="font-extrabold text-base mb-2 leading-snug">
           Are you sure you want to delete your pin? 😢
         </div>
-        <div style={{ fontSize: 14, opacity: 0.85, marginBottom: 24 }}>
+        <div className="text-sm opacity-85 mb-6">
           It looked like a great place!
         </div>
-        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+        <div className="flex gap-2.5 justify-center">
           <button
             onClick={onCancel}
-            style={{
-              padding: "10px 16px",
-              borderRadius: 10,
-              border: "1px solid rgba(0,0,0,0.18)",
-              background: "white",
-              color: "#111",
-              cursor: "pointer",
-              fontWeight: 800,
-            }}
+            className="px-4 py-2.5 rounded-[10px] border border-black/[0.18] bg-white text-[#111] cursor-pointer font-extrabold"
           >
             No
           </button>
           <button
             onClick={onConfirm}
-            style={{
-              padding: "10px 16px",
-              borderRadius: 10,
-              border: "none",
-              background: "#dc2626",
-        
-              color: "white",
-              cursor: "pointer",
-              fontWeight: 800,
-            }}
+            className="px-4 py-2.5 rounded-[10px] border-none bg-red-600 text-white cursor-pointer font-extrabold"
           >
             Yes, delete
           </button>
