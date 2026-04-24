@@ -15,6 +15,11 @@ interface Suggestion {
   center: [number, number];
 }
 
+// Shared class for the top-left avatar / top-right sign-out round buttons.
+// Hover/touch brightness swap is handled by Tailwind's hover:/active: variants.
+const topRoundBtnClass =
+  "absolute top-5 w-11 h-11 rounded-full border-none bg-white/25 hover:bg-white/[0.35] active:bg-white/[0.35] cursor-pointer flex items-center justify-center backdrop-blur-md transition-colors";
+
 export function InitialPage({ onGoToMap }: InitialPageProps) {
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [itineraryModalOpen, setItineraryModalOpen] = useState(false);
@@ -113,99 +118,26 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
   }
 
   return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100dvh",
-        background: "linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-        boxSizing: "border-box",
-        color: "white",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        overflow: "hidden",
-      }}
-    >
+    <div className="w-screen h-[100dvh] bg-gradient-to-br from-[#ff8c00] to-[#ff6b00] flex flex-col items-center justify-center p-5 box-border text-white font-sans overflow-hidden">
       {/* Logo / Icon */}
-      <div
-        style={{
-          width: "80px",
-          height: "80px",
-          background: "white",
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "48px",
-          marginBottom: "32px",
-          boxShadow: "0 8px 24px rgba(0, 0, 0, 0.2)",
-        }}
-      >
+      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-[48px] mb-8 shadow-[0_8px_24px_rgba(0,0,0,0.2)]">
         🧭
       </div>
 
       {/* Title */}
-      <h1
-        style={{
-          fontSize: "36px",
-          fontWeight: "bold",
-          margin: "0 0 12px 0",
-          textAlign: "center",
-        }}
-      >
+      <h1 className="text-4xl font-bold m-0 mb-3 text-center">
         travelBuddy
       </h1>
 
       {/* Subtitle */}
-      <p
-        style={{
-          fontSize: "16px",
-          fontWeight: "400",
-          margin: "0 0 48px 0",
-          textAlign: "center",
-          opacity: 0.95,
-          maxWidth: "280px",
-        }}
-      >
+      <p className="text-base font-normal m-0 mb-12 text-center opacity-95 max-w-[280px]">
         Discover amazing places and create unforgettable memories
       </p>
 
       {/* Profile Button (Top Left) */}
       <button
         onClick={() => setProfileOpen(true)}
-        style={{
-          position: "absolute",
-          top: "20px",
-          left: "20px",
-          width: "44px",
-          height: "44px",
-          borderRadius: "50%",
-          border: "none",
-          background: "rgba(255, 255, 255, 0.25)",
-          cursor: "pointer",
-          overflow: "hidden",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 0,
-          transition: "background 0.2s",
-          backdropFilter: "blur(10px)",
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = "rgba(255, 255, 255, 0.35)";
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = "rgba(255, 255, 255, 0.25)";
-        }}
-        onTouchStart={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = "rgba(255, 255, 255, 0.35)";
-        }}
-        onTouchEnd={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = "rgba(255, 255, 255, 0.25)";
-        }}
+        className={`${topRoundBtnClass} left-5 p-0 overflow-hidden`}
         aria-label="Open profile"
         title="Profile"
       >
@@ -213,118 +145,37 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
           <img
             src={avatarUrl}
             alt="avatar"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            className="w-full h-full object-cover"
           />
         ) : (
-          <span style={{ fontSize: 20, color: "white" }}>🙂</span>
+          <span className="text-xl text-white">🙂</span>
         )}
       </button>
 
       {/* Sign Out Button (Top Right) */}
       <button
         onClick={() => setShowSignOutConfirm(true)}
-        style={{
-          position: "absolute",
-          top: "20px",
-          right: "20px",
-          width: "44px",
-          height: "44px",
-          borderRadius: "50%",
-          border: "none",
-          background: "rgba(255, 255, 255, 0.25)",
-          color: "white",
-          cursor: "pointer",
-          fontSize: "20px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transition: "background 0.2s",
-          backdropFilter: "blur(10px)",
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = "rgba(255, 255, 255, 0.35)";
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = "rgba(255, 255, 255, 0.25)";
-        }}
+        className={`${topRoundBtnClass} right-5 text-white text-xl`}
         title="Sign out"
       >
         👋
       </button>
 
       {/* Buttons Container */}
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "380px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-        }}
-      >
+      <div className="w-full max-w-[380px] flex flex-col gap-3">
         {/* Button 1: Where Next? - Transforms into search bar */}
         {!searchActive ? (
           <button
             onClick={() => setSearchActive(true)}
-            style={{
-              width: "100%",
-              padding: "18px 20px",
-              fontSize: "18px",
-              fontWeight: "600",
-              border: "none",
-              borderRadius: "16px",
-              background: "white",
-              color: "#ff8c00",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "12px",
-              transition: "transform 0.2s, box-shadow 0.2s",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            }}
-            onMouseDown={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.98)";
-            }}
-            onMouseUp={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-            }}
-            onTouchStart={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.98)";
-            }}
-            onTouchEnd={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-            }}
+            className="w-full px-5 py-[18px] text-lg font-semibold border-none rounded-2xl bg-white text-[#ff8c00] cursor-pointer flex items-center justify-center gap-3 transition-transform active:scale-[0.98] shadow-[0_4px_12px_rgba(0,0,0,0.15)]"
           >
             <span>🌍</span>
             <span>Where next?</span>
           </button>
         ) : (
-          <div
-            ref={searchContainerRef}
-            style={{
-              width: "100%",
-              position: "relative",
-            }}
-          >
-            <div
-              style={{
-                width: "100%",
-                display: "flex",
-                gap: "12px",
-                alignItems: "center",
-                justifyContent: "space-between",
-                background: "white",
-                borderRadius: "16px",
-                padding: "18px 20px",
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-                color: "#111",
-                lineHeight: "1",
-                minHeight: "56px",
-                boxSizing: "border-box",
-              }}
-            >
-              <span style={{ fontSize: "18px", flexShrink: 0, display: "flex", alignItems: "center" }}>🌍</span>
+          <div ref={searchContainerRef} className="w-full relative">
+            <div className="w-full flex gap-3 items-center justify-between bg-white rounded-2xl px-5 py-[18px] shadow-[0_4px_12px_rgba(0,0,0,0.15)] text-[#111] leading-none min-h-[56px] box-border">
+              <span className="text-lg shrink-0 flex items-center">🌍</span>
               <input
                 autoFocus
                 type="text"
@@ -342,21 +193,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
                   }
                 }}
                 placeholder="Search location..."
-                style={{
-                  flex: 1,
-                  border: "none",
-                  fontSize: "16px",
-                  outline: "none",
-                  fontFamily: "inherit",
-                  color: "#111",
-                  background: "transparent",
-                  height: "auto",
-                  margin: "0",
-                  padding: "0",
-                  lineHeight: "1",
-                  WebkitAppearance: "none",
-                  appearance: "none",
-                }}
+                className="flex-1 border-none text-base outline-none font-[inherit] text-[#111] bg-transparent h-auto m-0 p-0 leading-none appearance-none"
               />
               <button
                 onClick={() => {
@@ -365,21 +202,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
                   setSuggestions([]);
                   setShowSuggestions(false);
                 }}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  cursor: "pointer",
-                  fontSize: "16px",
-                  padding: "0 4px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#111",
-                  flexShrink: 0,
-                  height: "auto",
-                  minWidth: "24px",
-                  lineHeight: "1",
-                }}
+                className="border-none bg-transparent cursor-pointer text-base px-1 flex items-center justify-center text-[#111] shrink-0 h-auto min-w-[24px] leading-none"
                 title="Cancel"
               >
                 ✕
@@ -388,43 +211,12 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
 
             {/* Suggestions Dropdown - Scrollable */}
             {showSuggestions && suggestions.length > 0 && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "calc(100% + 8px)",
-                  left: 0,
-                  right: 0,
-                  background: "white",
-                  borderRadius: "12px",
-                  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.2)",
-                  maxHeight: "220px",
-                  overflowY: "scroll",
-                  overflow: "hidden",
-                  zIndex: 1000,
-                  WebkitOverflowScrolling: "touch",
-                }}
-              >
+              <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.2)] max-h-[220px] overflow-hidden z-[1000]">
                 {suggestions.map((suggestion, idx) => (
                   <div
                     key={suggestion.id}
                     onClick={() => handleSearchSubmit(suggestion)}
-                    style={{
-                      padding: "14px 16px",
-                      borderBottom: idx < suggestions.length - 1 ? "1px solid rgba(0, 0, 0, 0.08)" : "none",
-                      cursor: "pointer",
-                      transition: "background 0.2s",
-                      color: "#111",
-                      fontSize: "15px",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.background = "rgba(255, 140, 0, 0.08)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.background = "transparent";
-                    }}
+                    className={`px-4 py-3.5 cursor-pointer transition-colors text-[#111] text-[15px] whitespace-nowrap overflow-hidden text-ellipsis hover:bg-[#ff8c00]/[0.08] ${idx < suggestions.length - 1 ? "border-b border-black/[0.08]" : ""}`}
                   >
                     📍 {suggestion.place_name}
                   </div>
@@ -445,35 +237,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
             }
             setItineraryModalOpen(true);
           }}
-          style={{
-            width: "100%",
-            padding: "18px 20px",
-            fontSize: "18px",
-            fontWeight: "600",
-            border: "none",
-            borderRadius: "16px",
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            color: "white",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "12px",
-            transition: "transform 0.2s, box-shadow 0.2s",
-            boxShadow: "0 6px 16px rgba(102, 126, 234, 0.4)",
-          }}
-          onMouseDown={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.98)";
-          }}
-          onMouseUp={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-          }}
-          onTouchStart={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.98)";
-          }}
-          onTouchEnd={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-          }}
+          className="w-full px-5 py-[18px] text-lg font-semibold border-none rounded-2xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white cursor-pointer flex items-center justify-center gap-3 transition-transform active:scale-[0.98] shadow-[0_6px_16px_rgba(102,126,234,0.4)]"
         >
           <span>✨</span>
           <span>Create your custom travel itinerary!</span>
@@ -483,64 +247,27 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
       {/* Sign Out Confirmation Modal */}
       {showSignOutConfirm && (
         <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10000,
-          }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000]"
           onClick={() => setShowSignOutConfirm(false)}
         >
           <div
-            style={{
-              background: "white",
-              borderRadius: "20px",
-              padding: "24px",
-              maxWidth: "300px",
-              boxShadow: "0 12px 48px rgba(0, 0, 0, 0.3)",
-            }}
+            className="bg-white rounded-[20px] p-6 max-w-[300px] shadow-[0_12px_48px_rgba(0,0,0,0.3)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: "0 0 12px 0", fontSize: "18px", color: "#111" }}>
-              Sign out?
-            </h3>
-            <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#666", lineHeight: "1.5" }}>
+            <h3 className="m-0 mb-3 text-lg text-[#111]">Sign out?</h3>
+            <p className="m-0 mb-6 text-sm text-[#666] leading-normal">
               Are you sure you want to sign out? You'll need to sign in again to access your profile.
             </p>
-            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+            <div className="flex gap-2.5 justify-end">
               <button
                 onClick={() => setShowSignOutConfirm(false)}
-                style={{
-                  padding: "10px 20px",
-                  borderRadius: "10px",
-                  border: "1px solid rgba(0, 0, 0, 0.18)",
-                  background: "white",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "#111",
-                }}
+                className="px-5 py-2.5 rounded-[10px] border border-black/[0.18] bg-white cursor-pointer text-sm font-semibold text-[#111]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSignOut}
-                style={{
-                  padding: "10px 20px",
-                  borderRadius: "10px",
-                  border: "none",
-                  background: "#ff4444",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "white",
-                }}
+                className="px-5 py-2.5 rounded-[10px] border-none bg-[#ff4444] cursor-pointer text-sm font-semibold text-white"
               >
                 Sign out
               </button>
@@ -584,82 +311,23 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
       {/* Coming Soon Popup */}
       {showComingSoon && (
         <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "20px",
-            boxSizing: "border-box",
-          }}
+          className="fixed inset-0 w-full h-full bg-black/50 flex items-center justify-center z-[1000] p-5 box-border"
           onClick={() => setShowComingSoon(false)}
         >
           <div
-            style={{
-              background: "white",
-              borderRadius: "20px",
-              padding: "32px 24px",
-              maxWidth: "320px",
-              textAlign: "center",
-              boxShadow: "0 12px 40px rgba(0, 0, 0, 0.3)",
-            }}
+            className="bg-white rounded-[20px] px-6 py-8 max-w-[320px] text-center shadow-[0_12px_40px_rgba(0,0,0,0.3)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              style={{
-                fontSize: "48px",
-                marginBottom: "16px",
-              }}
-            >
-              😉
-            </div>
-            <h2
-              style={{
-                fontSize: "24px",
-                fontWeight: "bold",
-                margin: "0 0 12px 0",
-                color: "#333",
-              }}
-            >
+            <div className="text-[48px] mb-4">😉</div>
+            <h2 className="text-2xl font-bold m-0 mb-3 text-[#333]">
               Coming Soon!
             </h2>
-            <p
-              style={{
-                fontSize: "16px",
-                color: "#666",
-                margin: "0 0 24px 0",
-                lineHeight: "1.5",
-              }}
-            >
+            <p className="text-base text-[#666] m-0 mb-6 leading-normal">
               Be patient! This feature is coming soon...
             </p>
             <button
               onClick={() => setShowComingSoon(false)}
-              style={{
-                width: "100%",
-                padding: "12px 20px",
-                fontSize: "16px",
-                fontWeight: "600",
-                border: "none",
-                borderRadius: "12px",
-                background: "#ff8c00",
-        
-                color: "white",
-                cursor: "pointer",
-                transition: "background 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = "#ff7700";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = "#ff8c00";
-              }}
+              className="w-full px-5 py-3 text-base font-semibold border-none rounded-xl bg-[#ff8c00] hover:bg-[#ff7700] text-white cursor-pointer transition-colors"
             >
               Got it! 🚀
             </button>
