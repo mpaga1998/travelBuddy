@@ -86,4 +86,42 @@ Can happen in parallel with earlier phases, but must be decided before fundraisi
 - [ ] **7.1** Pick a niche and commit. Candidates: backpacker/hostel 18-35 (half-built already), solo-travel safety + community, long-term nomad routes. Rewrite landing page and empty states around it.
 - [ ] **7.2** Reshape onboarding for the wedge. E.g. backpacker-focused signup asks "what region next?" and seeds map + suggests people to follow.
 - [ ] **7.3** Seed content in chosen wedge. Manually add 100-300 high-quality pins in target region(s) before launch. A community map with zero pins is dead on arrival.
-- [ ] **7.4** Unit economics doc. Avg OpenAI cos
+- [ ] **7.4** Unit economics doc. Avg OpenAI cost/active user/month. Free tier cap. Where paid starts. One page for the investor deck.
+
+## Phase 8 — Launch prep
+
+- [ ] **8.1** Deploy backend. Railway / Fly / Render for Express. Vercel for frontend. Env vars via hosting dashboard, never in git.
+- [ ] **8.2** Fix CORS. Replace hardcoded `localhost:5173` / ngrok URL with `process.env.ALLOWED_ORIGINS` (comma-separated).
+- [ ] **8.3** Real README. Setup, env vars, local run, tests, deployment. New engineer productive in 30 min.
+- [ ] **8.4** Custom domain + HTTPS.
+- [ ] **8.5** Legal pages. Privacy policy, ToS, cookie notice. Termly or iubenda generates acceptable boilerplate.
+- [ ] **8.6** App store prep (if mobile). PWA install prompts, or wrap in Expo / React Native shell.
+
+## Phase 9 — Polish
+
+- [ ] **9.1** Design system. shadcn/ui (free, good) or similar. Replace inline-styled buttons/inputs/modals.
+- [ ] **9.2** Accessibility pass. ARIA labels on icon buttons, keyboard nav in modals, visible focus states, contrast audit.
+- [ ] **9.3** Empty states everywhere. "You haven't X yet — here's how to start" with CTAs.
+- [ ] **9.4** Performance pass. Lighthouse run, fix obvious wins (lazy-load itinerary modal, memoize marker list, etc.).
+
+---
+
+## Rough effort estimates
+
+| Phase | Effort | Blocking for launch? |
+|-------|--------|----------------------|
+| 1. Security | ~1 week | **Complete ✅** |
+| 2. Refactor | ~1 week | No, but everything later gets slower without it |
+| 3. Scale | ~3 days | Only if you expect >1k pins at launch |
+| 4. Moderation | ~1 week | Yes for public launch |
+| 5. Community | 2-3 weeks | Yes if pitching "community app" |
+| 6. Observability + testing | ~1 week | Yes before paid users |
+| 7. Product wedge | Ongoing | Yes before fundraising |
+| 8. Launch prep | ~3 days | Yes obviously |
+| 9. Polish | Ongoing | No |
+
+**Non-negotiable before any real user:** ~~Phase 1~~ (done) + Phase 4.
+
+---
+
+*Last updated: 2026-04-23 (Phase 2.3 / 2.4 / 2.6 shipped — ItineraryModal + profileModal split + feature error boundaries; 2.5 Tailwind migration deferred pending npm install on Windows)*

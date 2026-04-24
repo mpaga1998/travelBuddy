@@ -105,5 +105,5 @@ export function MapCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />;
+  return <div ref={containerRef} className="absolute inset-0" />;
 }
