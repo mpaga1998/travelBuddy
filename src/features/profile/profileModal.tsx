@@ -14,6 +14,19 @@ type Props = {
 type Section = 'menu' | 'profile' | 'saved' | 'itineraries';
 
 /**
+ * Supabase can return `dob` as `'YYYY-MM-DD'` (DATE column) or as a full ISO
+ * timestamp if the column was accidentally created as timestamptz. HTML
+ * `<input type="date">` silently rejects any value that is not strictly
+ * `YYYY-MM-DD`, which manifests as the DOB field being blank on reopen even
+ * though the save succeeded. Slice defensively so both column types display.
+ */
+function normalizeDobForDateInput(raw: string | null | undefined): string {
+  if (!raw) return '';
+  // Both 'YYYY-MM-DD' and 'YYYY-MM-DDTHH:mm:ss±HH:mm' have the date in [0, 10).
+  return raw.slice(0, 10);
+}
+
+/**
  * Profile modal shell.
  *
  * This component used to be ~1,400 lines. In Phase 2.4 it was split into three
@@ -101,7 +114,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
             initialLastName={profile.last_name ?? ''}
             initialUsername={profile.username ?? ''}
             initialCountryCode={profile.country_code ?? ''}
-            initialDob={profile.dob ?? ''}
+            initialDob={normalizeDobForDateInput(profile.dob)}
             onAvatarChange={(url) =>
               setProfile((p) => (p ? { ...p, avatar_url: url } : p))
             }
