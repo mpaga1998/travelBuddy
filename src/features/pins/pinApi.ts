@@ -12,6 +12,7 @@ type DbPinRow = {
   created_at: string;
   created_by: string; // Add this field
   bookmark_count: number;
+  report_count: number;
   tips?: string[],
   image_urls?: string[],
   profiles: {
@@ -71,7 +72,7 @@ export type PinFilters = {
 // so pins with no profile are still returned — defensive).
 const SELECT_DEFAULT = `
   id, title, description, category, lat, lng, created_at, created_by, bookmark_count,
-  tips, image_urls,
+  report_count, tips, image_urls,
   profiles:created_by (id, username, role, hostel_name, dob),
   reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
 `;
@@ -80,7 +81,7 @@ const SELECT_DEFAULT = `
 // profiles.role filter to exclude parent rows, not just the embedded result.
 const SELECT_INNER = `
   id, title, description, category, lat, lng, created_at, created_by, bookmark_count,
-  tips, image_urls,
+  report_count, tips, image_urls,
   profiles:created_by!inner (id, username, role, hostel_name, dob),
   reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
 `;
@@ -142,6 +143,7 @@ export async function listPins(opts: PinFilters = {}): Promise<{ pins: Pin[]; li
       likesCount: counts?.likes_count ?? 0,
       dislikesCount: counts?.dislikes_count ?? 0,
       bookmarkCount: row.bookmark_count ?? 0,
+      reportCount: row.report_count ?? 0,
     };
   });
 

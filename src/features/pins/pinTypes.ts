@@ -20,6 +20,7 @@ export type Pin = {
   likesCount: number;
   dislikesCount: number;
   bookmarkCount: number;
+  reportCount: number;
   tips?: string[];
   imageUrls?: string[];
   createdAt: string;
