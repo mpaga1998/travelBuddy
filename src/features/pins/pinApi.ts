@@ -328,3 +328,25 @@ export async function toggleBookmark(pinId: string): Promise<boolean> {
     return true; // Now bookmarked
   }
 }
+
+/**
+ * Submit a report against a pin. The unique constraint on (pin_id, reporter_id)
+ * will cause Supabase to return a 23505 error if the user has already reported
+ * this pin — callers should surface that as "already reported".
+ *
+ * `reason` may be an empty string — the DB column is NOT NULL but there is no
+ * non-empty CHECK constraint, so an empty string is valid.
+ */
+export async function reportPin(pinId: string, reason: string): Promise<void> {
+  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  if (userErr) throw userErr;
+
+  const user = userData.user;
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("pin_reports")
+    .insert({ pin_id: pinId, reporter_id: user.id, reason });
+
+  if (error) throw error;
+}
