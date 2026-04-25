@@ -5,7 +5,7 @@ Do phases top-to-bottom; each assumes the previous is done.
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Progress:** 14 / 50 steps complete — **Phase 1 ✅ · Phase 2 ✅**
+**Progress:** 17 / 50 steps complete — **Phase 1 ✅ · Phase 2 ✅**
 
 ---
 
@@ -43,9 +43,9 @@ So the app doesn't die at 10k pins.
 
 - [x] **3.1** Bounding-box pin queries. `listPins()` accepts viewport bounds; fetch only pins in view plus buffer. Debounced re-fetch on pan/zoom end.
 - [x] **3.2** Server-side filtering. Move category / age / creator-type filters to SQL instead of fetching everything and filtering client-side.
-- [ ] **3.3** Replace `alert()` with toasts. Install `sonner` or `react-hot-toast`. Every `alert(...)` and `confirm(...)` becomes a toast/modal.
-- [ ] **3.4** Add loading skeletons for map, profile, itinerary views. Replace "Loading…" text.
-- [ ] **3.5** Image handling. Enforce ~5MB max upload, use Supabase image transformation URLs for thumbnails, add client-side compression before upload.
+- [x] **3.3** Replaced native dialogs with `sonner` toasts + custom `ConfirmDialog` / `TitlePromptDialog` primitives (promise-based via Context + Provider + resolverRef). Mounted `<Toaster>` in `App.tsx` (rich colors, top-center, 4 s). Migration covered all `alert()`/`confirm()`/`prompt()` call sites in `ItineraryModal`, `ProfileInfoTab` (sign-out), `SavedItinerariesTab` (delete + clipboard). `grep -rn 'alert(\|confirm(\|prompt(' src/` returns zero post-migration. Pinned `sonner@^1.5.0` (2.x doesn't exist on npm).
+- [x] **3.4** Loading skeletons. New `src/components/Skeleton.tsx` primitive — `animate-pulse` `bg-gray-200` block with `role="status"` + `aria-label="Loading"`. Replaced spinners/text in three places: `profileModal.LoadingScreen` (avatar circle + 6 form-field skeletons matching `ProfileInfoTab` shape), `BookmarkedPinsTab` (4-card grid on mobile / 6-card on desktop with image-area + 2 text-line skeletons each), `SavedItinerariesTab` (3 list-row skeletons matching the real card layout). The shape mirrors the post-load DOM so layout doesn't shift on data arrival.
+- [x] **3.5** Image handling. Two new helpers: `src/lib/imageCompress.ts` — canvas-based downscale (1920 px longest edge default, 1024 px for avatars) + JPEG re-encode at 0.85 quality, short-circuits on GIF/SVG and on already-small images (≤max-dim AND ≤2 MB); plus `validateImageFile(file)` returning an error string or null (5 MB cap, image MIME check). `src/lib/imageTransforms.ts` — rewrites Supabase Storage URLs from `/storage/v1/object/public/` to `/storage/v1/render/image/public/` with `?width=&height=&resize=&quality=` params, env-gated by `VITE_SUPABASE_IMG_TRANSFORMS` so the free tier still works (falls back to original URL). Five presets: `imgAvatar` 220 sq, `imgThumbnail` 320 sq, `imgPopup` 480x240, `imgDetail` 800x600, `imgLightbox` 1600x1200 (contain). Wired into all upload sites (avatar in `ProfileInfoTab`, pin photos in `MapView`) — invalid files now toast.error per file and the picked-file input is reset so re-picking the same file fires `onChange`. Wired into all render sites (`ProfileInfoTab` avatar, `BookmarkedPinsTab` grid + detail, `PinPopup` featured, `MapView` lightbox) with `loading="lazy"` + `decoding="async"`.
 
 ## Phase 4 — Moderation
 
@@ -124,4 +124,4 @@ Can happen in parallel with earlier phases, but must be decided before fundraisi
 
 ---
 
-*Last updated: 2026-04-23 (Phase 2.3 / 2.4 / 2.6 shipped — ItineraryModal + profileModal split + feature error boundaries; 2.5 Tailwind migration deferred pending npm install on Windows)*
+*Last updated: 2026-04-25 (Phase 3.3 / 3.4 / 3.5 shipped — toasts + skeletons + image compression / transforms.)*
