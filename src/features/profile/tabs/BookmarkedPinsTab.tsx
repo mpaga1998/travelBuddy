@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getMapsUrl } from '../../../lib/mapsUtils';
 import { getMyBookmarkedPins } from '../profileApi';
+import { Skeleton } from '../../../components/Skeleton';
+import { imgThumbnail, imgDetail } from '../../../lib/imageTransforms';
 
 export interface BookmarkedPinsTabProps {
   isMobile: boolean;
@@ -45,8 +47,10 @@ export function BookmarkedPinsTab({ isMobile }: BookmarkedPinsTabProps) {
         {selectedPin.images && selectedPin.images.length > 0 && (
           <div className="w-full h-[200px] rounded-xl overflow-hidden mb-4 bg-gray-100">
             <img
-              src={selectedPin.images[0]}
+              src={imgDetail(selectedPin.images[0])}
               alt={selectedPin.title}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover"
             />
           </div>
@@ -119,10 +123,23 @@ export function BookmarkedPinsTab({ isMobile }: BookmarkedPinsTabProps) {
   }
 
   if (loadingBookmarks) {
+    const placeholders = Array.from({ length: isMobile ? 4 : 6 });
     return (
-      <div className="flex-1 overflow-auto p-4 flex flex-col items-center justify-center gap-4">
-        <div className="w-10 h-10 border-[3px] border-gray-200 border-t-blue-600 rounded-full animate-spin" />
-        <div className="text-[13px] text-slate-500 font-medium">Loading saved pins…</div>
+      <div className="flex-1 overflow-auto p-4">
+        <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-3 gap-4'}`}>
+          {placeholders.map((_, i) => (
+            <div
+              key={i}
+              className={`flex flex-col rounded-xl border border-black/[0.08] overflow-hidden bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] ${isMobile ? 'min-h-[140px]' : 'min-h-[160px]'}`}
+            >
+              <Skeleton className="flex-1 min-h-[80px] rounded-none" />
+              <div className={`${isMobile ? 'p-2.5' : 'p-3'} flex flex-col gap-1.5`}>
+                <Skeleton className="h-3.5 w-3/4 rounded" />
+                <Skeleton className="h-3 w-1/3 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -157,17 +174,16 @@ export function BookmarkedPinsTab({ isMobile }: BookmarkedPinsTabProps) {
             >
               {pin.images && pin.images.length > 0 ? (
                 <img
-                  src={pin.images[0]}
+                  src={imgThumbnail(pin.images[0])}
                   alt={pin.title}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     console.error(
                       `❌ Failed to load image for pin "${pin.title}": ${pin.images[0]}`,
                     );
                     e.currentTarget.style.display = 'none';
-                  }}
-                  onLoad={() => {
-                    console.log(`✅ Loaded image for pin "${pin.title}": ${pin.images[0]}`);
                   }}
                 />
               ) : (
