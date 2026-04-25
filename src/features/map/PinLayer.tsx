@@ -75,6 +75,13 @@ export function PinLayer({
       if (!map.isSourceLoaded(SRC)) return;
 
       const features = map.querySourceFeatures(SRC);
+
+      // Defensive: querySourceFeatures can briefly return [] during cluster
+      // recompute even when isSourceLoaded() is true. Bailing out when there
+      // are no features AND we have pins prevents a one-frame flash where
+      // every marker is removed and re-added next frame.
+      if (features.length === 0 && pinsRef.current.length > 0) return;
+
       const next = new globalThis.Map<string, Marker>();
 
       for (const feat of features) {
@@ -201,8 +208,18 @@ export function PinLayer({
   }, [map]);
 
   // --- Data sync: push pins into the source whenever they change. ---------
+  // Track the last fingerprint so re-renders that produce a *new array with
+  // identical pins* (common after race-fixed reloads) don't re-call setData,
+  // which would force Mapbox to recluster and could briefly flash markers.
+  const lastFingerprintRef = useRef<string>("");
   useEffect(() => {
     if (!map) return;
+    const fingerprint = pins
+      .map((p) => `${p.id}:${p.lat.toFixed(6)},${p.lng.toFixed(6)}`)
+      .join("|");
+    if (fingerprint === lastFingerprintRef.current) return;
+    lastFingerprintRef.current = fingerprint;
+
     const src = map.getSource(SRC) as GeoJSONSource | undefined;
     if (src) src.setData(pinsToFc(pins));
     // Drop cached markers whose pin is gone  prevents stale DOM when a pin is deleted.

@@ -53,7 +53,13 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
   const activeCategoryRef = useRef(activeCategory);
   useEffect(() => { activeCategoryRef.current = activeCategory; }, [activeCategory]);
 
+  // Monotonic counter so older overlapping fetches (e.g. mount-time + map-ready
+  // races, rapid pan/filter changes) can't overwrite newer state. Each call
+  // bumps the counter; the result is dropped if a newer call has started.
+  const reqIdRef = useRef(0);
+
   const reload = useCallback(async (bounds?: PinBounds) => {
+    const reqId = ++reqIdRef.current;
     setLoading(true);
     try {
       const mt = mapTypeRef.current;
@@ -71,10 +77,14 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
       }
 
       const { pins: data, limitReached: lr } = await listPins(filters);
+      // Stale response — a newer reload() has been dispatched. Drop silently
+      // so the newer one's setPins is the last writer.
+      if (reqId !== reqIdRef.current) return;
       setPins(data);
       setLimitReached(lr);
     } finally {
-      setLoading(false);
+      // Only clear loading if we're still the latest request.
+      if (reqId === reqIdRef.current) setLoading(false);
     }
   }, []);
 
@@ -83,12 +93,15 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
   // changes; by the time reload() executes, activeCategoryRef has been synced
   // (React runs effects in declaration order within the same render).
   useEffect(() => {
-    if (mapType === "bookmarked" || !map) {
-      // Bookmarked mode: fetch without bounds so off-screen bookmarks appear.
-      // Also runs before the map is ready (map === null) so the list isn't empty.
+    // Bookmarked mode: fetch without bounds so off-screen bookmarks appear.
+    // For traveler/hostel modes, wait for the map to mount before fetching —
+    // otherwise we kick off an unbounded query that races the bounded one
+    // dispatched milliseconds later when onMapReady fires, causing flicker.
+    if (mapType === "bookmarked") {
       reload();
       return;
     }
+    if (!map) return;
     reload(getBoundsWithBuffer(map) ?? undefined);
   }, [reload, mapType, activeCategory, map]);
 
