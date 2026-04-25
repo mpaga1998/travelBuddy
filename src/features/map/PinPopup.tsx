@@ -3,6 +3,7 @@ import type { Pin } from "../pins/pinTypes";
 import { isBookmarked } from "../pins/pinApi";
 import { categoryEmoji, MOBILE_BREAKPOINT } from "./mapConstants";
 import { getMapsUrl } from "../../lib/mapsUtils";
+import { imgPopup } from "../../lib/imageTransforms";
 
 export type PinPopupProps = {
   pin: Pin;
@@ -100,7 +101,9 @@ export function PinPopup({
           onClick={(e) => { e.stopPropagation(); onShowImages(pin.imageUrls ?? []); }}
         >
           <img
-            src={pin.imageUrls[0]}
+            src={imgPopup(pin.imageUrls[0])}
+            loading="lazy"
+            decoding="async"
             className={`w-full object-cover block ${isMobile ? "h-[120px]" : "h-[140px]"}`}
           />
           {pin.imageUrls.length > 1 && (

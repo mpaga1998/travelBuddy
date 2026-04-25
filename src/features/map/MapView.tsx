@@ -8,6 +8,9 @@ import {
   toggleReaction,
   uploadPinImage,
 } from "../pins/pinApi";
+import { compressImage, validateImageFile } from "../../lib/imageCompress";
+import { imgLightbox } from "../../lib/imageTransforms";
+import { toast } from "sonner";
 
 import { ItineraryModal } from "../itinerary/ItineraryModal";
 import { supabase } from "../../lib/supabaseClient";
@@ -189,7 +192,9 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
 
     const imageUrls: string[] = [];
     for (const file of draft.images) {
-      const url = await uploadPinImage(file);
+      // Client-side downscale before upload — same rationale as avatar.
+      const compressed = await compressImage(file);
+      const url = await uploadPinImage(compressed);
       imageUrls.push(url);
     }
 
@@ -227,7 +232,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       borderRadius: "8px", cursor: "default",
     } as CSSStyleDeclaration);
 
-    const update = () => { img.src = urls[currentIndex]; };
+    const update = () => { img.src = imgLightbox(urls[currentIndex]); };
     update();
     lightbox.appendChild(img);
 
@@ -494,9 +499,20 @@ function DraftModal({
                 accept="image/*"
                 multiple
                 onChange={(e) => {
-                  const newImages = Array.from(e.target.files ?? []);
-                  const combined = [...draft.images, ...newImages].slice(-5);
+                  const picked = Array.from(e.target.files ?? []);
+                  const valid: File[] = [];
+                  for (const f of picked) {
+                    const err = validateImageFile(f);
+                    if (err) {
+                      toast.error(`${f.name}: ${err}`);
+                    } else {
+                      valid.push(f);
+                    }
+                  }
+                  const combined = [...draft.images, ...valid].slice(-5);
                   setDraft({ ...draft, images: combined });
+                  // Reset so picking the same file again still fires onChange.
+                  e.target.value = '';
                 }}
                 className="hidden"
               />

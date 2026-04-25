@@ -11,6 +11,8 @@ import {
 import { Field } from './Field';
 import { inputClass, smallBtn, primaryBtn, dangerBtn } from './profileStyles';
 import { useConfirm } from '../../../components/ConfirmDialog';
+import { compressImage, validateImageFile } from '../../../lib/imageCompress';
+import { imgAvatar } from '../../../lib/imageTransforms';
 
 export interface ProfileInfoTabProps {
   isMobile: boolean;
@@ -115,18 +117,19 @@ export function ProfileInfoTab({
     setErr(null);
     setMsg(null);
 
-    if (!file.type.startsWith('image/')) {
-      setErr('Please select an image file.');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setErr('Image too large (max 5MB).');
+    const validationErr = validateImageFile(file);
+    if (validationErr) {
+      setErr(validationErr);
       return;
     }
 
     setBusyAvatar(true);
     try {
-      const url = await uploadMyAvatar(file);
+      // Downscale + re-encode on the client so we don't ship 5 MB iPhone
+      // photos for an image that will render at 110x110. Falls back to the
+      // original File if compression fails.
+      const compressed = await compressImage(file, { maxDimension: 1024 });
+      const url = await uploadMyAvatar(compressed);
       setAvatar(url);
       onAvatarChange(url);
       setMsg('Avatar updated.');
@@ -167,7 +170,13 @@ export function ProfileInfoTab({
             className={`${isMobile ? 'w-[90px] h-[90px] text-[28px]' : 'w-[110px] h-[110px] text-[34px]'} rounded-full overflow-hidden bg-black/5 flex items-center justify-center font-black border border-black/10`}
           >
             {avatar ? (
-              <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
+              <img
+                src={imgAvatar(avatar)}
+                alt="Avatar"
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover"
+              />
             ) : (
               initials
             )}
