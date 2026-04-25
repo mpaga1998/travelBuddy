@@ -320,8 +320,12 @@ export function PinLayer({
     return () => {
       window.clearTimeout(timer);
     };
+    // Depend only on selectedPin?.id (not the full object) so a re-fetch that
+    // gives us a new Pin reference for the same pin doesn't tear down + rebuild
+    // the popup. The content-refresh effect below handles re-rendering when
+    // selectedPin's contents change (bookmarks, etc).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, selectedPin]);
+  }, [map, selectedPin?.id]);
 
   useEffect(() => {
     if (!popupRootRef.current || !selectedPin) return;

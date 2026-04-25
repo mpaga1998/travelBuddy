@@ -112,8 +112,13 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
 
     let timer: ReturnType<typeof setTimeout> | null = null;
 
-    const onMoveEnd = () => {
+    // Mapbox sets `originalEvent` only on user-initiated moves. Programmatic
+    // moves (e.g. easeTo from PinLayer when opening a popup) leave it undefined
+    // — we skip those because a popup-recentering pan never brings new pins
+    // into view, and a refetch there just churns the marker layer + popup.
+    const onMoveEnd = (e: { originalEvent?: Event }) => {
       if (mapTypeRef.current === "bookmarked") return;
+      if (!e.originalEvent) return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         reload(getBoundsWithBuffer(map) ?? undefined);
