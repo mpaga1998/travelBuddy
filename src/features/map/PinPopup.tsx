@@ -284,7 +284,7 @@ function ReportDialog({
       aria-label="Report pin"
       onClick={onCancel}
       onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999] p-4"
+      className="fixed inset-0 flex items-center justify-center z-[9999] p-4"
     >
       <form
         onClick={(e) => e.stopPropagation()}
