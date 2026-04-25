@@ -61,6 +61,11 @@ export function PinLayer({
   // HTML marker bookkeeping: markers by id (persisted), and those currently in DOM.
   const markersRef = useRef<globalThis.Map<string, Marker>>(new globalThis.Map());
   const markersOnScreenRef = useRef<globalThis.Map<string, Marker>>(new globalThis.Map());
+  // Two-phase removal queue: markers that were missing from the last
+  // querySourceFeatures call. Only actually removed when missing for two
+  // consecutive frames. Smooths out one-frame cluster-recompute jitter that
+  // would otherwise look like flicker as the user pans.
+  const pendingRemoveRef = useRef<Set<string>>(new Set());
 
   const popupRef = useRef<mapboxgl.Popup | null>(null);
   const popupRootRef = useRef<Root | null>(null);
@@ -112,10 +117,22 @@ export function PinLayer({
         if (!markersOnScreenRef.current.has(pinId)) marker.addTo(map);
       }
 
-      // Remove markers no longer on screen (clustered or viewport-culled).
+      // Two-phase removal — a marker only actually leaves the DOM if it was
+      // missing from `next` on the previous frame too. One-frame absences are
+      // almost always cluster-recompute jitter, not real visibility changes,
+      // and removing+re-adding the DOM node on every frame is what produces
+      // the flicker the user sees while panning.
+      const newPending = new Set<string>();
       for (const [id, marker] of markersOnScreenRef.current) {
-        if (!next.has(id)) marker.remove();
+        if (next.has(id)) continue;
+        if (pendingRemoveRef.current.has(id)) {
+          marker.remove(); // missing for 2+ frames → really gone
+        } else {
+          newPending.add(id); // first-frame absence — keep visible
+          next.set(id, marker);
+        }
       }
+      pendingRemoveRef.current = newPending;
       markersOnScreenRef.current = next;
     };
 
@@ -198,6 +215,7 @@ export function PinLayer({
         for (const m of markersOnScreenRef.current.values()) m.remove();
         markersOnScreenRef.current.clear();
         markersRef.current.clear();
+        pendingRemoveRef.current.clear();
         if (map.getLayer(L_CLUSTER_COUNT)) map.removeLayer(L_CLUSTER_COUNT);
         if (map.getLayer(L_CLUSTERS)) map.removeLayer(L_CLUSTERS);
         if (map.getSource(SRC)) map.removeSource(SRC);
@@ -229,6 +247,7 @@ export function PinLayer({
         marker.remove();
         markersRef.current.delete(id);
         markersOnScreenRef.current.delete(id);
+        pendingRemoveRef.current.delete(id);
       }
     }
   }, [map, pins]);
