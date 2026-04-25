@@ -89,11 +89,23 @@ const SELECT_INNER = `
 export async function listPins(opts: PinFilters = {}): Promise<{ pins: Pin[]; limitReached: boolean }> {
   const { bounds, category, creatorType } = opts;
 
+  // Resolve the current user so the author can still see their own hidden pin.
+  // Failures (unauthenticated, network) fall back to filtering hidden pins for everyone.
+  const { data: authData } = await supabase.auth.getUser();
+  const currentUserId = authData?.user?.id ?? null;
+
   let query = supabase
     .from("pins")
     .select(creatorType ? SELECT_INNER : SELECT_DEFAULT)
     .order("created_at", { ascending: false })
     .limit(500);
+
+  // Hidden-pin filter: show pin if it is not hidden, OR if the viewer is the author.
+  if (currentUserId) {
+    query = query.or(`is_hidden.eq.false,created_by.eq.${currentUserId}`);
+  } else {
+    query = query.eq("is_hidden", false);
+  }
 
   if (bounds) {
     query = query
