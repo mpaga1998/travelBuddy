@@ -11,7 +11,6 @@
   },
   "rewrites": [
     {
-      "//": "SPA fallback. Anything that isn't /api/* gets index.html so the client-side router (App.tsx) can handle the path. Without this Vercel returns its own 404 for routes like /admin before our React app ever loads.",
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
