@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import {
   fetchPublicItinerariesByUserId,
   fetchPublicPinsByUserId,
@@ -7,6 +8,8 @@ import {
   type PublicPin,
   type PublicProfile,
 } from './publicProfileApi';
+import { followUser, isFollowing, unfollowUser } from './followApi';
+import { supabase } from '../../lib/supabaseClient';
 import { imgAvatar, imgThumbnail } from '../../lib/imageTransforms';
 import { categoryEmoji } from '../map/mapConstants';
 import type { PinCategory } from '../pins/pinTypes';
@@ -40,6 +43,13 @@ export function PublicProfilePage({ handle, onBack }: PublicProfilePageProps) {
   const [error, setError] = useState<string | null>(null);
   const [openItinerary, setOpenItinerary] = useState<ItineraryDetail>(null);
 
+  // 5.2: viewer identity + follow state. Both nullable until the auth
+  // round-trip completes — `following` stays null while we don't know yet
+  // (button shows a loading state instead of guessing).
+  const [viewerId, setViewerId] = useState<string | null>(null);
+  const [following, setFollowing] = useState<boolean | null>(null);
+  const [followBusy, setFollowBusy] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -52,12 +62,17 @@ export function PublicProfilePage({ handle, onBack }: PublicProfilePageProps) {
       setProfile(profileData);
 
       // Pins + itineraries can fetch in parallel — they're both anon reads.
-      const [pinsData, itinData] = await Promise.all([
+      // The follow check needs the profile id, so it joins this batch too.
+      const [pinsData, itinData, viewerData, followingData] = await Promise.all([
         fetchPublicPinsByUserId(profileData.id),
         fetchPublicItinerariesByUserId(profileData.id),
+        supabase.auth.getUser(),
+        isFollowing(profileData.id),
       ]);
       setPins(pinsData);
       setItineraries(itinData);
+      setViewerId(viewerData.data.user?.id ?? null);
+      setFollowing(followingData);
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Failed to load profile';
       setError(message);
@@ -69,6 +84,46 @@ export function PublicProfilePage({ handle, onBack }: PublicProfilePageProps) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  /**
+   * Optimistic follow toggle. Flip locally first (state + cached count) so
+   * the button + counter feel instantaneous, then call the API and revert
+   * on failure. Mirrors the optimism pattern in SavedItinerariesTab's
+   * is_public toggle.
+   */
+  const handleToggleFollow = useCallback(async () => {
+    if (!profile || followBusy) return;
+    if (!viewerId) {
+      toast.error('Sign in to follow travelers.');
+      return;
+    }
+    if (viewerId === profile.id) return; // can't follow yourself
+
+    const next = !following;
+    setFollowBusy(true);
+    setFollowing(next);
+    setProfile((p) =>
+      p ? { ...p, followersCount: Math.max(0, p.followersCount + (next ? 1 : -1)) } : p
+    );
+
+    try {
+      if (next) {
+        await followUser(profile.id);
+      } else {
+        await unfollowUser(profile.id);
+      }
+    } catch (e) {
+      // Revert.
+      setFollowing(!next);
+      setProfile((p) =>
+        p ? { ...p, followersCount: Math.max(0, p.followersCount - (next ? 1 : -1)) } : p
+      );
+      const message = e instanceof Error ? e.message : 'Failed to update follow';
+      toast.error(message);
+    } finally {
+      setFollowBusy(false);
+    }
+  }, [profile, viewerId, following, followBusy]);
 
   // Profile not-found takes over the whole page so the user lands on a clear
   // message instead of staring at an empty layout.
@@ -91,7 +146,15 @@ export function PublicProfilePage({ handle, onBack }: PublicProfilePageProps) {
           <ProfileSkeleton />
         ) : profile ? (
           <>
-            <ProfileHeader profile={profile} pinCount={pins.length} itineraryCount={itineraries.length} />
+            <ProfileHeader
+              profile={profile}
+              pinCount={pins.length}
+              itineraryCount={itineraries.length}
+              viewerId={viewerId}
+              following={following}
+              followBusy={followBusy}
+              onToggleFollow={handleToggleFollow}
+            />
 
             <Section title="Pins" count={pins.length} empty="No pins yet.">
               {pins.length > 0 && (
@@ -144,10 +207,18 @@ function ProfileHeader({
   profile,
   pinCount,
   itineraryCount,
+  viewerId,
+  following,
+  followBusy,
+  onToggleFollow,
 }: {
   profile: PublicProfile;
   pinCount: number;
   itineraryCount: number;
+  viewerId: string | null;
+  following: boolean | null;
+  followBusy: boolean;
+  onToggleFollow: () => void;
 }) {
   const initials = useMemo(() => {
     return (
@@ -165,6 +236,14 @@ function ProfileHeader({
     profile.role === 'hostel'
       ? profile.hostelName ?? profile.username
       : profile.username;
+
+  // Hide the follow button on:
+  //   - your own profile (can't follow yourself; CHECK constraint enforces it)
+  //   - signed-out visitors (viewerId === null)
+  //
+  // Anonymous visitors still see the counts — they're public — they just
+  // don't get an action surface.
+  const showFollowButton = viewerId !== null && viewerId !== profile.id;
 
   return (
     <section className="bg-white rounded-2xl border border-black/[0.08] p-5 mb-6 shadow-sm">
@@ -186,21 +265,40 @@ function ProfileHeader({
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-xl font-bold truncate">{displayName}</h2>
-            {profile.role === 'hostel' && (
-              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-semibold">
-                Hostel
-              </span>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl font-bold truncate">{displayName}</h2>
+                {profile.role === 'hostel' && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-semibold">
+                    Hostel
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-0.5">@{profile.handle}</p>
+            </div>
+
+            {showFollowButton && (
+              <FollowButton
+                following={following}
+                busy={followBusy}
+                onClick={onToggleFollow}
+              />
             )}
           </div>
-          <p className="text-sm text-gray-500 mt-0.5">@{profile.handle}</p>
 
           {profile.bio && (
             <p className="text-sm text-gray-700 mt-3 whitespace-pre-wrap">{profile.bio}</p>
           )}
 
-          <div className="flex gap-4 mt-4 text-xs text-gray-500">
+          <div className="flex gap-4 mt-4 text-xs text-gray-500 flex-wrap">
+            <span>
+              <strong className="text-gray-900">{profile.followersCount}</strong>{' '}
+              {profile.followersCount === 1 ? 'follower' : 'followers'}
+            </span>
+            <span>
+              <strong className="text-gray-900">{profile.followingCount}</strong> following
+            </span>
             <span>
               <strong className="text-gray-900">{pinCount}</strong> pins
             </span>
@@ -216,6 +314,48 @@ function ProfileHeader({
         </div>
       </div>
     </section>
+  );
+}
+
+function FollowButton({
+  following,
+  busy,
+  onClick,
+}: {
+  following: boolean | null;
+  busy: boolean;
+  onClick: () => void;
+}) {
+  // While the initial isFollowing check is in flight, show a neutral
+  // "Loading…" state instead of guessing — guessing wrong would briefly
+  // flash the wrong label.
+  if (following === null) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="px-4 py-1.5 rounded-full border border-black/15 bg-white text-sm font-semibold text-gray-400 cursor-not-allowed"
+        aria-label="Checking follow status"
+      >
+        Loading…
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy}
+      aria-pressed={following}
+      className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
+        following
+          ? 'border border-black/15 bg-white text-gray-700 hover:bg-red-50 hover:text-red-700 hover:border-red-200'
+          : 'border-none bg-blue-600 text-white hover:bg-blue-700'
+      } ${busy ? 'opacity-60 cursor-wait' : 'cursor-pointer'}`}
+    >
+      {following ? '✓ Following' : '+ Follow'}
+    </button>
   );
 }
 

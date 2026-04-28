@@ -27,6 +27,10 @@ export interface PublicProfile {
   hostelName: string | null;
   countryCode: string | null;
   age: number | null;
+  // 5.2: cached follow counts. Maintained by triggers on the follows table —
+  // never compute these client-side, just read them.
+  followersCount: number;
+  followingCount: number;
   /** ISO date the user joined (profile created_at). Null if column missing. */
   createdAt: string | null;
 }
@@ -41,6 +45,8 @@ interface DbProfileRow {
   hostel_name: string | null;
   country_code: string | null;
   dob: string | null;
+  followers_count: number | null;
+  following_count: number | null;
 }
 
 function mapProfileRow(row: DbProfileRow): PublicProfile {
@@ -54,6 +60,8 @@ function mapProfileRow(row: DbProfileRow): PublicProfile {
     hostelName: row.hostel_name,
     countryCode: row.country_code,
     age: row.dob ? calculateAge(row.dob) : null,
+    followersCount: row.followers_count ?? 0,
+    followingCount: row.following_count ?? 0,
     createdAt: null,
   };
 }
@@ -73,7 +81,9 @@ export async function fetchPublicProfileByHandle(
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, handle, username, bio, avatar_url, role, hostel_name, country_code, dob')
+    .select(
+      'id, handle, username, bio, avatar_url, role, hostel_name, country_code, dob, followers_count, following_count'
+    )
     .eq('handle', normalized)
     .maybeSingle();
 
