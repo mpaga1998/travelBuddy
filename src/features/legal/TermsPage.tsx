@@ -4,7 +4,7 @@ interface TermsPageProps {
 
 export function TermsPage({ onBack }: TermsPageProps) {
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="h-screen overflow-y-auto bg-white text-gray-900">
       <header className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-4 z-10">
         <button
           type="button"

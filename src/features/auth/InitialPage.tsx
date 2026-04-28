@@ -118,7 +118,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
   }
 
   return (
-    <div className="w-screen h-[100dvh] bg-gradient-to-br from-[#ff8c00] to-[#ff6b00] flex flex-col items-center justify-center p-5 box-border text-white font-sans overflow-hidden">
+    <div className="relative w-screen h-[100dvh] bg-gradient-to-br from-[#ff8c00] to-[#ff6b00] flex flex-col items-center justify-center p-5 box-border text-white font-sans overflow-hidden">
       {/* Logo / Icon */}
       <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-[48px] mb-8 shadow-[0_8px_24px_rgba(0,0,0,0.2)]">
         🧭
