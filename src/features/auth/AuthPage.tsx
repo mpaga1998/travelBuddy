@@ -29,6 +29,9 @@ export function AuthPage() {
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
+  // TODO: persist tos_accepted_at on profiles if legal asks.
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
@@ -173,10 +176,41 @@ export function AuthPage() {
           className={inputClass}
         />
 
+        {mode === "signup" && (
+          <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              className="mt-0.5 shrink-0 cursor-pointer"
+            />
+            <span>
+              I agree to the{' '}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-slate-900"
+              >
+                Terms of Service
+              </a>
+              {' '}and{' '}
+              <a
+                href="/guidelines"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-slate-900"
+              >
+                Community Guidelines
+              </a>
+            </span>
+          </label>
+        )}
+
         {err && <div className="text-[crimson] text-[13px]">{err}</div>}
         {msg && <div className="text-green-700 text-[13px]">{msg}</div>}
 
-        <button type="submit" disabled={busy} className={primaryBtnClass(busy)}>
+        <button type="submit" disabled={busy || (mode === 'signup' && !agreedToTerms)} className={primaryBtnClass(busy || (mode === 'signup' && !agreedToTerms))}>
           {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Sign up"}
         </button>
 
@@ -186,6 +220,7 @@ export function AuthPage() {
             setErr(null);
             setMsg(null);
             setMode(mode === "signin" ? "signup" : "signin");
+            setAgreedToTerms(false);
             setDob("");
             setPassword("");
           }}

@@ -10,11 +10,13 @@ import { InitialPage } from "./features/auth/InitialPage";
 import { MapView } from "./features/map/MapView";
 import { AdminPage } from "./features/admin/AdminPage";
 import { isCurrentUserAdmin } from "./features/admin/adminApi";
+import { TermsPage } from "./features/legal/TermsPage";
+import { GuidelinesPage } from "./features/legal/GuidelinesPage";
 import { FeatureErrorBoundary } from "./components/FeatureErrorBoundary";
 import { ConfirmDialogProvider } from "./components/ConfirmDialog";
 import { PromptDialogProvider } from "./components/PromptDialog";
 
-type AppPage = "loading" | "auth" | "initial" | "map" | "admin" | "notfound";
+type AppPage = "loading" | "auth" | "initial" | "map" | "admin" | "notfound" | "terms" | "guidelines";
 
 /**
  * Read the current pathname. Memoized at call time only — we wire a popstate
@@ -90,6 +92,17 @@ export default function App() {
   useEffect(() => {
     if (initialLoading) {
       setCurrentPage("loading");
+      return;
+    }
+
+    // Public routes — short-circuit before the auth guard so these pages are
+    // reachable while signed out (and also while signed in).
+    if (pathname === '/terms') {
+      setCurrentPage('terms');
+      return;
+    }
+    if (pathname === '/guidelines') {
+      setCurrentPage('guidelines');
       return;
     }
 
@@ -177,6 +190,28 @@ export default function App() {
             }}
           />
         </FeatureErrorBoundary>
+      );
+    }
+
+    if (currentPage === "terms") {
+      return (
+        <TermsPage
+          onBack={() => {
+            window.history.pushState({}, '', '/');
+            setPathname('/');
+          }}
+        />
+      );
+    }
+
+    if (currentPage === "guidelines") {
+      return (
+        <GuidelinesPage
+          onBack={() => {
+            window.history.pushState({}, '', '/');
+            setPathname('/');
+          }}
+        />
       );
     }
 

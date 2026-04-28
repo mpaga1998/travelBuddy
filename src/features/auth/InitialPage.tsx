@@ -308,6 +308,35 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
         </FeatureErrorBoundary>
       )}
 
+      {/* Legal footer */}
+      <footer className="absolute bottom-4 w-full text-center text-xs text-gray-500 pointer-events-none">
+        <span className="pointer-events-auto">
+          <a
+            href="/terms"
+            onClick={(e) => {
+              e.preventDefault();
+              window.history.pushState({}, '', '/terms');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="hover:underline"
+          >
+            Terms of Service
+          </a>
+          {' · '}
+          <a
+            href="/guidelines"
+            onClick={(e) => {
+              e.preventDefault();
+              window.history.pushState({}, '', '/guidelines');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="hover:underline"
+          >
+            Community Guidelines
+          </a>
+        </span>
+      </footer>
+
       {/* Coming Soon Popup */}
       {showComingSoon && (
         <div
