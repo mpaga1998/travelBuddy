@@ -21,6 +21,7 @@ type DbPinRow = {
     role: "traveler" | "hostel";
     hostel_name: string | null;
     dob: string | null;
+    handle: string | null;
   } | null;
 
   // ✅ IMPORTANT: Supabase returns joined relations as arrays
@@ -73,7 +74,7 @@ export type PinFilters = {
 const SELECT_DEFAULT = `
   id, title, description, category, lat, lng, created_at, created_by, bookmark_count,
   report_count, tips, image_urls,
-  profiles:created_by (id, username, role, hostel_name, dob),
+  profiles:created_by (id, username, role, hostel_name, dob, handle),
   reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
 `;
 
@@ -82,7 +83,7 @@ const SELECT_DEFAULT = `
 const SELECT_INNER = `
   id, title, description, category, lat, lng, created_at, created_by, bookmark_count,
   report_count, tips, image_urls,
-  profiles:created_by!inner (id, username, role, hostel_name, dob),
+  profiles:created_by!inner (id, username, role, hostel_name, dob, handle),
   reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
 `;
 
@@ -150,6 +151,7 @@ export async function listPins(opts: PinFilters = {}): Promise<{ pins: Pin[]; li
           ? row.profiles?.hostel_name ?? "Hostel"
           : row.profiles?.username ?? "Traveler",
       createdByAge: row.profiles?.dob ? calculateAge(row.profiles.dob) : null,
+      createdByHandle: row.profiles?.handle ?? null,
 
       // ✅ now works
       likesCount: counts?.likes_count ?? 0,

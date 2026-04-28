@@ -135,6 +135,27 @@ export function PinPopup({
             <span className="px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-800 text-xs font-semibold">
               📋 From your itinerary
             </span>
+          ) : pin.createdByHandle ? (
+            // 5.1: when the author has a handle, the attribution is a link
+            // to their public profile. PinPopup is mounted via createRoot
+            // outside the main app tree, so we can't use the in-app router
+            // setter directly — pushState + a manual popstate event lets
+            // App.tsx's pathname listener pick up the change without a full
+            // page reload.
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const url = `/u/${pin.createdByHandle}`;
+                window.history.pushState({}, '', url);
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="px-2 py-1 rounded-full bg-blue-600/[0.12] text-xs cursor-pointer border-none hover:bg-blue-600/[0.2] transition-colors"
+            >
+              {pin.createdByType === "hostel"
+                ? `Recommended by ${pin.createdByLabel}`
+                : `Pinned by ${pin.createdByLabel}`}
+            </button>
           ) : (
             <span className="px-2 py-1 rounded-full bg-blue-600/[0.12] text-xs">
               {pin.createdByType === "hostel"

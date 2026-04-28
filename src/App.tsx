@@ -12,11 +12,27 @@ import { AdminPage } from "./features/admin/AdminPage";
 import { isCurrentUserAdmin } from "./features/admin/adminApi";
 import { TermsPage } from "./features/legal/TermsPage";
 import { GuidelinesPage } from "./features/legal/GuidelinesPage";
+import { PublicProfilePage } from "./features/profile/PublicProfilePage";
 import { FeatureErrorBoundary } from "./components/FeatureErrorBoundary";
 import { ConfirmDialogProvider } from "./components/ConfirmDialog";
 import { PromptDialogProvider } from "./components/PromptDialog";
 
-type AppPage = "loading" | "auth" | "initial" | "map" | "admin" | "notfound" | "terms" | "guidelines";
+type AppPage = "loading" | "auth" | "initial" | "map" | "admin" | "notfound" | "terms" | "guidelines" | "user";
+
+/**
+ * Parse a /u/<handle> URL. Returns the lowercased handle or null when the
+ * path doesn't match. Trailing slashes are tolerated. The handle itself is
+ * lowercased here to match the DB CHECK constraint.
+ */
+function parseUserHandle(path: string): string | null {
+  const m = path.match(/^\/u\/([^/?#]+)\/?$/);
+  if (!m) return null;
+  try {
+    return decodeURIComponent(m[1]).toLowerCase();
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Read the current pathname. Memoized at call time only — we wire a popstate
@@ -103,6 +119,10 @@ export default function App() {
     }
     if (pathname === '/guidelines') {
       setCurrentPage('guidelines');
+      return;
+    }
+    if (parseUserHandle(pathname)) {
+      setCurrentPage('user');
       return;
     }
 
@@ -212,6 +232,34 @@ export default function App() {
             setPathname('/');
           }}
         />
+      );
+    }
+
+    if (currentPage === "user") {
+      // Parse the handle at render time so it always tracks the current path —
+      // covers the case where the user pastes a different /u/:handle URL while
+      // already on a profile page (popstate updates `pathname`, which retriggers
+      // PublicProfilePage's load via its `handle` prop).
+      const handle = parseUserHandle(pathname);
+      if (!handle) {
+        // Defensive: pathname changed out from under us. Fall through to home.
+        return (
+          <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-700 p-6 text-center">
+            <h1 className="text-2xl font-bold mb-2">404</h1>
+            <p className="text-sm text-gray-500 mb-6">This page could not be found.</p>
+          </div>
+        );
+      }
+      return (
+        <FeatureErrorBoundary featureName="Profile">
+          <PublicProfilePage
+            handle={handle}
+            onBack={() => {
+              window.history.pushState({}, '', '/');
+              setPathname('/');
+            }}
+          />
+        </FeatureErrorBoundary>
       );
     }
 

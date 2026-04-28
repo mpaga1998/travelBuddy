@@ -8,11 +8,15 @@ import {
   type Profile,
   calculateAge,
 } from '../profileApi';
+import { isHandleAvailable } from '../publicProfileApi';
+import { validateHandle, HANDLE_MAX_LENGTH } from '../handleValidation';
 import { Field } from './Field';
 import { inputClass, smallBtn, primaryBtn, dangerBtn } from './profileStyles';
 import { useConfirm } from '../../../components/ConfirmDialog';
 import { compressImage, validateImageFile } from '../../../lib/imageCompress';
 import { imgAvatar } from '../../../lib/imageTransforms';
+
+const BIO_MAX_LENGTH = 280;
 
 export interface ProfileInfoTabProps {
   isMobile: boolean;
@@ -51,6 +55,12 @@ export function ProfileInfoTab({
   const [countryCode, setCountryCode] = useState(initialCountryCode);
   const [dob, setDob] = useState(initialDob);
   const [avatar, setAvatar] = useState(profile.avatar_url ?? '');
+  // 5.1: handle + bio for public profile pages. We initialize from
+  // profile.handle/bio (added to the type in profileApi.ts) — these are
+  // independent of the existing username field, which stays as the display
+  // name shown in pin labels.
+  const [handle, setHandle] = useState(profile.handle ?? '');
+  const [bio, setBio] = useState(profile.bio ?? '');
 
   const [saving, setSaving] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
@@ -94,6 +104,36 @@ export function ProfileInfoTab({
       }
     }
 
+    // 5.1: handle + bio validation. Handle is optional — empty string clears
+    // it (column is nullable). Format/reserved checks live in handleValidation.ts;
+    // uniqueness check is a separate DB round-trip via isHandleAvailable.
+    const trimmedHandle = handle.trim();
+    let normalizedHandle: string | null = null;
+    if (trimmedHandle) {
+      const result = validateHandle(trimmedHandle);
+      if (!result.ok) {
+        setErr(result.error);
+        return;
+      }
+      normalizedHandle = result.normalized;
+      // Only check availability when the handle actually changed — saves a
+      // round-trip on every save and avoids a self-conflict false-positive
+      // (the index would catch it anyway via unique violation, but
+      // isHandleAvailable already accounts for "already mine = available").
+      if (normalizedHandle !== (profile.handle ?? '')) {
+        const available = await isHandleAvailable(normalizedHandle);
+        if (!available) {
+          setErr('That handle is already taken.');
+          return;
+        }
+      }
+    }
+
+    if (bio.length > BIO_MAX_LENGTH) {
+      setErr(`Bio must be ${BIO_MAX_LENGTH} characters or fewer.`);
+      return;
+    }
+
     setSaving(true);
     try {
       await updateMyProfile({
@@ -102,11 +142,20 @@ export function ProfileInfoTab({
         username: u,
         country_code: countryCode || null,
         dob: dob || null,
+        handle: normalizedHandle,
+        bio: bio.trim() || null,
       });
 
       setMsg('Profile saved.');
     } catch (e: any) {
-      setErr(e?.message ?? 'Failed to save profile');
+      // Surface unique-violation as a friendlier message — the DB index is
+      // the source of truth and can race against isHandleAvailable above.
+      const code = (e as { code?: string } | null)?.code;
+      if (code === '23505') {
+        setErr('That handle is already taken.');
+      } else {
+        setErr(e?.message ?? 'Failed to save profile');
+      }
     } finally {
       setSaving(false);
     }
@@ -256,6 +305,43 @@ export function ProfileInfoTab({
               onChange={(e) => setUsername(e.target.value)}
               className={inputClass}
             />
+          </Field>
+
+          <Field label="Handle (for public profile URL)">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">@</span>
+              <input
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                placeholder="your-handle"
+                maxLength={HANDLE_MAX_LENGTH}
+                className={inputClass}
+              />
+            </div>
+            {handle && profile.handle === handle.trim().toLowerCase() && (
+              <a
+                href={`/u/${profile.handle}`}
+                className="mt-1.5 inline-block text-xs text-blue-600 hover:underline"
+              >
+                View public profile →
+              </a>
+            )}
+            <div className="mt-1.5 text-xs text-gray-500">
+              3–30 characters, lowercase letters, numbers, _ or -.
+            </div>
+          </Field>
+
+          <Field label="Bio">
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value.slice(0, BIO_MAX_LENGTH))}
+              placeholder="A short blurb shown on your public profile."
+              rows={3}
+              className={`${inputClass} resize-y min-h-[72px]`}
+            />
+            <div className="mt-1 text-xs text-gray-500 text-right">
+              {bio.length}/{BIO_MAX_LENGTH}
+            </div>
           </Field>
 
           <Field label="Email">
