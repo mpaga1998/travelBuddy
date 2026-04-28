@@ -5,7 +5,7 @@ Do phases top-to-bottom; each assumes the previous is done.
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Progress:** 17 / 50 steps complete — **Phase 1 ✅ · Phase 2 ✅**
+**Progress:** 21 / 50 steps complete — **Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅**
 
 ---
 
@@ -51,10 +51,10 @@ So the app doesn't die at 10k pins.
 
 Before you ever go public. User-generated map + images + no moderation = trouble.
 
-- [ ] **4.1** Create `pin_reports` table (`pin_id`, `reporter_id`, `reason`, `created_at`) + cached count column on `pins`.
-- [ ] **4.2** Add "Report pin" button in the pin popup.
-- [ ] **4.3** Auto-hide at threshold. `is_hidden` column on pins; trigger or cron sets true when reports ≥ N. Filter from `listPins`.
-- [ ] **4.4** OpenAI moderation on submission. Free endpoint, one call. Reject flagged pins/itineraries with clear error.
+- [x] **4.1** Create `pin_reports` table (`pin_id`, `reporter_id`, `reason`, `created_at`) + cached count column on `pins`.
+- [x] **4.2** Add "Report pin" button in the pin popup.
+- [x] **4.3** Auto-hide at threshold. `is_hidden` column on pins; trigger or cron sets true when reports ≥ N. Filter from `listPins`.
+- [x] **4.4** OpenAI moderation on submission. New `api/lib/moderation.ts` calls `omni-moderation-latest` (free endpoint) with whitespace short-circuit and **fail-open** policy on every error path (no key, network down, parse failure) — same rationale as the rate limiter: a third-party hiccup must never block content creation. Wired into two paths: (1) `api/itinerary.ts` moderates `notes + desiredAttractions` joined into one input, BEFORE Mapbox geocoding / weather / OpenAI generation, returning a 400 with the standard rejection message — flows through the existing form `error` prop, no form changes needed; (2) new `api/moderate.ts` route (POST, requireAuth + validateBodySize, no rate limiter — moderation is free) that the client pre-flights from `MapView.onSubmitDraft` via `src/lib/moderation.ts#checkContentAllowed` before image upload + `createPin`. Locations are intentionally NOT moderated — geographic strings like war-zone place names trip violence categories with high false-positive rate. Both server and client constants for the user-facing message are deliberately generic so we don't enumerate ban-evasion paths.
 - [ ] **4.5** Basic admin view at `/admin`. Lists reported/hidden pins with restore/remove actions. Gate on `is_admin` boolean in profiles.
 - [ ] **4.6** Terms of Service + Community Guidelines pages.
 

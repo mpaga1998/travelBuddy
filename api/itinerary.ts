@@ -13,6 +13,7 @@ import { fetchCommunityPins } from './lib/communityPins.js';
 import { fetchWeatherContext } from './lib/weatherContext.js';
 import { buildPracticalContext } from './lib/practicalContext.js';
 import { buildBudgetContext } from './lib/budgetContext.js';
+import { moderateText, MODERATION_REJECTION_MESSAGE } from './lib/moderation.js';
 
 // Load environment variables
 dotenv.config();
@@ -119,6 +120,37 @@ export default async function handler(
       };
       res.status(400).json(response);
       return;
+    }
+
+    // 🛡️ 4.4: Moderate user-supplied free-text fields BEFORE we spend money on
+    // Mapbox / weather / OpenAI. Locations are not moderated — they're
+    // geographic strings, false-positive rate would be too high (war-zone
+    // place names trip violence categories). We moderate notes +
+    // desiredAttractions joined into one input. Fails open inside moderateText
+    // — see api/lib/moderation.ts.
+    const userText = [
+      tripInput.notes,
+      ...(tripInput.desiredAttractions ?? []),
+    ]
+      .filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+      .join('\n');
+    if (userText) {
+      const moderation = await moderateText(userText);
+      if (moderation.flagged) {
+        console.warn(
+          '🛡️ [ITINERARY] Rejected for',
+          user.id,
+          'categories:',
+          moderation.categories?.join(', ') ?? '(none)'
+        );
+        const response: ItineraryResponse = {
+          success: false,
+          itinerary: '',
+          error: MODERATION_REJECTION_MESSAGE,
+        };
+        res.status(400).json(response);
+        return;
+      }
     }
 
     // Kick off the profile lookup immediately so it runs in parallel with

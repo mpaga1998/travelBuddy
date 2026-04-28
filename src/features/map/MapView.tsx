@@ -10,6 +10,7 @@ import {
 } from "../pins/pinApi";
 import { compressImage, validateImageFile } from "../../lib/imageCompress";
 import { imgLightbox } from "../../lib/imageTransforms";
+import { checkContentAllowed, MODERATION_REJECTION_MESSAGE } from "../../lib/moderation";
 import { toast } from "sonner";
 
 import { ItineraryModal } from "../itinerary/ItineraryModal";
@@ -189,6 +190,22 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     if (!draft) return;
     const title = draft.title.trim();
     if (!title) return;
+
+    // 🛡️ 4.4: Pre-flight title + description + tips through OpenAI moderation
+    // BEFORE we burn cycles on image compression / Supabase Storage uploads.
+    // Fails open inside checkContentAllowed — see src/lib/moderation.ts.
+    const moderationInput = [
+      title,
+      draft.description.trim(),
+      ...draft.tips.map((t) => t.trim()).filter(Boolean),
+    ]
+      .filter(Boolean)
+      .join('\n');
+    const allowed = await checkContentAllowed(moderationInput);
+    if (!allowed) {
+      toast.error(MODERATION_REJECTION_MESSAGE);
+      return;
+    }
 
     const imageUrls: string[] = [];
     for (const file of draft.images) {
