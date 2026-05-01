@@ -13,11 +13,22 @@ import { isCurrentUserAdmin } from "./features/admin/adminApi";
 import { TermsPage } from "./features/legal/TermsPage";
 import { GuidelinesPage } from "./features/legal/GuidelinesPage";
 import { PublicProfilePage } from "./features/profile/PublicProfilePage";
+import { FeedPage } from "./features/feed/FeedPage";
 import { FeatureErrorBoundary } from "./components/FeatureErrorBoundary";
 import { ConfirmDialogProvider } from "./components/ConfirmDialog";
 import { PromptDialogProvider } from "./components/PromptDialog";
 
-type AppPage = "loading" | "auth" | "initial" | "map" | "admin" | "notfound" | "terms" | "guidelines" | "user";
+type AppPage =
+  | "loading"
+  | "auth"
+  | "initial"
+  | "map"
+  | "admin"
+  | "notfound"
+  | "terms"
+  | "guidelines"
+  | "user"
+  | "feed";
 
 /**
  * Parse a /u/<handle> URL. Returns the lowercased handle or null when the
@@ -141,6 +152,14 @@ export default function App() {
       return;
     }
 
+    // 5.3: /feed activity timeline. Sits behind the auth gate because it's
+    // inherently personal (your follow graph). Signed-out visitors will have
+    // already been redirected to /auth above.
+    if (pathname === '/feed') {
+      setCurrentPage('feed');
+      return;
+    }
+
     // Logged in: show initial page first
     if (showInitialPage) {
       setCurrentPage("initial");
@@ -232,6 +251,27 @@ export default function App() {
             setPathname('/');
           }}
         />
+      );
+    }
+
+    if (currentPage === "feed") {
+      return (
+        <FeatureErrorBoundary featureName="Feed">
+          <FeedPage
+            onBack={() => {
+              window.history.pushState({}, '', '/');
+              setPathname('/');
+            }}
+            onOpenMap={() => {
+              // Pop back to '/' first, then transition into the map view via
+              // the existing showInitialPage flag. Keeps the URL clean and
+              // matches how InitialPage opens the map.
+              window.history.pushState({}, '', '/');
+              setPathname('/');
+              setShowInitialPage(false);
+            }}
+          />
+        </FeatureErrorBoundary>
       );
     }
 

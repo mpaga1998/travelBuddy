@@ -242,6 +242,21 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
           <span>✨</span>
           <span>Create your custom travel itinerary!</span>
         </button>
+
+        {/* Button 3: Feed — secondary action, intentionally lighter so it
+            doesn't compete with the two headline CTAs. Uses a translucent
+            white pill that sits well on the orange gradient backdrop, same
+            language as the top-corner round buttons. */}
+        <button
+          onClick={() => {
+            window.history.pushState({}, '', '/feed');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          className="w-full px-5 py-3 text-base font-semibold border border-white/30 rounded-2xl bg-white/15 hover:bg-white/[0.22] active:bg-white/[0.22] text-white cursor-pointer flex items-center justify-center gap-2 transition-colors backdrop-blur-md"
+        >
+          <span>📰</span>
+          <span>Feed</span>
+        </button>
       </div>
 
       {/* Sign Out Confirmation Modal */}
