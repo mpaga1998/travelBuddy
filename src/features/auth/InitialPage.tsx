@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { ItineraryModal } from "../itinerary/ItineraryModal";
 import { ProfileModal } from "../profile/profileModal";
 import { getMyProfile } from "../profile/profileApi";
+import { countUnread } from "../notifications/notificationsApi";
 import { FeatureErrorBoundary } from "../../components/FeatureErrorBoundary";
 
 interface InitialPageProps {
@@ -30,9 +31,31 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState("");
+  // 5.4: unread notification count for the bell badge. Refreshes on mount
+  // and whenever the window regains focus — cheap and feels live without
+  // pulling in Supabase Realtime. Capped at 99+ in the badge so a viral
+  // pin doesn't blow up the layout.
+  const [unread, setUnread] = useState(0);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
+
+  // Refresh the bell badge on mount + focus. Effects fire in declaration
+  // order, so this runs alongside the avatar fetch — no ordering hazard.
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => {
+      countUnread().then((n) => {
+        if (!cancelled) setUnread(n);
+      });
+    };
+    refresh();
+    window.addEventListener('focus', refresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', refresh);
+    };
+  }, []);
 
   // Click outside handler
   useEffect(() => {
@@ -149,6 +172,27 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
           />
         ) : (
           <span className="text-xl text-white">🙂</span>
+        )}
+      </button>
+
+      {/* Notifications Bell (Top Right, left of sign-out) */}
+      <button
+        onClick={() => {
+          window.history.pushState({}, '', '/notifications');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        className={`${topRoundBtnClass} right-[76px] text-white text-xl`}
+        title="Notifications"
+        aria-label={unread > 0 ? `Notifications (${unread} unread)` : 'Notifications'}
+      >
+        🔔
+        {unread > 0 && (
+          <span
+            className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center border-2 border-[#ff8c00]"
+            aria-hidden="true"
+          >
+            {unread > 99 ? '99+' : unread}
+          </span>
         )}
       </button>
 

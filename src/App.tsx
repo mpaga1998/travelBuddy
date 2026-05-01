@@ -14,6 +14,7 @@ import { TermsPage } from "./features/legal/TermsPage";
 import { GuidelinesPage } from "./features/legal/GuidelinesPage";
 import { PublicProfilePage } from "./features/profile/PublicProfilePage";
 import { FeedPage } from "./features/feed/FeedPage";
+import { NotificationsPage } from "./features/notifications/NotificationsPage";
 import { FeatureErrorBoundary } from "./components/FeatureErrorBoundary";
 import { ConfirmDialogProvider } from "./components/ConfirmDialog";
 import { PromptDialogProvider } from "./components/PromptDialog";
@@ -28,7 +29,8 @@ type AppPage =
   | "terms"
   | "guidelines"
   | "user"
-  | "feed";
+  | "feed"
+  | "notifications";
 
 /**
  * Parse a /u/<handle> URL. Returns the lowercased handle or null when the
@@ -160,6 +162,13 @@ export default function App() {
       return;
     }
 
+    // 5.4: /notifications inbox. Same gate — notifications are inherently
+    // personal so signed-out visitors hit the auth page first.
+    if (pathname === '/notifications') {
+      setCurrentPage('notifications');
+      return;
+    }
+
     // Logged in: show initial page first
     if (showInitialPage) {
       setCurrentPage("initial");
@@ -266,6 +275,24 @@ export default function App() {
               // Pop back to '/' first, then transition into the map view via
               // the existing showInitialPage flag. Keeps the URL clean and
               // matches how InitialPage opens the map.
+              window.history.pushState({}, '', '/');
+              setPathname('/');
+              setShowInitialPage(false);
+            }}
+          />
+        </FeatureErrorBoundary>
+      );
+    }
+
+    if (currentPage === "notifications") {
+      return (
+        <FeatureErrorBoundary featureName="Notifications">
+          <NotificationsPage
+            onBack={() => {
+              window.history.pushState({}, '', '/');
+              setPathname('/');
+            }}
+            onOpenMap={() => {
               window.history.pushState({}, '', '/');
               setPathname('/');
               setShowInitialPage(false);
