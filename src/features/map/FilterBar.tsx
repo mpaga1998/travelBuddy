@@ -80,7 +80,7 @@ export function FilterBar({
               : "relative text-base"
           }`}
         >
-          🎒 travelBuddy
+          🎒 Nook
         </button>
 
         {!isMobile && <div className="flex-1" />}
