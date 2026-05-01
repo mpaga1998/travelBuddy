@@ -8,6 +8,10 @@ import {
   toggleReaction,
   uploadPinImage,
 } from "../pins/pinApi";
+import { compressImage, validateImageFile } from "../../lib/imageCompress";
+import { imgLightbox } from "../../lib/imageTransforms";
+import { checkContentAllowed, MODERATION_REJECTION_MESSAGE } from "../../lib/moderation";
+import { toast } from "sonner";
 
 import { ItineraryModal } from "../itinerary/ItineraryModal";
 import { supabase } from "../../lib/supabaseClient";
@@ -61,6 +65,8 @@ type MapViewProps = {
  */
 export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   const mapRef = useRef<MapboxMap | null>(null);
+  // Separate state so useMapPins can react when the map becomes available.
+  const [mapInstance, setMapInstance] = useState<MapboxMap | null>(null);
   const isMobile = useIsMobile();
 
   // --- Auth (just the id — we don't need profile here) --------------------
@@ -81,6 +87,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   const {
     filteredPins,
     loading,
+    limitReached,
     reload,
     mapType,
     setMapType,
@@ -88,7 +95,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     setActiveCategory,
     selectedAgeRanges,
     setSelectedAgeRanges,
-  } = useMapPins(bookmarkedPinIds);
+  } = useMapPins(bookmarkedPinIds, mapInstance);
 
   // --- Selection + draft + modals ----------------------------------------
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
@@ -118,6 +125,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   // --- Map callbacks ------------------------------------------------------
   const handleMapReady = useCallback((map: MapboxMap) => {
     mapRef.current = map;
+    setMapInstance(map);
   }, []);
 
   const handleMapClick = useCallback(async (lngLat: mapboxgl.LngLat) => {
@@ -183,9 +191,27 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     const title = draft.title.trim();
     if (!title) return;
 
+    // 🛡️ 4.4: Pre-flight title + description + tips through OpenAI moderation
+    // BEFORE we burn cycles on image compression / Supabase Storage uploads.
+    // Fails open inside checkContentAllowed — see src/lib/moderation.ts.
+    const moderationInput = [
+      title,
+      draft.description.trim(),
+      ...draft.tips.map((t) => t.trim()).filter(Boolean),
+    ]
+      .filter(Boolean)
+      .join('\n');
+    const allowed = await checkContentAllowed(moderationInput);
+    if (!allowed) {
+      toast.error(MODERATION_REJECTION_MESSAGE);
+      return;
+    }
+
     const imageUrls: string[] = [];
     for (const file of draft.images) {
-      const url = await uploadPinImage(file);
+      // Client-side downscale before upload — same rationale as avatar.
+      const compressed = await compressImage(file);
+      const url = await uploadPinImage(compressed);
       imageUrls.push(url);
     }
 
@@ -223,7 +249,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       borderRadius: "8px", cursor: "default",
     } as CSSStyleDeclaration);
 
-    const update = () => { img.src = urls[currentIndex]; };
+    const update = () => { img.src = imgLightbox(urls[currentIndex]); };
     update();
     lightbox.appendChild(img);
 
@@ -330,11 +356,11 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
             onRequestDelete={handleRequestDelete}
           />
 
-          {loading && (
+          {!loading && limitReached && (
             <div
-              className={`absolute top-3 left-3 px-2.5 py-2 rounded-[10px] bg-white/90 border border-black/[0.08] shadow-[0_6px_18px_rgba(0,0,0,0.08)] ${isMobile ? "text-[13px]" : "text-sm"}`}
+              className={`absolute top-3 left-3 px-2.5 py-2 rounded-[10px] bg-white/90 border border-black/[0.08] shadow-[0_6px_18px_rgba(0,0,0,0.08)] ${isMobile ? "text-[13px]" : "text-sm"} text-gray-600`}
             >
-              Loading pins…
+              Showing 500 nearest pins — zoom in to see more
             </div>
           )}
 
@@ -490,9 +516,20 @@ function DraftModal({
                 accept="image/*"
                 multiple
                 onChange={(e) => {
-                  const newImages = Array.from(e.target.files ?? []);
-                  const combined = [...draft.images, ...newImages].slice(-5);
+                  const picked = Array.from(e.target.files ?? []);
+                  const valid: File[] = [];
+                  for (const f of picked) {
+                    const err = validateImageFile(f);
+                    if (err) {
+                      toast.error(`${f.name}: ${err}`);
+                    } else {
+                      valid.push(f);
+                    }
+                  }
+                  const combined = [...draft.images, ...valid].slice(-5);
                   setDraft({ ...draft, images: combined });
+                  // Reset so picking the same file again still fires onChange.
+                  e.target.value = '';
                 }}
                 className="hidden"
               />

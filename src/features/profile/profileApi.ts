@@ -11,6 +11,11 @@ export type Profile = {
   avatar_url: string | null;
   dob: string | null; // ISO date string
   age: number | null; // Computed from dob
+  // Phase 5.1: public profile fields. Both nullable for back-compat with
+  // existing rows. `handle` is the unique URL slug for /u/:handle; `bio` is
+  // a 280-char blurb shown on the public profile page.
+  handle: string | null;
+  bio: string | null;
 };
 
 /**
@@ -215,6 +220,9 @@ export type SavedItinerary = {
   travel_pace: string | null;
   budget: string | null;
   interests: string[];
+  // 5.1: opt-in flag for public profile visibility. False by default; only
+  // is_public = true itineraries surface on /u/:handle for non-owners.
+  is_public: boolean;
   created_at: string;
   updated_at: string;
 };

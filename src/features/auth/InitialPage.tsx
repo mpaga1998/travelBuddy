@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { ItineraryModal } from "../itinerary/ItineraryModal";
 import { ProfileModal } from "../profile/profileModal";
 import { getMyProfile } from "../profile/profileApi";
+import { countUnread } from "../notifications/notificationsApi";
 import { FeatureErrorBoundary } from "../../components/FeatureErrorBoundary";
 
 interface InitialPageProps {
@@ -30,9 +31,31 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState("");
+  // 5.4: unread notification count for the bell badge. Refreshes on mount
+  // and whenever the window regains focus — cheap and feels live without
+  // pulling in Supabase Realtime. Capped at 99+ in the badge so a viral
+  // pin doesn't blow up the layout.
+  const [unread, setUnread] = useState(0);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
+
+  // Refresh the bell badge on mount + focus. Effects fire in declaration
+  // order, so this runs alongside the avatar fetch — no ordering hazard.
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => {
+      countUnread().then((n) => {
+        if (!cancelled) setUnread(n);
+      });
+    };
+    refresh();
+    window.addEventListener('focus', refresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', refresh);
+    };
+  }, []);
 
   // Click outside handler
   useEffect(() => {
@@ -118,7 +141,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
   }
 
   return (
-    <div className="w-screen h-[100dvh] bg-gradient-to-br from-[#ff8c00] to-[#ff6b00] flex flex-col items-center justify-center p-5 box-border text-white font-sans overflow-hidden">
+    <div className="relative w-screen h-[100dvh] bg-gradient-to-br from-[#ff8c00] to-[#ff6b00] flex flex-col items-center justify-center p-5 box-border text-white font-sans overflow-hidden">
       {/* Logo / Icon */}
       <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-[48px] mb-8 shadow-[0_8px_24px_rgba(0,0,0,0.2)]">
         🧭
@@ -149,6 +172,27 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
           />
         ) : (
           <span className="text-xl text-white">🙂</span>
+        )}
+      </button>
+
+      {/* Notifications Bell (Top Right, left of sign-out) */}
+      <button
+        onClick={() => {
+          window.history.pushState({}, '', '/notifications');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        className={`${topRoundBtnClass} right-[76px] text-white text-xl`}
+        title="Notifications"
+        aria-label={unread > 0 ? `Notifications (${unread} unread)` : 'Notifications'}
+      >
+        🔔
+        {unread > 0 && (
+          <span
+            className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center border-2 border-[#ff8c00]"
+            aria-hidden="true"
+          >
+            {unread > 99 ? '99+' : unread}
+          </span>
         )}
       </button>
 
@@ -242,6 +286,21 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
           <span>✨</span>
           <span>Create your custom travel itinerary!</span>
         </button>
+
+        {/* Button 3: Feed — secondary action, intentionally lighter so it
+            doesn't compete with the two headline CTAs. Uses a translucent
+            white pill that sits well on the orange gradient backdrop, same
+            language as the top-corner round buttons. */}
+        <button
+          onClick={() => {
+            window.history.pushState({}, '', '/feed');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          className="w-full px-5 py-3 text-base font-semibold border border-white/30 rounded-2xl bg-white/15 hover:bg-white/[0.22] active:bg-white/[0.22] text-white cursor-pointer flex items-center justify-center gap-2 transition-colors backdrop-blur-md"
+        >
+          <span>📰</span>
+          <span>Feed</span>
+        </button>
       </div>
 
       {/* Sign Out Confirmation Modal */}
@@ -307,6 +366,35 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
           />
         </FeatureErrorBoundary>
       )}
+
+      {/* Legal footer */}
+      <footer className="absolute bottom-4 w-full text-center text-xs text-gray-500 pointer-events-none">
+        <span className="pointer-events-auto">
+          <a
+            href="/terms"
+            onClick={(e) => {
+              e.preventDefault();
+              window.history.pushState({}, '', '/terms');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="hover:underline"
+          >
+            Terms of Service
+          </a>
+          {' · '}
+          <a
+            href="/guidelines"
+            onClick={(e) => {
+              e.preventDefault();
+              window.history.pushState({}, '', '/guidelines');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="hover:underline"
+          >
+            Community Guidelines
+          </a>
+        </span>
+      </footer>
 
       {/* Coming Soon Popup */}
       {showComingSoon && (

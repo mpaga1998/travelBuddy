@@ -87,6 +87,7 @@ async function queryPinsNear(
     let query = supabase
       .from('pins')
       .select('id, title, category, lat, lng, bookmark_count, profiles!created_by(username, role, hostel_name)')
+      .eq('is_hidden', false)
       .gte('lat', point.lat - BBOX_DEGREES)
       .lte('lat', point.lat + BBOX_DEGREES)
       .gte('lng', point.lng - BBOX_DEGREES)
@@ -104,14 +105,22 @@ async function queryPinsNear(
       return [];
     }
 
-    return (data ?? []).map((row: {
+    // Supabase's generated types declare embedded relations as arrays even
+    // when the FK is single-valued (one profile per pin). At runtime the
+    // PostgREST `profiles!created_by(...)` syntax returns a single object
+    // (or null), not an array — so we cast through `unknown` and treat it
+    // as an object. Same pattern as src/features/pins/pinApi.ts line 117.
+    type Row = {
       title: string;
       category: string;
       lat: number;
       lng: number;
       bookmark_count?: number;
       profiles?: { username?: string; role?: string; hostel_name?: string } | null;
-    }) => {
+    };
+    const rows = (data ?? []) as unknown as Row[];
+
+    return rows.map((row) => {
       const profile = row.profiles;
       const isHostel = profile?.role === 'hostel';
       const contributorLabel = isHostel

@@ -61,6 +61,22 @@ export function PinLayer({
   // HTML marker bookkeeping: markers by id (persisted), and those currently in DOM.
   const markersRef = useRef<globalThis.Map<string, Marker>>(new globalThis.Map());
   const markersOnScreenRef = useRef<globalThis.Map<string, Marker>>(new globalThis.Map());
+  // Two-phase removal queue: markers that were missing from the last
+  // querySourceFeatures call. Only actually removed when missing for two
+  // consecutive frames. Smooths out one-frame cluster-recompute jitter that
+  // would otherwise look like flicker as the user pans.
+  const pendingRemoveRef = useRef<Set<string>>(new Set());
+  // True while the map is mid-animation (pan or zoom). While animating we
+  // ADD markers eagerly but NEVER remove — clustering recomputes constantly
+  // during a zoom and reacting to that with marker removals causes flicker.
+  // Mapbox's Marker class handles per-frame screen-space repositioning of
+  // existing markers automatically, so they keep tracking the map smoothly.
+  const isAnimatingRef = useRef(false);
+  // Stash the animation listeners so the install effect's cleanup can detach.
+  const animListenersRef = useRef<{
+    onAnimationStart: () => void;
+    onAnimationEnd: () => void;
+  } | null>(null);
 
   const popupRef = useRef<mapboxgl.Popup | null>(null);
   const popupRootRef = useRef<Root | null>(null);
@@ -75,6 +91,13 @@ export function PinLayer({
       if (!map.isSourceLoaded(SRC)) return;
 
       const features = map.querySourceFeatures(SRC);
+
+      // Defensive: querySourceFeatures can briefly return [] during cluster
+      // recompute even when isSourceLoaded() is true. Bailing out when there
+      // are no features AND we have pins prevents a one-frame flash where
+      // every marker is removed and re-added next frame.
+      if (features.length === 0 && pinsRef.current.length > 0) return;
+
       const next = new globalThis.Map<string, Marker>();
 
       for (const feat of features) {
@@ -105,9 +128,31 @@ export function PinLayer({
         if (!markersOnScreenRef.current.has(pinId)) marker.addTo(map);
       }
 
-      // Remove markers no longer on screen (clustered or viewport-culled).
-      for (const [id, marker] of markersOnScreenRef.current) {
-        if (!next.has(id)) marker.remove();
+      // Removal policy:
+      //   • While animating (pan/zoom): NEVER remove. Just keep currently-
+      //     visible markers visible. The cluster algorithm thrashes during
+      //     animation and removing in response causes the disappearing-pins
+      //     bug. Mapbox auto-repositions existing markers as the map moves.
+      //   • At rest: two-phase removal. A marker only leaves the DOM if it
+      //     was missing on the previous frame too. Single-frame absences are
+      //     cluster-recompute jitter, not real changes.
+      if (isAnimatingRef.current) {
+        for (const [id, marker] of markersOnScreenRef.current) {
+          if (!next.has(id)) next.set(id, marker);
+        }
+        pendingRemoveRef.current.clear();
+      } else {
+        const newPending = new Set<string>();
+        for (const [id, marker] of markersOnScreenRef.current) {
+          if (next.has(id)) continue;
+          if (pendingRemoveRef.current.has(id)) {
+            marker.remove(); // missing for 2+ frames → really gone
+          } else {
+            newPending.add(id);
+            next.set(id, marker);
+          }
+        }
+        pendingRemoveRef.current = newPending;
       }
       markersOnScreenRef.current = next;
     };
@@ -178,6 +223,26 @@ export function PinLayer({
       // Sync HTML markers every frame (guarded by isSourceLoaded). This matches
       // the Mapbox "cluster-html" example  cheap because the guard short-circuits.
       map.on("render", updateMarkers);
+
+      // Animation gates: suppress marker REMOVAL during pan/zoom (see comment
+      // on isAnimatingRef). On settle we run a final reconcile so the steady-
+      // state marker set matches the visible features.
+      const onAnimationStart = () => { isAnimatingRef.current = true; };
+      const onAnimationEnd = () => {
+        isAnimatingRef.current = false;
+        // Drop any pending grace tokens so the post-settle reconcile makes
+        // a clean decision rather than carrying over animation-era state.
+        pendingRemoveRef.current.clear();
+        updateMarkers();
+      };
+      map.on("movestart", onAnimationStart);
+      map.on("zoomstart", onAnimationStart);
+      map.on("moveend", onAnimationEnd);
+      map.on("zoomend", onAnimationEnd);
+
+      // Stash so cleanup can remove them.
+      animListenersRef.current = { onAnimationStart, onAnimationEnd };
+
       // Run once now in case source is already loaded (HMR etc).
       updateMarkers();
     };
@@ -188,9 +253,19 @@ export function PinLayer({
     return () => {
       try {
         map.off("render", updateMarkers);
+        if (animListenersRef.current) {
+          const { onAnimationStart, onAnimationEnd } = animListenersRef.current;
+          map.off("movestart", onAnimationStart);
+          map.off("zoomstart", onAnimationStart);
+          map.off("moveend", onAnimationEnd);
+          map.off("zoomend", onAnimationEnd);
+          animListenersRef.current = null;
+        }
         for (const m of markersOnScreenRef.current.values()) m.remove();
         markersOnScreenRef.current.clear();
         markersRef.current.clear();
+        pendingRemoveRef.current.clear();
+        isAnimatingRef.current = false;
         if (map.getLayer(L_CLUSTER_COUNT)) map.removeLayer(L_CLUSTER_COUNT);
         if (map.getLayer(L_CLUSTERS)) map.removeLayer(L_CLUSTERS);
         if (map.getSource(SRC)) map.removeSource(SRC);
@@ -201,8 +276,18 @@ export function PinLayer({
   }, [map]);
 
   // --- Data sync: push pins into the source whenever they change. ---------
+  // Track the last fingerprint so re-renders that produce a *new array with
+  // identical pins* (common after race-fixed reloads) don't re-call setData,
+  // which would force Mapbox to recluster and could briefly flash markers.
+  const lastFingerprintRef = useRef<string>("");
   useEffect(() => {
     if (!map) return;
+    const fingerprint = pins
+      .map((p) => `${p.id}:${p.lat.toFixed(6)},${p.lng.toFixed(6)}`)
+      .join("|");
+    if (fingerprint === lastFingerprintRef.current) return;
+    lastFingerprintRef.current = fingerprint;
+
     const src = map.getSource(SRC) as GeoJSONSource | undefined;
     if (src) src.setData(pinsToFc(pins));
     // Drop cached markers whose pin is gone  prevents stale DOM when a pin is deleted.
@@ -212,6 +297,7 @@ export function PinLayer({
         marker.remove();
         markersRef.current.delete(id);
         markersOnScreenRef.current.delete(id);
+        pendingRemoveRef.current.delete(id);
       }
     }
   }, [map, pins]);
@@ -303,8 +389,12 @@ export function PinLayer({
     return () => {
       window.clearTimeout(timer);
     };
+    // Depend only on selectedPin?.id (not the full object) so a re-fetch that
+    // gives us a new Pin reference for the same pin doesn't tear down + rebuild
+    // the popup. The content-refresh effect below handles re-rendering when
+    // selectedPin's contents change (bookmarks, etc).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, selectedPin]);
+  }, [map, selectedPin?.id]);
 
   useEffect(() => {
     if (!popupRootRef.current || !selectedPin) return;

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import type { Pin } from "../pins/pinTypes";
-import { isBookmarked } from "../pins/pinApi";
+import { isBookmarked, reportPin } from "../pins/pinApi";
 import { categoryEmoji, MOBILE_BREAKPOINT } from "./mapConstants";
 import { getMapsUrl } from "../../lib/mapsUtils";
+import { imgPopup } from "../../lib/imageTransforms";
 
 export type PinPopupProps = {
   pin: Pin;
@@ -59,6 +61,8 @@ export function PinPopup({
   // another tab), we want the button to reflect truth.
   const [bookmarkedConfirmed, setBookmarkedConfirmed] = useState<boolean | null>(null);
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportBusy, setReportBusy] = useState(false);
 
   useEffect(() => {
     // Itinerary pins are ephemeral — skip the server round-trip.
@@ -100,7 +104,9 @@ export function PinPopup({
           onClick={(e) => { e.stopPropagation(); onShowImages(pin.imageUrls ?? []); }}
         >
           <img
-            src={pin.imageUrls[0]}
+            src={imgPopup(pin.imageUrls[0])}
+            loading="lazy"
+            decoding="async"
             className={`w-full object-cover block ${isMobile ? "h-[120px]" : "h-[140px]"}`}
           />
           {pin.imageUrls.length > 1 && (
@@ -129,6 +135,27 @@ export function PinPopup({
             <span className="px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-800 text-xs font-semibold">
               📋 From your itinerary
             </span>
+          ) : pin.createdByHandle ? (
+            // 5.1: when the author has a handle, the attribution is a link
+            // to their public profile. PinPopup is mounted via createRoot
+            // outside the main app tree, so we can't use the in-app router
+            // setter directly — pushState + a manual popstate event lets
+            // App.tsx's pathname listener pick up the change without a full
+            // page reload.
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const url = `/u/${pin.createdByHandle}`;
+                window.history.pushState({}, '', url);
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="px-2 py-1 rounded-full bg-blue-600/[0.12] text-xs cursor-pointer border-none hover:bg-blue-600/[0.2] transition-colors"
+            >
+              {pin.createdByType === "hostel"
+                ? `Recommended by ${pin.createdByLabel}`
+                : `Pinned by ${pin.createdByLabel}`}
+            </button>
           ) : (
             <span className="px-2 py-1 rounded-full bg-blue-600/[0.12] text-xs">
               {pin.createdByType === "hostel"
@@ -210,8 +237,109 @@ export function PinPopup({
               Delete
             </button>
           )}
+
+          {/* Report — only shown to other users, not to the pin's author */}
+          {!isItineraryPin && !isOwnPin && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setReportDialogOpen(true); }}
+              disabled={reportBusy}
+              className="px-2.5 py-2 rounded-[10px] border border-black/[0.12] bg-white text-slate-400 hover:text-slate-600 cursor-pointer text-[12px] font-semibold outline-none flex-none"
+              title="Report this pin"
+            >
+              🚩 Report
+            </button>
+          )}
         </div>
       </div>
+
+      {reportDialogOpen && (
+        <ReportDialog
+          onCancel={() => setReportDialogOpen(false)}
+          onSubmit={async (reason) => {
+            setReportBusy(true);
+            try {
+              await reportPin(pin.id, reason);
+              setReportDialogOpen(false);
+              toast.success("Report submitted — thanks for keeping the map safe.");
+            } catch (err) {
+              const msg =
+                (err as { code?: string })?.code === "23505"
+                  ? "You've already reported this pin."
+                  : err instanceof Error
+                    ? err.message
+                    : "Failed to submit report.";
+              toast.error(msg);
+            } finally {
+              setReportBusy(false);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── ReportDialog ────────────────────────────────────────────────────────────
+// Self-contained modal rendered inside PinPopup's isolated React tree
+// (PinPopup is mounted via createRoot in PinLayer — no Context providers from
+// the main app tree are available here).
+
+function ReportDialog({
+  onSubmit,
+  onCancel,
+}: {
+  onSubmit: (reason: string) => void | Promise<void>;
+  onCancel: () => void;
+}) {
+  const [reason, setReason] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(reason.trim());
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Report pin"
+      onClick={onCancel}
+      onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
+      className="fixed inset-0 flex items-center justify-center z-[9999] p-4"
+    >
+      <form
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={handleSubmit}
+        className="bg-white rounded-2xl shadow-[0_18px_48px_rgba(0,0,0,0.22)] max-w-md w-full p-5 flex flex-col gap-3"
+      >
+        <h3 className="text-lg font-bold text-slate-900 m-0">Report this pin</h3>
+        <p className="text-sm text-slate-600 m-0">
+          Tell us what's wrong — this helps keep the map safe for everyone.
+        </p>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="e.g. Spam, inaccurate location, inappropriate content…"
+          maxLength={500}
+          rows={3}
+          className="px-3 py-2 rounded-lg border border-black/[0.18] text-sm text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 resize-none"
+        />
+        <div className="flex gap-2 justify-end mt-1">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 rounded-lg border border-black/[0.18] bg-white hover:bg-gray-100 text-slate-900 font-semibold text-sm min-h-[40px] cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm min-h-[40px] cursor-pointer border-none"
+          >
+            Submit report
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

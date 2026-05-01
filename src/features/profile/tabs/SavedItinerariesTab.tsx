@@ -1,5 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
 import { deleteItinerary, getMyItineraries, type SavedItinerary } from '../profileApi';
+import { setItineraryPublic } from '../publicProfileApi';
+import { useConfirm } from '../../../components/ConfirmDialog';
+import { Skeleton } from '../../../components/Skeleton';
 
 // No props — the modal shell's header owns "back to menu" navigation. We used
 // to take an `onBackToMenu` prop and render our own back button above the list,
@@ -39,17 +43,58 @@ export function SavedItinerariesTab() {
     })();
   }, []);
 
-  async function onDeleteItinerary(itineraryId: string) {
-    if (!window.confirm('🗑️ Are you sure you want to delete this itinerary?')) {
-      return;
+  const confirm = useConfirm();
+
+  /**
+   * 5.1: flip an itinerary's is_public flag. Optimistic — we update the
+   * local state first so the UI feels snappy, then revert if the DB call
+   * fails. The toggle is a quick action so we don't gate it behind a
+   * confirm dialog; the user can always toggle it back.
+   */
+  async function onTogglePublic(itineraryId: string, nextPublic: boolean) {
+    // Optimistic update.
+    setSavedItineraries((prev) =>
+      prev.map((it) => (it.id === itineraryId ? { ...it, is_public: nextPublic } : it))
+    );
+    if (selectedItinerary?.id === itineraryId) {
+      setSelectedItinerary({ ...selectedItinerary, is_public: nextPublic });
     }
+
+    try {
+      await setItineraryPublic(itineraryId, nextPublic);
+      toast.success(nextPublic ? 'Itinerary is now public' : 'Itinerary is now private');
+    } catch (e: any) {
+      // Revert on failure.
+      setSavedItineraries((prev) =>
+        prev.map((it) => (it.id === itineraryId ? { ...it, is_public: !nextPublic } : it))
+      );
+      if (selectedItinerary?.id === itineraryId) {
+        setSelectedItinerary({ ...selectedItinerary, is_public: !nextPublic });
+      }
+      const message = e?.message ?? 'Failed to update visibility';
+      toast.error(message);
+    }
+  }
+
+  async function onDeleteItinerary(itineraryId: string) {
+    const ok = await confirm({
+      title: 'Delete this itinerary?',
+      message: "You can't undo this — the saved itinerary will be gone for good.",
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    });
+    if (!ok) return;
 
     try {
       await deleteItinerary(itineraryId);
       setSavedItineraries(savedItineraries.filter((it) => it.id !== itineraryId));
+      toast.success('Itinerary deleted');
       setMsg('Itinerary deleted.');
     } catch (e: any) {
-      setErr(e?.message ?? 'Failed to delete itinerary');
+      const message = e?.message ?? 'Failed to delete itinerary';
+      toast.error(message);
+      setErr(message);
     }
   }
 
@@ -96,25 +141,47 @@ export function SavedItinerariesTab() {
         {err && <div className="mt-2 text-[crimson] text-[13px]">{err}</div>}
         {msg && <div className="mt-2 text-green-600 text-[13px]">{msg}</div>}
 
-        <div className="flex gap-2 mt-4 border-t border-black/[0.08] pt-4">
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(selectedItinerary.markdown_content);
-              alert('✅ Itinerary copied to clipboard!');
-            }}
-            className={copyBtnClass}
-          >
-            📋 Copy
-          </button>
-          <button
-            onClick={() => {
-              onDeleteItinerary(selectedItinerary.id);
-              setSelectedItinerary(null);
-            }}
-            className={deleteBtnClass}
-          >
-            🗑️ Delete
-          </button>
+        <div className="flex flex-col gap-3 mt-4 border-t border-black/[0.08] pt-4">
+          {/* Public/private toggle — owner-only since this whole tab is owner-scoped. */}
+          <label className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-gray-50 border border-black/[0.06] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selectedItinerary.is_public}
+              onChange={(e) => onTogglePublic(selectedItinerary.id, e.target.checked)}
+              className="mt-0.5 w-4 h-4 cursor-pointer"
+            />
+            <span className="flex-1 text-[13px] text-[#111]">
+              <span className="font-semibold block">
+                {selectedItinerary.is_public ? '🌍 Public on your profile' : '🔒 Private'}
+              </span>
+              <span className="text-xs text-gray-600 block mt-0.5">
+                {selectedItinerary.is_public
+                  ? 'Anyone visiting your profile can see this itinerary.'
+                  : 'Only you can see this itinerary.'}
+              </span>
+            </span>
+          </label>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(selectedItinerary.markdown_content);
+                toast.success('Copied to clipboard');
+              }}
+              className={copyBtnClass}
+            >
+              📋 Copy
+            </button>
+            <button
+              onClick={() => {
+                onDeleteItinerary(selectedItinerary.id);
+                setSelectedItinerary(null);
+              }}
+              className={deleteBtnClass}
+            >
+              🗑️ Delete
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -130,10 +197,24 @@ export function SavedItinerariesTab() {
       {msg && <div className="mb-3 text-green-600 text-[13px]">{msg}</div>}
 
       {loadingItineraries ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-sm text-[#666] mb-2">Loading...</div>
-          </div>
+        <div className="flex flex-col gap-3">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="bg-white border border-black/[0.08] rounded-xl p-4 flex flex-col gap-2"
+            >
+              <Skeleton className="h-5 w-2/3 rounded" />
+              <div className="flex flex-col gap-1.5 mt-1">
+                <Skeleton className="h-3 w-4/5 rounded" />
+                <Skeleton className="h-3 w-3/5 rounded" />
+                <Skeleton className="h-3 w-2/5 rounded" />
+              </div>
+              <div className="flex gap-2 mt-2">
+                <Skeleton className="h-9 flex-1 rounded-lg" />
+                <Skeleton className="h-9 flex-1 rounded-lg" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : savedItineraries.length === 0 ? (
         <div className="flex-1 flex items-center justify-center text-center">
@@ -153,7 +234,14 @@ export function SavedItinerariesTab() {
               className="bg-white border border-black/[0.08] hover:border-purple-600 hover:bg-purple-600/[0.02] rounded-xl p-4 flex flex-col gap-2 cursor-pointer transition-colors"
               onClick={() => setSelectedItinerary(itinerary)}
             >
-              <div className="text-base font-bold text-[#111]">{itinerary.title}</div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="text-base font-bold text-[#111]">{itinerary.title}</div>
+                {itinerary.is_public && (
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-green-700 bg-green-100 px-1.5 py-0.5 rounded">
+                    Public
+                  </span>
+                )}
+              </div>
 
               <div className="text-[13px] text-[#666] flex flex-col gap-1">
                 <div>
@@ -183,7 +271,7 @@ export function SavedItinerariesTab() {
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(itinerary.markdown_content);
-                    alert('✅ Itinerary copied to clipboard!');
+                    toast.success('Copied to clipboard');
                   }}
                   className={copyBtnClass}
                 >

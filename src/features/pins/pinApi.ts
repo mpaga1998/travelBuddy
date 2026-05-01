@@ -12,6 +12,7 @@ type DbPinRow = {
   created_at: string;
   created_by: string; // Add this field
   bookmark_count: number;
+  report_count: number;
   tips?: string[],
   image_urls?: string[],
   profiles: {
@@ -20,6 +21,7 @@ type DbPinRow = {
     role: "traveler" | "hostel";
     hostel_name: string | null;
     dob: string | null;
+    handle: string | null;
   } | null;
 
   // ✅ IMPORTANT: Supabase returns joined relations as arrays
@@ -44,24 +46,92 @@ function safeCategory(raw: string): PinCategory {
   return ALLOWED_CATEGORIES.includes(raw as PinCategory) ? (raw as PinCategory) : "other";
 }
 
-export async function listPins(): Promise<Pin[]> {
-  const { data, error } = await supabase
+export type PinBounds = {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+};
+
+export type PinFilters = {
+  bounds?: PinBounds;
+  /** Filter to a single category. Omit or pass undefined for all categories. */
+  category?: PinCategory;
+  /**
+   * Filter by creator type (traveler | hostel). Omit for both.
+   * Implemented via profiles.role with an INNER join so the parent row is
+   * excluded when the profile doesn't match — safe because every pin requires
+   * an authenticated user who has a profile row.
+   */
+  creatorType?: "traveler" | "hostel";
+  // NOTE: ageRanges is intentionally absent. Age is computed from profiles.dob
+  // in the mapping layer — there is no created_by_age column in the database.
+  // Age filtering stays in the client-side useMemo inside useMapPins.
+};
+
+// Base SELECT for queries without a creatorType filter (LEFT JOIN on profiles
+// so pins with no profile are still returned — defensive).
+const SELECT_DEFAULT = `
+  id, title, description, category, lat, lng, created_at, created_by, bookmark_count,
+  report_count, tips, image_urls,
+  profiles:created_by (id, username, role, hostel_name, dob, handle),
+  reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
+`;
+
+// When filtering by role we need an INNER JOIN so PostgREST uses the
+// profiles.role filter to exclude parent rows, not just the embedded result.
+const SELECT_INNER = `
+  id, title, description, category, lat, lng, created_at, created_by, bookmark_count,
+  report_count, tips, image_urls,
+  profiles:created_by!inner (id, username, role, hostel_name, dob, handle),
+  reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
+`;
+
+export async function listPins(opts: PinFilters = {}): Promise<{ pins: Pin[]; limitReached: boolean }> {
+  const { bounds, category, creatorType } = opts;
+
+  // Resolve the current user so the author can still see their own hidden pin.
+  // Failures (unauthenticated, network) fall back to filtering hidden pins for everyone.
+  const { data: authData } = await supabase.auth.getUser();
+  const currentUserId = authData?.user?.id ?? null;
+
+  let query = supabase
     .from("pins")
-    .select(
-      `
-      id, title, description, category, lat, lng, created_at, created_by, bookmark_count,
-      tips, image_urls,
-      profiles:created_by (id, username, role, hostel_name, dob),
-      reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
-    `
-    )
-    .order("created_at", { ascending: false });
+    .select(creatorType ? SELECT_INNER : SELECT_DEFAULT)
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  // Hidden-pin filter: show pin if it is not hidden, OR if the viewer is the author.
+  if (currentUserId) {
+    query = query.or(`is_hidden.eq.false,created_by.eq.${currentUserId}`);
+  } else {
+    query = query.eq("is_hidden", false);
+  }
+
+  if (bounds) {
+    query = query
+      .gte("lat", bounds.south)
+      .lte("lat", bounds.north)
+      .gte("lng", bounds.west)
+      .lte("lng", bounds.east);
+  }
+
+  if (category) {
+    query = query.eq("category", category);
+  }
+
+  if (creatorType) {
+    query = query.eq("profiles.role", creatorType);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
 
   const rows = (data ?? []) as unknown as DbPinRow[];
+  const limitReached = rows.length === 500;
 
-  return rows.map((row) => {
+  const mapped = rows.map((row) => {
     const counts = row.reaction_counts?.[0] ?? null;
 
     return {
@@ -81,13 +151,17 @@ export async function listPins(): Promise<Pin[]> {
           ? row.profiles?.hostel_name ?? "Hostel"
           : row.profiles?.username ?? "Traveler",
       createdByAge: row.profiles?.dob ? calculateAge(row.profiles.dob) : null,
+      createdByHandle: row.profiles?.handle ?? null,
 
       // ✅ now works
       likesCount: counts?.likes_count ?? 0,
       dislikesCount: counts?.dislikes_count ?? 0,
       bookmarkCount: row.bookmark_count ?? 0,
+      reportCount: row.report_count ?? 0,
     };
   });
+
+  return { pins: mapped, limitReached };
 }
 
 export async function uploadPinImage(file: File): Promise<string> {
@@ -267,4 +341,26 @@ export async function toggleBookmark(pinId: string): Promise<boolean> {
     if (error) throw error;
     return true; // Now bookmarked
   }
+}
+
+/**
+ * Submit a report against a pin. The unique constraint on (pin_id, reporter_id)
+ * will cause Supabase to return a 23505 error if the user has already reported
+ * this pin — callers should surface that as "already reported".
+ *
+ * `reason` may be an empty string — the DB column is NOT NULL but there is no
+ * non-empty CHECK constraint, so an empty string is valid.
+ */
+export async function reportPin(pinId: string, reason: string): Promise<void> {
+  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  if (userErr) throw userErr;
+
+  const user = userData.user;
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("pin_reports")
+    .insert({ pin_id: pinId, reporter_id: user.id, reason });
+
+  if (error) throw error;
 }

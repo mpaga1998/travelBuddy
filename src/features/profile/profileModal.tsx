@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { Skeleton } from '../../components/Skeleton';
 import { getMyProfile, type Profile } from './profileApi';
 import { ProfileInfoTab } from './tabs/ProfileInfoTab';
 import { BookmarkedPinsTab } from './tabs/BookmarkedPinsTab';
@@ -228,12 +229,26 @@ function MenuScreen({ onPick }: { onPick: (s: Section) => void }) {
 }
 
 function LoadingScreen({ isMobile }: { isMobile: boolean }) {
+  // Shape matches ProfileInfoTab: avatar circle + upload button + 6 form fields.
+  const fields = Array.from({ length: 6 });
   return (
     <div
-      className={`flex-1 flex flex-col items-center justify-center gap-4 p-8 ${isMobile ? 'min-h-[300px]' : 'min-h-[400px]'}`}
+      className={`flex-1 overflow-auto p-4 flex flex-col ${isMobile ? 'min-h-[300px]' : 'min-h-[400px]'}`}
     >
-      <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin" />
-      <div className="text-sm text-slate-500 font-medium">Loading profile…</div>
+      <div className="grid justify-items-center gap-2.5 mb-4">
+        <Skeleton
+          className={`${isMobile ? 'w-[90px] h-[90px]' : 'w-[110px] h-[110px]'} rounded-full`}
+        />
+        <Skeleton className="h-10 w-28 rounded-lg" />
+      </div>
+      <div className="grid grid-cols-1 gap-3">
+        {fields.map((_, i) => (
+          <div key={i} className="flex flex-col gap-1.5">
+            <Skeleton className="h-3 w-20 rounded" />
+            <Skeleton className="h-10 w-full rounded-lg" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

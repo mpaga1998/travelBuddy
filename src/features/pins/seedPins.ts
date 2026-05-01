@@ -12,9 +12,11 @@ export const seedPins: Pin[] = [
     createdByType: "hostel",
     createdById: "h1",
     createdByAge: null,
+    createdByHandle: null,
     likesCount: 12,
     dislikesCount: 0,
     bookmarkCount: 0,
+    reportCount: 0,
     createdAt: new Date().toISOString(),
   },
   {
@@ -28,9 +30,11 @@ export const seedPins: Pin[] = [
     createdByType: "traveler",
     createdById: "u2",
     createdByAge: 28,
+    createdByHandle: null,
     likesCount: 5,
     dislikesCount: 0,
     bookmarkCount: 0,
+    reportCount: 0,
     createdAt: new Date().toISOString(),
   },
 ];
