@@ -111,7 +111,11 @@ export function PinComments({ pinId, currentUserId }: PinCommentsProps) {
             onClick={(e) => e.stopPropagation()}
             placeholder="Add a comment…"
             rows={2}
-            className="w-full px-2.5 py-2 rounded-lg border border-black/[0.18] text-[13px] resize-y min-h-[48px] focus:outline-none focus:border-blue-600"
+            // bg-white + text-[#111] + [color-scheme:light] forces the
+            // composer to stay readable on Android/iOS Chrome's dark mode,
+            // which otherwise auto-darkens unstyled <textarea>s. Same trick
+            // we already use on the date inputs in ItineraryForm.
+            className="w-full px-2.5 py-2 rounded-lg border border-black/[0.18] text-[13px] resize-y min-h-[48px] bg-white text-[#111] placeholder:text-gray-400 [color-scheme:light] focus:outline-none focus:border-blue-600"
           />
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-gray-400">
