@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import * as Sentry from '@sentry/react';
 
 /**
  * Feature-level error boundary.
@@ -44,6 +45,9 @@ export class FeatureErrorBoundary extends Component<Props, State> {
       error,
       info.componentStack,
     );
+    Sentry.captureException(error, {
+      contexts: { react: { componentStack: info.componentStack } },
+    });
     this.props.onError?.(error, info);
   }
 

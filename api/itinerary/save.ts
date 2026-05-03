@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { initSupabase } from '../lib/supabaseServer.js';
 import { requireAuth } from '../lib/requireAuth.js';
 import { validateBodySize } from '../lib/validateBodySize.js';
+import { captureApiError } from '../lib/sentryServer.js';
 
 // Load environment variables
 dotenv.config();
@@ -114,16 +115,24 @@ export default async function handler(
       .single();
 
     if (error) {
+      // Supabase returns PostgrestError-shaped objects from .insert(). Cast
+      // to a narrow shape so we can pull the diagnostic fields without `any`.
+      const dbErr = error as {
+        message: string;
+        code?: string;
+        details?: string;
+        hint?: string;
+      };
       console.error('❌ [SAVE] Database error:', {
-        message: error.message,
-        code: (error as any).code,
-        details: (error as any).details,
-        hint: (error as any).hint,
+        message: dbErr.message,
+        code: dbErr.code,
+        details: dbErr.details,
+        hint: dbErr.hint,
       });
       res.status(400).json({
         success: false,
-        error: `Database error: ${error.message}`,
-        details: (error as any).details,
+        error: `Database error: ${dbErr.message}`,
+        details: dbErr.details,
       });
       return;
     }
@@ -145,6 +154,7 @@ export default async function handler(
       message: 'Itinerary saved successfully',
     });
   } catch (error) {
+    captureApiError(error);
     console.error('❌ [SAVE] Catch block error:', {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,

@@ -11,10 +11,13 @@
     "dev:frontend": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepare": "husky"
   },
   "dependencies": {
     "@mapbox/point-geometry": "^1.1.0",
+    "@sentry/node": "^10.51.0",
+    "@sentry/react": "^10.51.0",
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/supabase-js": "^2.98.0",
@@ -41,6 +44,8 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "postcss": "^8.5.10",
     "tailwindcss": "^3.4.19",
     "typescript": "~5.9.3",
@@ -50,5 +55,8 @@
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "4.59.0",
     "@rollup/rollup-linux-x64-musl": "4.59.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": "eslint --fix"
   }
 }

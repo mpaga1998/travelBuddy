@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import dotenv from 'dotenv';
 import { requireAdmin } from '../lib/requireAdmin.js';
+import { captureApiError } from '../lib/sentryServer.js';
 import { validateBodySize } from '../lib/validateBodySize.js';
 import { initSupabase } from '../lib/supabaseServer.js';
 
@@ -87,6 +88,7 @@ export default async function handler(
     console.log(`🛡️ [ADMIN] ${admin.id} ${action}d pin ${pinId}`);
     res.status(200).json({ success: true });
   } catch (err) {
+    captureApiError(err);
     console.error('🛡️ [ADMIN] /api/admin/action failed:', err);
     res.status(500).json({
       success: false,
