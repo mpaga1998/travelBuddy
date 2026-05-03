@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
+import { track } from '../../lib/analytics';
 
 const inputClass =
   "px-3 py-2.5 rounded-[10px] border border-black/20 outline-none text-slate-900 bg-white";
@@ -99,6 +100,7 @@ export function AuthPage() {
       });
 
       if (signUpError) throw signUpError;
+      track('signup');
 
       // If email confirmations are ON, there is no session yet.
       if (!signUpData.session) {

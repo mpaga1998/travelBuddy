@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ItineraryInput } from '../types';
 import { generateItinerary } from '../itineraryApi';
+import { track } from '../../../lib/analytics';
 
 export type DraftStep = 'form' | 'loading' | 'streaming' | 'result';
 
@@ -45,6 +46,14 @@ export function useItineraryDraft(): ItineraryDraft {
       // Belt + suspenders: ensure we end on the final text.
       setMarkdown(result);
       setStep('result');
+      const nights = Math.max(
+        0,
+        Math.round(
+          (new Date(input.departure.date).getTime() - new Date(input.arrival.date).getTime()) /
+            86_400_000,
+        ),
+      );
+      track('itinerary_generated', { days: nights + 1 });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setStep('form');

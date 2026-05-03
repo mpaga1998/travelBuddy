@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Pin } from "../pins/pinTypes";
 import { isBookmarked, reportPin } from "../pins/pinApi";
+import { track } from '../../lib/analytics';
 import { PinComments } from "../pins/PinComments";
 import { categoryEmoji, MOBILE_BREAKPOINT } from "./mapConstants";
 import { getMapsUrl } from "../../lib/mapsUtils";
@@ -269,6 +270,7 @@ export function PinPopup({
             setReportBusy(true);
             try {
               await reportPin(pin.id, reason);
+              track('pin_reported');
               setReportDialogOpen(false);
               toast.success("Report submitted — thanks for keeping the map safe.");
             } catch (err) {

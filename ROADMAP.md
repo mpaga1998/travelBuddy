@@ -5,7 +5,7 @@ Do phases top-to-bottom; each assumes the previous is done.
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Progress:** 27 / 50 steps complete — **Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 5 ✅**
+**Progress:** 31 / 50 steps complete — **Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 5 ✅**
 
 ---
 
@@ -73,11 +73,11 @@ This is what makes it a "community" app. Currently missing despite the pitch.
 Before real users land.
 
 - [ ] **6.1** Structured logging. Replace every `console.log` in `api/` with `pino`. Tag logs with request IDs (use Vercel's `x-vercel-id` header or generate one).
-- [ ] **6.2** Error tracking. Drop Sentry into frontend (`@sentry/react`) and backend (`@sentry/node`). ~10 min of setup.
-- [ ] **6.3** Baseline analytics. PostHog or Plausible. Track: signup, pin created, itinerary generated/saved, follow, pin reported.
+- [x] **6.2** Error tracking. Drop Sentry into frontend (`@sentry/react`) and backend (`@sentry/node`). ~10 min of setup.
+- [x] **6.3** Baseline analytics. PostHog or Plausible. Track: signup, pin created, itinerary generated/saved, follow, pin reported.
 - [ ] **6.4** Smoke tests in Playwright: sign up, log in, create pin, generate itinerary, save itinerary.
-- [ ] **6.5** GitHub Actions CI. Lint + typecheck + Playwright tests. Block merge on failure.
-- [ ] **6.6** Pre-commit lint/typecheck via `husky` + `lint-staged`.
+- [x] **6.5** GitHub Actions CI. Lint + typecheck + Playwright tests. Block merge on failure.
+- [x] **6.6** Pre-commit lint/typecheck via `husky` + `lint-staged`.
 
 ## Phase 7 — Product wedge
 

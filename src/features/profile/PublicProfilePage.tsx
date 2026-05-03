@@ -9,6 +9,7 @@ import {
   type PublicProfile,
 } from './publicProfileApi';
 import { followUser, isFollowing, unfollowUser } from './followApi';
+import { track } from '../../lib/analytics';
 import { supabase } from '../../lib/supabaseClient';
 import { imgAvatar, imgThumbnail } from '../../lib/imageTransforms';
 import { categoryEmoji } from '../map/mapConstants';
@@ -109,6 +110,7 @@ export function PublicProfilePage({ handle, onBack }: PublicProfilePageProps) {
     try {
       if (next) {
         await followUser(profile.id);
+        track('follow_added');
       } else {
         await unfollowUser(profile.id);
       }
