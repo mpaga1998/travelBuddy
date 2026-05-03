@@ -2,7 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import dotenv from 'dotenv';
 import { TripInput, ItineraryResponse } from './lib/types.js';
 import { generateItinerary } from './lib/openai.js';
-import { generateSuggestions } from './lib/itineraryRefinement.js';
+import { generateSuggestions, type GenerationContext } from './lib/itineraryRefinement.js';
 import { initSupabase } from './lib/supabaseServer.js';
 import { requireAuth } from './lib/requireAuth.js';
 import { validateBodySize } from './lib/validateBodySize.js';
@@ -298,8 +298,9 @@ export default async function handler(
 
         // Generate helpful suggestions based on error context. Validation
         // errors thrown deeper in the pipeline tack a `context` field onto
-        // the Error instance — cast to a narrowed shape rather than `any`.
-        const context = (error as Error & { context?: unknown }).context;
+        // the Error instance — type the cast against the actual shape so
+        // generateSuggestions accepts it without an `any` round-trip.
+        const context = (error as Error & { context?: GenerationContext }).context;
         if (context && req.body) {
           suggestions = generateSuggestions(req.body as TripInput, context);
         }
