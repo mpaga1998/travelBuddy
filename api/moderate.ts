@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { requireAuth } from './lib/requireAuth.js';
 import { validateBodySize } from './lib/validateBodySize.js';
 import { moderateText } from './lib/moderation.js';
+import { captureApiError } from './lib/sentryServer.js';
 
 dotenv.config();
 
@@ -60,6 +61,12 @@ export default async function handler(
     return;
   }
 
-  const { flagged, categories } = await moderateText(text);
-  res.status(200).json({ success: true, flagged, categories: categories ?? [] });
+  try {
+    const { flagged, categories } = await moderateText(text);
+    res.status(200).json({ success: true, flagged, categories: categories ?? [] });
+  } catch (err) {
+    captureApiError(err);
+    console.error('❌ [MODERATE] handler error:', err);
+    res.status(500).json({ success: false, error: 'Moderation check failed' });
+  }
 }

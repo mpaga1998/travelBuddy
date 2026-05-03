@@ -2,7 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import dotenv from 'dotenv';
 import { TripInput, ItineraryResponse } from './lib/types.js';
 import { generateItinerary } from './lib/openai.js';
-import { generateSuggestions } from './lib/itineraryRefinement.js';
+import { generateSuggestions, type GenerationContext } from './lib/itineraryRefinement.js';
 import { initSupabase } from './lib/supabaseServer.js';
 import { requireAuth } from './lib/requireAuth.js';
 import { validateBodySize } from './lib/validateBodySize.js';
@@ -14,6 +14,7 @@ import { fetchWeatherContext } from './lib/weatherContext.js';
 import { buildPracticalContext } from './lib/practicalContext.js';
 import { buildBudgetContext } from './lib/budgetContext.js';
 import { moderateText, MODERATION_REJECTION_MESSAGE } from './lib/moderation.js';
+import { captureApiError } from './lib/sentryServer.js';
 
 // Load environment variables
 dotenv.config();
@@ -237,8 +238,11 @@ export default async function handler(
       res.setHeader('X-Accel-Buffering', 'no');
       res.status(200);
       // Flush headers so the client sees the 200 before the first token.
-      if (typeof (res as any).flushHeaders === 'function') {
-        (res as any).flushHeaders();
+      // VercelResponse doesn't surface flushHeaders in its type, but it
+      // exists on the underlying Node ServerResponse — narrow safely.
+      const flushable = res as VercelResponse & { flushHeaders?: () => void };
+      if (typeof flushable.flushHeaders === 'function') {
+        flushable.flushHeaders();
       }
 
       const firstName = await firstNamePromise;
@@ -281,6 +285,7 @@ export default async function handler(
     res.status(200).json(response);
   } catch (error) {
     console.error('Itinerary generation error:', error);
+    captureApiError(error, { userId: user.id });
 
     let statusCode = 500;
     let errorMessage = 'Failed to generate itinerary';
@@ -291,8 +296,11 @@ export default async function handler(
         statusCode = 400;
         errorMessage = error.message;
 
-        // Generate helpful suggestions based on error context
-        const context = (error as any).context;
+        // Generate helpful suggestions based on error context. Validation
+        // errors thrown deeper in the pipeline tack a `context` field onto
+        // the Error instance — type the cast against the actual shape so
+        // generateSuggestions accepts it without an `any` round-trip.
+        const context = (error as Error & { context?: GenerationContext }).context;
         if (context && req.body) {
           suggestions = generateSuggestions(req.body as TripInput, context);
         }

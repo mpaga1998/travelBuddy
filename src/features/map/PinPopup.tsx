@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Pin } from "../pins/pinTypes";
 import { isBookmarked, reportPin } from "../pins/pinApi";
+import { track } from '../../lib/analytics';
+import { PinComments } from "../pins/PinComments";
 import { categoryEmoji, MOBILE_BREAKPOINT } from "./mapConstants";
 import { getMapsUrl } from "../../lib/mapsUtils";
 import { imgPopup } from "../../lib/imageTransforms";
@@ -250,6 +252,15 @@ export function PinPopup({
             </button>
           )}
         </div>
+
+        {/* 5.5: Comments thread. Hidden for ephemeral itinerary pins (not
+            persisted to the DB, so commenting on one would be a 404). The
+            section manages its own load + state — opening a different pin
+            recreates the popup root, which remounts PinComments with the
+            new pinId, so we don't need an explicit refresh hook here. */}
+        {!isItineraryPin && (
+          <PinComments pinId={pin.id} currentUserId={currentUserId} />
+        )}
       </div>
 
       {reportDialogOpen && (
@@ -259,6 +270,7 @@ export function PinPopup({
             setReportBusy(true);
             try {
               await reportPin(pin.id, reason);
+              track('pin_reported');
               setReportDialogOpen(false);
               toast.success("Report submitted — thanks for keeping the map safe.");
             } catch (err) {

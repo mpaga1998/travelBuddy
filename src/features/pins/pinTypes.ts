@@ -25,6 +25,8 @@ export type Pin = {
   dislikesCount: number;
   bookmarkCount: number;
   reportCount: number;
+  // 5.5: cached comment count maintained by triggers on pin_comments.
+  commentCount: number;
   tips?: string[];
   imageUrls?: string[];
   createdAt: string;

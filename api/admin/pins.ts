@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import dotenv from 'dotenv';
 import { requireAdmin } from '../lib/requireAdmin.js';
 import { initSupabase } from '../lib/supabaseServer.js';
+import { captureApiError } from '../lib/sentryServer.js';
 
 dotenv.config();
 
@@ -155,6 +156,7 @@ export default async function handler(
 
     res.status(200).json({ success: true, reported, hidden });
   } catch (err) {
+    captureApiError(err);
     console.error('🛡️ [ADMIN] /api/admin/pins failed:', err);
     res.status(500).json({
       success: false,

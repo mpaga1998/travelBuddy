@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Map as MapboxMap } from "mapbox-gl";
+import { track } from '../../lib/analytics';
 
 import type { Pin, PinCategory } from "../pins/pinTypes";
 import {
@@ -224,6 +225,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       tips: draft.tips.filter((t) => t.trim()),
       imageUrls,
     });
+    track('pin_created', { category: draft.category });
 
     setDraft(null);
     await reload();

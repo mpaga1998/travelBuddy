@@ -3,7 +3,7 @@
  *
  * Queries the Supabase `pins` table for community-submitted spots within
  * ~15 km of each trip location. These are injected into the prompt tagged
- * as "💎 From Backpack Map travelers" so the model can weave real community
+ * as "💎 From nook travelers" so the model can weave real community
  * recommendations into the generated itinerary.
  *
  * This is the app's unique angle: no other AI itinerary tool can say
@@ -193,7 +193,7 @@ export function renderCommunityPinsContext(ctx: CommunityPinsContext): string {
   if (!ctx.pins.length) return '';
 
   const lines: string[] = [
-    '**💎 Backpack Map community picks — weave 1–2 per day; preserve the exact names:**',
+    '**💎 nook community picks — weave 1–2 per day; preserve the exact names:**',
   ];
 
   for (const pin of ctx.pins) {

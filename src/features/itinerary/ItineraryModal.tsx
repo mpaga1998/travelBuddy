@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { saveItineraryToProfile } from './itineraryApi';
+import { track } from '../../lib/analytics';
 import { supabase } from '../../lib/supabaseClient';
 import { useItineraryDraft } from './hooks/useItineraryDraft';
 import { ItineraryForm } from './ItineraryForm';
@@ -82,6 +83,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
           interests: lastInput.interests,
         }
       );
+      track('itinerary_saved');
       toast.success('Itinerary saved to your profile');
       handleReset();
       onClose();

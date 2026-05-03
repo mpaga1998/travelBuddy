@@ -15,7 +15,7 @@ import { supabase } from '../../lib/supabaseClient';
  * same pattern).
  */
 
-export type NotificationKind = 'like' | 'bookmark' | 'follow';
+export type NotificationKind = 'like' | 'bookmark' | 'follow' | 'comment';
 
 export interface AppNotification {
   id: string;

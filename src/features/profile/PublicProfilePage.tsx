@@ -9,6 +9,7 @@ import {
   type PublicProfile,
 } from './publicProfileApi';
 import { followUser, isFollowing, unfollowUser } from './followApi';
+import { track } from '../../lib/analytics';
 import { supabase } from '../../lib/supabaseClient';
 import { imgAvatar, imgThumbnail } from '../../lib/imageTransforms';
 import { categoryEmoji } from '../map/mapConstants';
@@ -109,6 +110,7 @@ export function PublicProfilePage({ handle, onBack }: PublicProfilePageProps) {
     try {
       if (next) {
         await followUser(profile.id);
+        track('follow_added');
       } else {
         await unfollowUser(profile.id);
       }
@@ -519,7 +521,7 @@ function NotFound({ onBack }: { onBack: () => void }) {
       <div className="text-5xl mb-4">🧭</div>
       <h1 className="text-2xl font-bold mb-2">Profile not found</h1>
       <p className="text-sm text-gray-500 mb-6 max-w-md">
-        We couldn't find a Backpack Map profile with that handle. The user may have changed
+        We couldn't find a nook profile with that handle. The user may have changed
         their handle, or the link might be a typo.
       </p>
       <button

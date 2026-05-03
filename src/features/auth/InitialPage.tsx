@@ -149,7 +149,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
 
       {/* Title */}
       <h1 className="text-4xl font-bold m-0 mb-3 text-center">
-        travelBuddy
+        nook
       </h1>
 
       {/* Subtitle */}

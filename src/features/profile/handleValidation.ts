@@ -65,7 +65,8 @@ const RESERVED_HANDLES = new Set<string>([
   'itinerary',
   'itineraries',
   'backpack',
-  'backpackmap',
+  'nook',
+  'backpackmap', // legacy reservation — keep so it can't be claimed
   'official',
   'staff',
   'moderator',
