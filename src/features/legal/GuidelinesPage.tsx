@@ -26,7 +26,7 @@ export function GuidelinesPage({ onBack }: GuidelinesPageProps) {
 
         <h1 className="text-2xl font-bold mb-4">Community Guidelines</h1>
         <p className="mb-8 leading-relaxed text-gray-700">
-          Backpack Map exists to help travellers discover and share great experiences. These
+          nook exists to help travellers discover and share great experiences. These
           guidelines set out what kind of community we want to build — and what we won't tolerate.
           By using the platform you agree to follow them.
         </p>
@@ -66,7 +66,7 @@ export function GuidelinesPage({ onBack }: GuidelinesPageProps) {
 
         <h2 className="text-lg font-semibold mt-8 mb-3">5. Disclose Commercial Relationships</h2>
         <p className="mb-4 leading-relaxed">
-          Commercial promotion is permitted on Backpack Map, but only with clear and honest
+          Commercial promotion is permitted on nook, but only with clear and honest
           disclosure. If you operate a hostel, tour company, or other travel business, you must
           self-identify by selecting the appropriate account role when setting up your profile
           (the platform supports <strong>Traveler</strong> and <strong>Hostel</strong> profiles).

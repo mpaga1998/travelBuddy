@@ -28,7 +28,7 @@ export function TermsPage({ onBack }: TermsPageProps) {
 
         <h2 className="text-lg font-semibold mt-8 mb-3">1. Acceptable Use</h2>
         <p className="mb-4 leading-relaxed">
-          Backpack Map is a platform for discovering, sharing, and organising travel experiences. You
+          nook is a platform for discovering, sharing, and organising travel experiences. You
           may use the service only for lawful purposes and in accordance with these Terms. You agree
           not to use the service in any way that violates applicable local, national, or international
           laws or regulations.
@@ -45,7 +45,7 @@ export function TermsPage({ onBack }: TermsPageProps) {
         <h2 className="text-lg font-semibold mt-8 mb-3">3. Content Ownership</h2>
         <p className="mb-4 leading-relaxed">
           You retain full ownership of the pins, itineraries, and other content you create and post
-          on Backpack Map. By submitting content, you grant Backpack Map a non-exclusive, worldwide,
+          on nook. By submitting content, you grant nook a non-exclusive, worldwide,
           royalty-free licence to display, reproduce, and distribute your content within the
           application solely for the purpose of operating and improving the service. This licence
           ends when you delete the content or close your account.
@@ -70,7 +70,7 @@ export function TermsPage({ onBack }: TermsPageProps) {
 
         <h2 className="text-lg font-semibold mt-8 mb-3">6. Limitation of Liability</h2>
         <p className="mb-4 leading-relaxed">
-          To the maximum extent permitted by applicable law, Backpack Map's total liability to you
+          To the maximum extent permitted by applicable law, nook's total liability to you
           for any claim arising out of or relating to these Terms or the service is limited to the
           amount you have paid for the service. As the service is currently provided free of charge,
           that amount is <strong>zero (€0)</strong>.

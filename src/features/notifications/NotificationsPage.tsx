@@ -249,20 +249,22 @@ function Empty() {
 // ────────────────────────── Helpers ───────────────────────────────────────
 
 function describeAction(n: AppNotification): string {
-  const titleTag = (kind: NotificationKind) => {
-    if (!n.pinTitle) return kind === 'like' ? 'liked your pin' : 'bookmarked your pin';
-    return kind === 'like'
-      ? `liked your pin "${n.pinTitle}"`
-      : `bookmarked your pin "${n.pinTitle}"`;
+  // Verb per kind. Pin title is folded into the sentence when present.
+  const verbForPin: Record<Exclude<NotificationKind, 'follow'>, string> = {
+    like: 'liked',
+    bookmark: 'bookmarked',
+    comment: 'commented on',
   };
 
   switch (n.kind) {
-    case 'like':
-      return titleTag('like');
-    case 'bookmark':
-      return titleTag('bookmark');
     case 'follow':
       return 'started following you';
+    case 'like':
+    case 'bookmark':
+    case 'comment': {
+      const verb = verbForPin[n.kind];
+      return n.pinTitle ? `${verb} your pin "${n.pinTitle}"` : `${verb} your pin`;
+    }
   }
 }
 

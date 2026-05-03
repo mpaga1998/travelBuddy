@@ -17,6 +17,7 @@ export const seedPins: Pin[] = [
     dislikesCount: 0,
     bookmarkCount: 0,
     reportCount: 0,
+    commentCount: 0,
     createdAt: new Date().toISOString(),
   },
   {
@@ -35,6 +36,7 @@ export const seedPins: Pin[] = [
     dislikesCount: 0,
     bookmarkCount: 0,
     reportCount: 0,
+    commentCount: 0,
     createdAt: new Date().toISOString(),
   },
 ];

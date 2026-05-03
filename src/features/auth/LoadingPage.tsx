@@ -33,7 +33,7 @@ export function LoadingPage({ onLoadingComplete }: LoadingPageProps) {
       <div className="w-[60px] h-[60px] border-4 border-white/30 border-t-white rounded-full animate-spin mb-8" />
 
       {/* Title */}
-      <h1 className="text-[32px] font-bold m-0 mb-4 text-center">Nook</h1>
+      <h1 className="text-[32px] font-bold m-0 mb-4 text-center">nook</h1>
 
       {/* Greeting if logged in */}
       {userName && (
