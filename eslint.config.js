@@ -21,7 +21,18 @@ import { defineConfig, globalIgnores } from 'eslint/config'
  */
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'test-results', 'playwright-report']),
+  // ─── Playwright tests run in Node, not the browser ──────────────────
+  // Override block placed FIRST so the later browser-globals block doesn't
+  // shadow it for tests/. Tests reference process.env and use the @playwright/test
+  // runtime, both of which expect Node globals.
+  {
+    files: ['tests/**/*.{ts,tsx}', 'playwright.config.ts'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: { ...globals.node },
+    },
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
