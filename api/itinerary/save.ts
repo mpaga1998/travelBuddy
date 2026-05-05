@@ -60,6 +60,7 @@ export default async function handler(
       travelPace,
       budget,
       interests,
+      tripType,
     } = req.body ?? {};
 
     console.log('📌 [SAVE] Received payload:', {
@@ -110,6 +111,7 @@ export default async function handler(
         travel_pace: travelPace,
         budget,
         interests: interests || [],
+        trip_type: tripType ?? null,
       })
       .select('id')
       .single();

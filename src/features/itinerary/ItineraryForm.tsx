@@ -1,5 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import type { ItineraryInput } from './types';
+import type { ItineraryInput, TripType } from './types';
+
+const TRIP_TYPE_OPTIONS: { value: TripType; label: string }[] = [
+  { value: 'solo_wanderer',   label: '🎒 Solo wanderer' },
+  { value: 'hostel_hop',      label: '🛏️ Hostel-hop' },
+  { value: 'friends_budget',  label: '👥 Friends on a budget' },
+  { value: 'slow_travel',     label: '🌅 Slow-travel / nomad' },
+  { value: 'first_abroad',    label: '✈️ First time abroad' },
+  { value: 'work_exchange',   label: '🤝 Work-exchange / volunteer' },
+];
 
 interface LocationSuggestion {
   id: string;
@@ -69,9 +78,19 @@ export interface ItineraryFormProps {
   onSubmit: (input: ItineraryInput) => void;
   error: string | null;
   isMobile: boolean;
+  /**
+   * 7.1: hide the trip-type vibe picker for hostel accounts — the
+   * backpacker-coded options (Solo wanderer, Hostel-hop, etc.) don't
+   * apply when a hostel is the one using the planner. Null = unknown
+   * yet (still loading), default to traveler in render-time fallback.
+   */
+  userRole?: 'traveler' | 'hostel' | null;
 }
 
-export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps) {
+export function ItineraryForm({ onSubmit, error, isMobile, userRole }: ItineraryFormProps) {
+  // Treat unknown / loading role as traveler so we don't make travelers
+  // wait an extra render to see the wedge picker.
+  const showTripType = userRole !== 'hostel';
   const [arrivalDate, setArrivalDate] = useState('');
   const [arrivalTime, setArrivalTime] = useState<'morning' | 'afternoon' | 'night' | ''>('');
   const [arrivalLocation, setArrivalLocation] = useState('');
@@ -84,6 +103,7 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
   const [customInterestInput, setCustomInterestInput] = useState('');
   const [budget, setBudget] = useState<'budget' | 'mid-range' | 'luxury'>('mid-range');
   const [notes, setNotes] = useState('');
+  const [tripType, setTripType] = useState<TripType | ''>('');
 
   // Location autocomplete
   const [arrivalSuggestions, setArrivalSuggestions] = useState<LocationSuggestion[]>([]);
@@ -241,6 +261,7 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
       interests: selectedInterests.length > 0 ? selectedInterests : undefined,
       budget,
       notes: notes.trim() || undefined,
+      tripType: tripType || undefined,
     };
 
     onSubmit(input);
@@ -281,6 +302,28 @@ export function ItineraryForm({ onSubmit, error, isMobile }: ItineraryFormProps)
       {error && (
         <div className="px-3.5 py-3 rounded-[10px] bg-red-100 text-red-900 text-sm border border-red-200">
           ❌ {error}
+        </div>
+      )}
+
+      {/* What's the vibe? — backpacker-coded options, hidden for hostel
+          accounts since they don't fit the Solo wanderer / Hostel-hop frame.
+          Hostel-mode trip types could be a follow-up if hostels start using
+          the planner regularly (planning recommendations for guests, etc.). */}
+      {showTripType && (
+        <div>
+          <label className={sectionLabelClass}>🎒 What's the vibe?</label>
+          <div className={threeColGrid}>
+            {TRIP_TYPE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setTripType((prev) => (prev === opt.value ? '' : opt.value))}
+                className={optionPillClass(tripType === opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
