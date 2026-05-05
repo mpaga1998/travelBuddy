@@ -18,6 +18,12 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const draft = useItineraryDraft();
   const prompt = usePrompt();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // 7.1: track the role so we can conditionally hide the trip-type picker
+  // for hostel accounts — the backpacker-coded vibes (Solo wanderer, etc.)
+  // don't apply when a hostel uses the planner. Role is fetched lazily;
+  // until it resolves, we err on the side of "traveler" so travelers
+  // never wait an extra round-trip to see the field.
+  const [userRole, setUserRole] = useState<'traveler' | 'hostel' | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [formKey, setFormKey] = useState(0);
 
@@ -27,6 +33,17 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUserId(user.id);
+        // Fetch the role separately — supabase.auth doesn't expose it.
+        // Best-effort; on failure we leave it null which the form treats
+        // as "traveler" via its fallback default.
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (profile?.role === 'traveler' || profile?.role === 'hostel') {
+          setUserRole(profile.role);
+        }
       }
     })();
   }, [open]);
@@ -81,6 +98,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
           travelPace: lastInput.travelPace,
           budget: lastInput.budget,
           interests: lastInput.interests,
+          tripType: lastInput.tripType,
         }
       );
       track('itinerary_saved');
@@ -136,6 +154,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
               onSubmit={handleGenerate}
               error={error}
               isMobile={isMobile}
+              userRole={userRole}
             />
           )}
 

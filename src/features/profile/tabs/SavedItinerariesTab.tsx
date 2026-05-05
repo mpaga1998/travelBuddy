@@ -9,6 +9,19 @@ import { Skeleton } from '../../../components/Skeleton';
 // to take an `onBackToMenu` prop and render our own back button above the list,
 // which stacked two "← Back" controls on screen.
 
+// Phase 7: trip-type label map. Mirrors the values from the
+// itinerary form's TRIP_TYPE_OPTIONS — kept local rather than imported
+// so SavedItinerariesTab doesn't pull in the form's dependencies. Keep
+// in sync with TRIP_TYPE_OPTIONS in src/features/itinerary/ItineraryForm.tsx.
+const TRIP_TYPE_LABELS: Record<string, string> = {
+  solo_wanderer: '🎒 Solo wanderer',
+  hostel_hop: '🛏️ Hostel-hop',
+  friends_budget: '👥 Friends on a budget',
+  slow_travel: '🌅 Slow-travel',
+  first_abroad: '✈️ First time abroad',
+  work_exchange: '🤝 Work-exchange',
+};
+
 // Shared action-button classes. Copy = neutral, Delete = destructive red.
 const copyBtnClass =
   'flex-1 px-3 py-2 rounded-lg border border-black/[0.18] bg-white hover:bg-gray-100 cursor-pointer text-[13px] font-semibold text-[#111] transition-colors';
@@ -236,6 +249,11 @@ export function SavedItinerariesTab() {
             >
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="text-base font-bold text-[#111]">{itinerary.title}</div>
+                {itinerary.trip_type && TRIP_TYPE_LABELS[itinerary.trip_type] && (
+                  <span className="text-[11px] font-semibold text-blue-800 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded">
+                    {TRIP_TYPE_LABELS[itinerary.trip_type]}
+                  </span>
+                )}
                 {itinerary.is_public && (
                   <span className="text-[10px] font-bold uppercase tracking-wide text-green-700 bg-green-100 px-1.5 py-0.5 rounded">
                     Public

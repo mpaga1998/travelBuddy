@@ -1,3 +1,11 @@
+export type TripType =
+  | 'solo_wanderer'
+  | 'hostel_hop'
+  | 'friends_budget'
+  | 'slow_travel'
+  | 'first_abroad'
+  | 'work_exchange';
+
 export interface TripInput {
   arrival: {
     date: string; // YYYY-MM-DD
@@ -15,6 +23,7 @@ export interface TripInput {
   interests?: string[];
   budget?: 'budget' | 'mid-range' | 'luxury';
   notes?: string;
+  tripType?: TripType;
 }
 
 export interface ItineraryResponse {

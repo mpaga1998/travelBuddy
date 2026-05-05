@@ -53,7 +53,14 @@ export function useItineraryDraft(): ItineraryDraft {
             86_400_000,
         ),
       );
-      track('itinerary_generated', { days: nights + 1 });
+      // Include tripType so we can see which sub-audience (solo/hostel-hop/etc.)
+      // is actually using nook. Falls back to 'unspecified' when the user
+      // skipped the field — that data is itself useful (tells us how many
+      // users bypass the wedge picker).
+      track('itinerary_generated', {
+        days: nights + 1,
+        tripType: input.tripType ?? 'unspecified',
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setStep('form');

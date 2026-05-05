@@ -152,9 +152,10 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
         nook
       </h1>
 
-      {/* Subtitle */}
-      <p className="text-base font-normal m-0 mb-12 text-center opacity-95 max-w-[280px]">
-        Discover amazing places and create unforgettable memories
+      {/* Subtitle — wedge-aligned positioning. Echoes the "travelers"
+          noun in the itinerary CTA below for a coherent voice. */}
+      <p className="text-base font-normal m-0 mb-12 text-center opacity-95 max-w-[320px]">
+        Hidden corners, shared by travelers who actually went.
       </p>
 
       {/* Profile Button (Top Left) */}
@@ -284,7 +285,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
           className="w-full px-5 py-[18px] text-lg font-semibold border-none rounded-2xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white cursor-pointer flex items-center justify-center gap-3 transition-transform active:scale-[0.98] shadow-[0_6px_16px_rgba(102,126,234,0.4)]"
         >
           <span>✨</span>
-          <span>Create your custom travel itinerary!</span>
+          <span>Plan the trip the algorithm wouldn't give you</span>
         </button>
 
         {/* Button 3: Feed — secondary action, intentionally lighter so it

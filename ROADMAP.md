@@ -5,7 +5,7 @@ Do phases top-to-bottom; each assumes the previous is done.
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Progress:** 31 / 50 steps complete — **Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 5 ✅**
+**Progress:** 32 / 50 steps complete — **Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 5 ✅**
 
 ---
 
@@ -75,7 +75,7 @@ Before real users land.
 - [ ] **6.1** Structured logging. Replace every `console.log` in `api/` with `pino`. Tag logs with request IDs (use Vercel's `x-vercel-id` header or generate one).
 - [x] **6.2** Error tracking. Drop Sentry into frontend (`@sentry/react`) and backend (`@sentry/node`). ~10 min of setup.
 - [x] **6.3** Baseline analytics. PostHog or Plausible. Track: signup, pin created, itinerary generated/saved, follow, pin reported.
-- [ ] **6.4** Smoke tests in Playwright: sign up, log in, create pin, generate itinerary, save itinerary.
+- [x] **6.4** Smoke tests in Playwright. New `playwright.config.ts` (chromium-only for speed; auto-starts `dev:frontend` locally; `PLAYWRIGHT_BASE_URL` overrides to point at any deployed preview/production URL; trace-on-first-retry, screenshot-on-failure, retain-video-on-failure). New `tests/e2e/smoke.spec.ts` with three tiers: (1) PUBLIC tests run unconditionally — home loads with auth form, signup-mode toggle reveals extra fields and disables submit until ToS is checked, /terms + /guidelines reachable signed-out, unknown `/u/<handle>` shows the not-found state; (2) AUTHENTICATED tests gate on `NOOK_E2E_EMAIL` + `NOOK_E2E_PASSWORD` (skip cleanly when unset, since seeding a Supabase test user with email confirmation off is the user's call) — sign-in landing, navigation to `/feed` and `/notifications`, "Where next?" expands the search bar; (3) EXPENSIVE tests `describe.skip`-d at the source — itinerary generation costs OpenAI tokens per run, opt-in only. Selectors prefer accessible roles + visible text instead of `data-testid` attributes (forces accessibility hygiene as a side effect). New `package.json` scripts: `test:e2e`, `test:e2e:ui`, `test:e2e:install`. `.gitignore` extended with Playwright outputs (`/test-results`, `/playwright-report`, `/playwright/.cache`, `/blob-report`). ESLint config gained a tests/ override block with `globals.node` so `process.env` references don't trip `no-undef` under the otherwise-browser-globals config. CI workflow integration deferred — running E2E in CI requires adding `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` / `VITE_MAPBOX_TOKEN` as GitHub Actions secrets and a separate dev-server step; left as a follow-up so the existing CI keeps passing on the lockfile-only path.
 - [x] **6.5** GitHub Actions CI. Lint + typecheck + Playwright tests. Block merge on failure.
 - [x] **6.6** Pre-commit lint/typecheck via `husky` + `lint-staged`.
 

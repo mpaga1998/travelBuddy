@@ -100,6 +100,7 @@ export default async function handler(
       interests: body.interests,
       budget: body.budget,
       notes: body.notes,
+      tripType: body.tripType,
     };
 
     console.log('📝 [API] Received itinerary request:', {
@@ -110,6 +111,7 @@ export default async function handler(
       attractions: tripInput.desiredAttractions,
       pace: tripInput.travelPace,
       budget: tripInput.budget,
+      tripType: tripInput.tripType ?? 'unspecified',
     });
 
     // Validation

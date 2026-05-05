@@ -220,6 +220,7 @@ export type SavedItinerary = {
   travel_pace: string | null;
   budget: string | null;
   interests: string[];
+  trip_type: string | null;
   // 5.1: opt-in flag for public profile visibility. False by default; only
   // is_public = true itineraries surface on /u/:handle for non-owners.
   is_public: boolean;

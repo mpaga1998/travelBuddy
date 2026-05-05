@@ -1,4 +1,4 @@
-import type { ItineraryInput, ItineraryResponse } from './types';
+import type { ItineraryInput, ItineraryResponse, TripType } from './types';
 import { supabase } from '../../lib/supabaseClient';
 
 // Single deploy target is Vercel - frontend always talks to /api, relative.
@@ -151,6 +151,7 @@ export async function saveItineraryToProfile(
     travelPace?: string;
     budget?: string;
     interests?: string[];
+    tripType?: TripType;
   }
 ): Promise<{ success: boolean; itineraryId: string; message: string }> {
   console.log('Saving itinerary to profile:', { title });
@@ -170,6 +171,7 @@ export async function saveItineraryToProfile(
       travelPace: params.travelPace,
       budget: params.budget,
       interests: params.interests || [],
+      tripType: params.tripType,
     };
 
     console.log('Fetching from:', `${API_BASE}/itinerary/save`);
