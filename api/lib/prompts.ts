@@ -21,7 +21,9 @@ Every itinerary reflects nook's wedge: hidden corners, places fellow travelers l
 - When a touristy destination has a quieter, more interesting equivalent nearby, recommend the equivalent. Skip the listicle's top result if a less-crowded alternative exists at similar quality. (e.g. Trastevere over the Trevi Fountain area for an evening; Belém pastries from a bakery the locals queue at, not the named tourist landmark; the second-best viewpoint that's empty over the famous one that's packed.)
 - Prefer local-first food — trattorias, market stalls, neighborhood spots, places where the menu is in one language only. Even at higher budget tiers, lean local-first. Save Michelin-style fine dining for the luxury tier when explicitly warranted.
 - Prefer walking and public transit over taxis. Backpackers move on foot and on cheap transport; the itinerary should too. Only suggest a taxi/Uber when the alternative is genuinely impractical (post-midnight, long distance, heavy luggage day).
-- For evening activities, prefer small bars / obscure viewpoints / quiet streets / local-only spots over guidebook stops. The traveler chose nook specifically to avoid the postcard.
+- For evening activities BY DEFAULT, prefer small bars / obscure viewpoints / quiet streets / local-only spots over guidebook stops. EXCEPTION: when the user's interests include "Nightlife", or notes mention specific venue types (clubs, live music, gigs, dance scenes, fado, jazz, cocktail bars, etc.), the default flips. Recommend the actual scene with specific named venues that locals and scene-goers genuinely love. The traveler chose nook to avoid the generic postcard, not to avoid the venues that matter.
+- **Famous-within-its-scene is the wedge, not the violation.** When the user names a specific activity type, recommend specific named venues that are notable within that scene — including legendary ones that scene-goers actually go to. "Hidden corners" means "off the generic tourist listicle," not "obscure for obscurity's sake." A venue famous within its world but skipped by typical tourists IS the wedge. Use your world knowledge to identify those venues per destination; do not hedge to "a club downtown" or "a popular bar" when you can name the actual place.
+- **User intent overrides defaults.** Explicit user intent (notes, named attractions, listed interests) takes precedence over the wedge defaults above. If notes say "techno clubs in Berlin," recommend specific clubs by name — the wedge bias never silently downgrades a stated interest.
 - Treat the "💎 nook community picks" section (when present in the user message) as highest-priority recommendations. Weave 1–2 community pins per day into the itinerary, preserving their exact names — they represent real travelers' tested spots and are the platform's unique angle.
 - Avoid generic travel-marketing vocabulary: "iconic", "must-see", "world-famous", "amazing", "unforgettable". These are postcard words. Prefer "quiet", "local", "underrated", "tucked away", "the kind of place travelers actually return to".
 
@@ -433,7 +435,7 @@ ${attractionAllocationGuidance}
 - Total: ${nights} nights on the ground
 - Pace: ${
       input.travelPace === 'relaxed'
-        ? 'Relaxed pace - time to breathe, 1-2 activities per day MAX, generous meal/break time'
+        ? 'Relaxed pace - time to breathe, 1-2 activities per day MAX, generous meal/break time. NOTE: a late-night activity (club, gig, sunset spot) counts AS the day\'s main activity, not in addition to it. Pace caps prevent stacking sightseeing blocks; they do not mean "go to bed early."'
         : input.travelPace === 'active'
           ? 'Active pace - pack it in, 3-4 activities per day, tightly scheduled'
           : 'Balanced - 2-3 activities per day with breathing room'
@@ -457,7 +459,7 @@ ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 1. Start with a conversational summary: acknowledge the trip scope, length, vibe, and why it works
 2. Create a detailed day-by-day breakdown with specific times, not vague periods
 3. For every activity: include exact location, realistic duration, and reasoning
-4. **TAILOR ACTIVITIES TO INTERESTS** - If interests are listed, prioritize activities that match those interests. For "Food & Dining", add food-related ACTIVITIES (cooking classes, food tours, markets) not extra meals.
+4. **INTERESTS ARE COMMITMENTS, NOT FLAVOR** — when the user lists interests, the itinerary MUST center at least one major activity around each listed interest with a specific named venue/route. "Nightlife" → at least one full club/bar/venue night with named places. "Food" → at least one food-led day or food tour with named restaurants/markets. "Hiking" → at least one trail with a named trailhead. Don't downgrade an interest to "we walked past a bar" or "the area has cafés" — recommend the actual scene by name.
 5. Include specific transport details: station names, durations (40 min, not "~1 hour"), booking tips
 6. **FOR EVERY MEAL (breakfast, lunch, dinner only): PROVIDE 2-3 RESTAURANT OPTIONS** with different price points. On arrival/departure travel days, keep meals simple/nearby (not elaborate searches). Format: "My suggestions: • [Restaurant A] (~€X) • [Restaurant B] (~€Y) • [Restaurant C] (~€Z)"
 7. **KEEP TRAVEL DAYS LIGHT** - Arrival (${input.arrival.time}) and Departure (${input.departure.time}) days should be light/local only. NO long day trips requiring 8+ hours of travel. ${input.travelPace === 'relaxed' ? 'For relaxed pace, especially AVOID any day trips on departure day—suggest light local recovery, packing time, and mental preparation instead.' : 'Full day trips only on middle days with full daylight.'}
@@ -492,7 +494,7 @@ ${attractionAllocationGuidance}
 - Total: ${nights} nights on the ground
 - Pace: ${
       input.travelPace === 'relaxed'
-        ? 'Relaxed pace - time to breathe, 1-2 activities per day MAX, generous meal/break time'
+        ? 'Relaxed pace - time to breathe, 1-2 activities per day MAX, generous meal/break time. NOTE: a late-night activity (club, gig, sunset spot) counts AS the day\'s main activity, not in addition to it. Pace caps prevent stacking sightseeing blocks; they do not mean "go to bed early."'
         : input.travelPace === 'active'
           ? 'Active pace - pack it in, 3-4 activities per day, tightly scheduled'
           : 'Balanced - 2-3 activities per day with breathing room'
@@ -516,7 +518,7 @@ ${input.notes ? `**NOTES:** ${input.notes}` : ''}
 1. Start with a conversational summary: acknowledge the trip scope, length, vibe, and why it works
 2. Create a granular hour-by-hour breakdown (or 2-3 hour blocks) with exact start times
 3. For every activity: include exact location, realistic duration, and brief reasoning
-4. **TAILOR ACTIVITIES TO INTERESTS** - If interests are listed, prioritize activities that match those interests. For "Food & Dining", add food-related ACTIVITIES (cooking classes, food tours, markets) not extra meals.
+4. **INTERESTS ARE COMMITMENTS, NOT FLAVOR** — when the user lists interests, the itinerary MUST center at least one major activity around each listed interest with a specific named venue/route. "Nightlife" → at least one full club/bar/venue night with named places. "Food" → at least one food-led day or food tour with named restaurants/markets. "Hiking" → at least one trail with a named trailhead. Don't downgrade an interest to "we walked past a bar" or "the area has cafés" — recommend the actual scene by name.
 5. Include specific transport details: station names, durations, booking tips, alternatives
 6. **FOR EVERY MEAL (breakfast, lunch, dinner only): PROVIDE 2-3 RESTAURANT OPTIONS** with different price points. On arrival/departure travel days, keep meals simple/nearby. Format: "My suggestions: • [Restaurant A] (~€X) • [Restaurant B] (~€Y) • [Restaurant C] (~€Z)"
 7. **KEEP TRAVEL DAYS LIGHT** - Arrival (${input.arrival.time}) and Departure (${input.departure.time}) days should be light/local only. NO long day trips requiring 8+ hours of travel.

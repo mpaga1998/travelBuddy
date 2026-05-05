@@ -5,7 +5,7 @@ Do phases top-to-bottom; each assumes the previous is done.
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Progress:** 32 / 50 steps complete — **Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 5 ✅**
+**Progress:** 35 / 50 steps complete — **Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 4 ✅ · Phase 5 ✅ · Phase 6 [5/6]**
 
 ---
 
@@ -124,4 +124,4 @@ Can happen in parallel with earlier phases, but must be decided before fundraisi
 
 ---
 
-*Last updated: 2026-04-25 (Phase 3.3 / 3.4 / 3.5 shipped — toasts + skeletons + image compression / transforms.)*
+*Last updated: 2026-05-05 (Phase 4 ✅ · Phase 5 ✅ · Phase 6 [5/6] — Sentry, Vercel Analytics, Playwright, CI, husky. Phase 7 Trip Type feature shipped.)*
