@@ -149,7 +149,7 @@ function PromptDialog({
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
           maxLength={maxLength}
-          className="px-3 py-2 rounded-lg border border-black/[0.18] text-sm text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 min-h-[40px]"
+          className="px-3 py-2 rounded-lg border border-black/[0.18] bg-white text-sm text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 min-h-[40px]"
         />
         <div className="flex gap-2 justify-end mt-1">
           <button
