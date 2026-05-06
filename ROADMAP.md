@@ -5,7 +5,7 @@ Do phases top-to-bottom; each assumes the previous is done.
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Progress:** 35 / 50 steps complete — **Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 4 ✅ · Phase 5 ✅ · Phase 6 [5/6]**
+**Progress:** 36 / 50 steps complete — **Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 4 ✅ · Phase 5 ✅ · Phase 6 [5/6] · Phase 7 [1/4]**
 
 ---
 
@@ -83,7 +83,7 @@ Before real users land.
 
 Can happen in parallel with earlier phases, but must be decided before fundraising.
 
-- [ ] **7.1** Pick a niche and commit. Candidates: backpacker/hostel 18-35 (half-built already), solo-travel safety + community, long-term nomad routes. Rewrite landing page and empty states around it.
+- [x] **7.1** Pick a niche and commit — backpackers 18-35 in Europe, with the "secluded corner / hidden gems" framing. Wedge committed across (a) brand copy: InitialPage subtitle changed from generic *"Discover amazing places…"* to *"Hidden corners, shared by travelers who actually went."*, primary CTA from *"Create your custom travel itinerary!"* to *"Plan the trip the algorithm wouldn't give you"*, plus an `index.html` `<title>` rename. (b) AI persona: `api/lib/prompts.ts` system prompt rewritten to open as *"You are nook's itinerary planner — built for backpackers, biased toward hidden corners over tourist traps."*, with a six-bullet **NOOK STYLE** block governing every recommendation: prefer-quieter-equivalent, local-first food, walking/transit over taxis, evening = small-bars-default-with-nightlife-exception, community-pins-as-highest-priority, vocabulary blacklist (*iconic / must-see / world-famous / amazing / unforgettable*). (c) Trip-shape commitments: new "What's the vibe?" picker at the top of the itinerary form with six backpacker-coded values (Solo wanderer / Hostel-hop / Friends on a budget / Slow-travel / First time abroad / Work-exchange), each injecting kind-specific bias rules into the prompt. Hostel-hop overrides accommodation budget; slow-travel overrides pace. Override-precedence rule placed at top of NOOK STYLE so trip-shape and explicit user intent (notes/interests) deterministically beat budget/pace defaults. Form gracefully hides the picker for hostel-role accounts. (d) Quality fixes from real-output review: famous-within-its-scene framed as the wedge (not the violation), interests upgraded from "tailor" to "commitments," late-night activities count as the day's main activity (not extra), evening-quiet default carves an exception when nightlife is listed. (e) Analytics: `itinerary_generated` event tagged with `tripType` so we can measure which sub-audience the wedge actually attracts. Empty-states rewrite deferred to Phase 9.3 — the wedge is *committed* in the surfaces a new user lands on, but every empty state across the app is a Phase 9 polish pass.
 - [ ] **7.2** Reshape onboarding for the wedge. E.g. backpacker-focused signup asks "what region next?" and seeds map + suggests people to follow.
 - [ ] **7.3** Seed content in chosen wedge. Manually add 100-300 high-quality pins in target region(s) before launch. A community map with zero pins is dead on arrival.
 - [ ] **7.4** Unit economics doc. Avg OpenAI cost/active user/month. Free tier cap. Where paid starts. One page for the investor deck.
