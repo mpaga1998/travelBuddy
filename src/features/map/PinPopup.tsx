@@ -98,7 +98,11 @@ export function PinPopup({
       onClick={stop}
       onMouseDown={stop}
       onTouchStart={stop}
-      className={`w-full max-w-full text-[#111] font-sans flex flex-col overflow-hidden ${isMobile ? "min-w-0 text-[13px]" : "min-w-[360px] text-sm"}`}
+      // max-h prevents the popup from overflowing the viewport on tall
+      // content (hero image + comments thread). The inner body section is
+      // `flex-1 overflow-y-auto` so the cap forces internal scroll instead
+      // of clipping the top off-screen above the pin marker.
+      className={`w-full max-w-full max-h-[calc(100dvh-96px)] text-[#111] font-sans flex flex-col overflow-hidden ${isMobile ? "min-w-0 text-[13px]" : "min-w-[360px] text-sm"}`}
     >
       {pin.imageUrls && pin.imageUrls.length > 0 && (
         <div

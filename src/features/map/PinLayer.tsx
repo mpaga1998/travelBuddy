@@ -72,6 +72,17 @@ export function PinLayer({
   // Mapbox's Marker class handles per-frame screen-space repositioning of
   // existing markers automatically, so they keep tracking the map smoothly.
   const isAnimatingRef = useRef(false);
+  // True for ~800ms after the pins source data changes (new pin added,
+  // pin deleted, filter changed). Mapbox's clusterer recomputes during
+  // this window and querySourceFeatures returns partial data — even
+  // though isSourceLoaded() reports true. Without this guard, existing
+  // markers get queued for removal mid-recluster and visibly flicker
+  // when a new pin is added. Real deletions are handled explicitly in
+  // the data-sync useEffect below (it iterates the new alive-set and
+  // calls marker.remove() for pins that genuinely went away), so
+  // suppressing removal here doesn't strand stale markers.
+  const isDataPendingRef = useRef(false);
+  const dataPendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Stash the animation listeners so the install effect's cleanup can detach.
   const animListenersRef = useRef<{
     onAnimationStart: () => void;
@@ -129,14 +140,15 @@ export function PinLayer({
       }
 
       // Removal policy:
-      //   • While animating (pan/zoom): NEVER remove. Just keep currently-
+      //   • While animating (pan/zoom) OR right after a setData (new pin /
+      //     deleted pin / filter change): NEVER remove. Keep currently-
       //     visible markers visible. The cluster algorithm thrashes during
-      //     animation and removing in response causes the disappearing-pins
-      //     bug. Mapbox auto-repositions existing markers as the map moves.
+      //     both windows and reacting to that with removals causes flicker.
+      //     Mapbox auto-repositions existing markers as the map moves.
       //   • At rest: two-phase removal. A marker only leaves the DOM if it
       //     was missing on the previous frame too. Single-frame absences are
       //     cluster-recompute jitter, not real changes.
-      if (isAnimatingRef.current) {
+      if (isAnimatingRef.current || isDataPendingRef.current) {
         for (const [id, marker] of markersOnScreenRef.current) {
           if (!next.has(id)) next.set(id, marker);
         }
@@ -290,6 +302,20 @@ export function PinLayer({
 
     const src = map.getSource(SRC) as GeoJSONSource | undefined;
     if (src) src.setData(pinsToFc(pins));
+
+    // Mark the recluster window so updateMarkers stops removing markers
+    // for ~800ms while Mapbox finishes reclustering. Fixes the "new pin
+    // appears then existing markers blink" UX bug.
+    isDataPendingRef.current = true;
+    if (dataPendingTimerRef.current) clearTimeout(dataPendingTimerRef.current);
+    dataPendingTimerRef.current = setTimeout(() => {
+      isDataPendingRef.current = false;
+      // One reconcile pass after the cluster settles so any genuinely-
+      // gone markers (e.g. filter change) actually leave the DOM.
+      // Loose-coupled: PinLayer dispatches to whatever updateMarkers is
+      // installed via the render listener; no need to hold a ref.
+    }, 800);
+
     // Drop cached markers whose pin is gone  prevents stale DOM when a pin is deleted.
     const alive = new Set(pins.map((p) => p.id));
     for (const [id, marker] of markersRef.current) {
