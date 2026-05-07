@@ -133,6 +133,7 @@ export async function countUnread(): Promise<number> {
  * RLS already pins this to the caller's own rows; we still pass through
  * `.is('read_at', null)` so we don't generate a no-op UPDATE on already-read
  * notifications (cheaper write).
+ */
 export async function markAllAsRead(): Promise<void> {
   const { data: userData } = await supabase.auth.getUser();
   const me = userData.user;
