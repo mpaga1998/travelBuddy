@@ -86,7 +86,7 @@ export function PinLayer({
   // the index, without depending on the install effect's closure.
   const updateClustersRef = useRef<(() => void) | null>(null);
   // Stash listeners for cleanup.
-  const zoomListenerRef = useRef<(() => void) | null>(null);
+  const renderListenerRef = useRef<(() => void) | null>(null);
   // Stash the unclustered-click handler for cleanup.
   const unclusteredClickRef = useRef<((e: mapboxgl.MapLayerMouseEvent) => void) | null>(null);
 
@@ -274,19 +274,20 @@ export function PinLayer({
       map.on("mouseleave", L_UNCLUSTERED, () => { map.getCanvas().style.cursor = ""; });
       unclusteredClickRef.current = onUnclusteredClick;
 
-      // ── Re-cluster on zoom changes ─────────────────────────────────────
-      // onZoom fires during animation (on integer crossings) for smooth
-      // cluster-split transitions. zoomend + moveend are belt-and-suspenders
-      // to guarantee a final update after any camera animation completes,
-      // including double-click zoom where some Mapbox builds don't fire
-      // moveend reliably when only the zoom level changes.
-      const onZoom = () => {
-        if (Math.floor(map.getZoom()) !== lastZoomRef.current) updateClusters();
+      // ── Re-cluster on any rendered-frame zoom change + pan ──────────────
+      // Using the "render" event (fires every frame) instead of "zoom" /
+      // "zoomend" is more reliable: Mapbox doesn't guarantee that "zoom"
+      // fires during programmatic animations on all platforms, and "zoomend"
+      // can be missed when a new animation starts before the previous one
+      // settles. With the integer-zoom guard, setData is only called at zoom
+      // crossings (≈14 times per full zoom-level sweep) — cheap enough.
+      const onRender = () => {
+        const iz = Math.floor(map.getZoom());
+        if (iz !== lastZoomRef.current) updateClusters();
       };
-      map.on("zoom", onZoom);
-      map.on("zoomend", updateClusters);
+      map.on("render", onRender);
       map.on("moveend", updateClusters);
-      zoomListenerRef.current = onZoom;
+      renderListenerRef.current = onRender;
 
       // Initial population.
       updateClusters();
@@ -303,9 +304,8 @@ export function PinLayer({
           map.off("click", L_UNCLUSTERED, onClick);
           map.off("click", L_UNCLUSTERED_LABEL, onClick);
         }
-        const onZoom = zoomListenerRef.current;
-        if (onZoom) map.off("zoom", onZoom);
-        map.off("zoomend", updateClusters);
+        const onRender = renderListenerRef.current;
+        if (onRender) map.off("render", onRender);
         map.off("moveend", updateClusters);
         if (map.getLayer(L_UNCLUSTERED_LABEL)) map.removeLayer(L_UNCLUSTERED_LABEL);
         if (map.getLayer(L_UNCLUSTERED)) map.removeLayer(L_UNCLUSTERED);
@@ -318,11 +318,14 @@ export function PinLayer({
   }, [map]);
 
   // --- Data sync: rebuild Supercluster index and refresh whenever pins change.
-  // Supercluster.load() is synchronous; updateClusters() calls setData() which
-  // Mapbox applies instantly. No async gap, no reconciliation loop needed.
+  // Reset lastZoomRef so the render-event guard treats the next frame as a
+  // zoom change and forces setData even if the integer zoom didn't move.
+  // Without this, a pin fetch that completes while the map is idle would load
+  // new data into the Supercluster index but never push it to the GL sources.
   useEffect(() => {
     if (!map) return;
     scRef.current.load(pinsToInput(pins));
+    lastZoomRef.current = -1; // force render-loop to call updateClusters()
     updateClustersRef.current?.();
   }, [map, pins]);
 

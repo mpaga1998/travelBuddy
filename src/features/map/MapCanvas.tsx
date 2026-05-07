@@ -59,18 +59,17 @@ export function MapCanvas({
       pitch: DEFAULT_PITCH,
     });
 
-    // Defer the empty-map click so a double-tap can cancel it before it fires.
-    // On mobile, browsers delay synthesised "click" events by ~300ms to detect
-    // double-taps, so "dblclick" can arrive BEFORE "click". We guard against
-    // both orderings:
-    //   • dblclick-before-click (mobile): lastDblClickTime lets onClick bail out
-    //   • dblclick-after-click  (desktop): pendingClick timer is cleared as usual
+    // Disable Mapbox's built-in doubleClickZoom so we own the full flow.
+    // We re-implement zoom in onDblClick (toward cursor, same UX).
+    // This removes ALL timing ambiguity: Mapbox's internal handler used to
+    // race with our onDblClick timer and sometimes win.
+    map.doubleClickZoom.disable();
+
     let pendingClick: ReturnType<typeof setTimeout> | null = null;
     let lastDblClickTime = -1000;
 
     const onClick = (e: mapboxgl.MapMouseEvent) => {
-      // If a dblclick fired recently (covers mobile order: dblclick → click),
-      // ignore this click entirely.
+      // Belt-and-suspenders: if a dblclick fired recently, bail out here too.
       if (Date.now() - lastDblClickTime < 600) return;
 
       // Interactive-layer escape hatch — clicks on pins/clusters don't open draft.
@@ -85,18 +84,18 @@ export function MapCanvas({
       if (pendingClick) clearTimeout(pendingClick);
       pendingClick = setTimeout(() => {
         pendingClick = null;
+        // Re-check after the 400ms wait — dblclick might have arrived during it.
+        if (Date.now() - lastDblClickTime < 600) return;
         clickHandlerRef.current?.(e.lngLat);
-      }, 300);
+      }, 400);
     };
 
-    const onDblClick = () => {
-      // Record time so onClick can bail if it fires after this (mobile order).
+    const onDblClick = (e: mapboxgl.MapMouseEvent) => {
       lastDblClickTime = Date.now();
-      // Also cancel any pending timer (desktop order: click → click → dblclick).
-      if (pendingClick) {
-        clearTimeout(pendingClick);
-        pendingClick = null;
-      }
+      // Cancel any pending single-click handler.
+      if (pendingClick) { clearTimeout(pendingClick); pendingClick = null; }
+      // Replicate doubleClickZoom: zoom +1 toward cursor.
+      map.easeTo({ center: e.lngLat, zoom: map.getZoom() + 1, duration: 300 });
     };
 
     map.on("click", onClick);
