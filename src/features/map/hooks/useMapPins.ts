@@ -28,12 +28,23 @@ function getBoundsWithBuffer(map: MapboxMap): PinBounds | null {
   const north = b.getNorth();
   const dLat = (north - south) * VIEWPORT_BUFFER;
   const dLng = (east - west) * VIEWPORT_BUFFER;
+  // Clamp to valid coordinate ranges so Supabase's .gte/.lte comparisons
+  // don't silently return 0 rows when the buffer pushes past ±180 or ±90.
   return {
-    west: west - dLng,
-    east: east + dLng,
-    south: south - dLat,
-    north: north + dLat,
+    west:  Math.max(west  - dLng, -180),
+    east:  Math.min(east  + dLng,  180),
+    south: Math.max(south - dLat,  -90),
+    north: Math.min(north + dLat,   90),
   };
+}
+
+/** Below this zoom we skip bbox-filtering and fetch all pins globally. */
+const UNBOUNDED_ZOOM_THRESHOLD = 8;
+
+/** Get bbox-with-buffer, or undefined when the view is too wide to benefit. */
+function getBoundsForZoom(map: MapboxMap): PinBounds | undefined {
+  if (map.getZoom() < UNBOUNDED_ZOOM_THRESHOLD) return undefined;
+  return getBoundsWithBuffer(map) ?? undefined;
 }
 
 export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null) {
@@ -57,6 +68,10 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
   // races, rapid pan/filter changes) can't overwrite newer state. Each call
   // bumps the counter; the result is dropped if a newer call has started.
   const reqIdRef = useRef(0);
+  // Synced with pins[] state so reload() can read the previous count without
+  // capturing stale closure values (the ref is updated every render below).
+  const pinsRef = useRef<Pin[]>([]);
+  useEffect(() => { pinsRef.current = pins; }, [pins]);
 
   const reload = useCallback(async (bounds?: PinBounds) => {
     const reqId = ++reqIdRef.current;
@@ -80,6 +95,21 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
       // Stale response — a newer reload() has been dispatched. Drop silently
       // so the newer one's setPins is the last writer.
       if (reqId !== reqIdRef.current) return;
+
+      // Defensive: if a bounded reload returns 0 results but we previously had
+      // pins, the bbox is likely bad (clamped antimeridian, edge case, etc.).
+      // Preserve the previous state rather than blanking the map. This trades
+      // a briefly stale view for resilience against a spurious empty response.
+      // A legitimately-empty viewport at high zoom is allowed through when
+      // pinsRef.current is already empty (fresh mount or genuine empty area).
+      if (data.length === 0 && pinsRef.current.length > 0 && bounds) {
+        console.warn(
+          "[useMapPins] reload returned 0 pins for bbox", bounds,
+          "— preserving previous", pinsRef.current.length, "pins"
+        );
+        return;
+      }
+
       setPins(data);
       setLimitReached(lr);
     } finally {
@@ -102,7 +132,7 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
       return;
     }
     if (!map) return;
-    reload(getBoundsWithBuffer(map) ?? undefined);
+    reload(getBoundsForZoom(map));
   }, [reload, mapType, activeCategory, map]);
 
   // Debounced moveend listener — only active when map is available and not in
@@ -121,7 +151,7 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
       if (!e.originalEvent) return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
-        reload(getBoundsWithBuffer(map) ?? undefined);
+        reload(getBoundsForZoom(map));
       }, DEBOUNCE_MS);
     };
 
