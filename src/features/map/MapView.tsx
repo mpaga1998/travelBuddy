@@ -441,7 +441,8 @@ function CompassButton({ map }: { map: MapboxMap | null }) {
       type="button"
       onClick={handleClick}
       aria-label="Reset bearing to north"
-      className="absolute bottom-8 right-4 z-10 w-10 h-10 rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.22)] border border-black/[0.08] flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-transform"
+      className="absolute right-4 z-10 w-10 h-10 rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.22)] border border-black/[0.08] flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-transform"
+      style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
     >
       {/* Needle SVG: red = north, grey = south. Rotated so the red tip always
           points toward true north regardless of the map's bearing. */}
