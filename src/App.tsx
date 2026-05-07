@@ -292,7 +292,8 @@ export default function App() {
               window.history.pushState({}, '', '/');
               setPathname('/');
             }}
-            onOpenMap={() => {
+            onOpenMap={(center) => {
+              if (center) setMapCenter(center);
               window.history.pushState({}, '', '/');
               setPathname('/');
               setShowInitialPage(false);

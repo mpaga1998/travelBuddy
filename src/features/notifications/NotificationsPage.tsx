@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import {
   fetchNotifications,
   markAllAsRead,
+  markOneAsRead,
   type AppNotification,
   type NotificationKind,
 } from './notificationsApi';
@@ -26,8 +27,8 @@ import { imgAvatar } from '../../lib/imageTransforms';
 
 interface NotificationsPageProps {
   onBack: () => void;
-  /** Open the map view (no specific pin centering yet). */
-  onOpenMap: () => void;
+  /** Open the map view, optionally centred on a specific pin location. */
+  onOpenMap: (center?: { lat: number; lng: number }) => void;
 }
 
 export function NotificationsPage({ onBack, onOpenMap }: NotificationsPageProps) {
@@ -75,23 +76,37 @@ export function NotificationsPage({ onBack, onOpenMap }: NotificationsPageProps)
 
   /**
    * Click target depends on the notification kind:
-   *   - like / bookmark: open the map (the pin lives there). We could deep-link
-   *     to the specific pin once map routing supports query params, but for now
-   *     "View on map" is consistent with the feed card's behavior.
+   *   - like / bookmark / comment: open the map centred on the pin.
    *   - follow: navigate to the actor's public profile.
-   * Either way, navigating implicitly marks the notification "seen" so we
-   * also trigger a mark-all-read in the background — a small UX win.
+   * Either way, mark the notification as read immediately (optimistic).
    */
   const handleClick = useCallback(
     (n: AppNotification) => {
+      // Optimistic mark-as-read for the clicked row.
+      if (n.readAt === null) {
+        const now = new Date().toISOString();
+        setItems((prev) =>
+          prev.map((item) => (item.id === n.id ? { ...item, readAt: now } : item))
+        );
+        // Fire-and-forget — failure is non-critical (user already sees it as read).
+        markOneAsRead(n.id).catch((e) =>
+          console.warn('[notifications] markOneAsRead failed:', e)
+        );
+      }
+
       if (n.kind === 'follow') {
         if (!n.actorHandle) return;
         window.history.pushState({}, '', `/u/${n.actorHandle}`);
         window.dispatchEvent(new PopStateEvent('popstate'));
         return;
       }
-      // like or bookmark
-      onOpenMap();
+
+      // like, bookmark, or comment — navigate to the map centred on the pin.
+      const center =
+        n.pinLat != null && n.pinLng != null
+          ? { lat: n.pinLat, lng: n.pinLng }
+          : undefined;
+      onOpenMap(center);
     },
     [onOpenMap]
   );

@@ -30,9 +30,11 @@ export interface AppNotification {
   actorAvatarUrl: string | null;
   actorRole: 'traveler' | 'hostel';
   actorHostelName: string | null;
-  // Pin context — only present for like/bookmark.
+  // Pin context — only present for like/bookmark/comment.
   pinId: string | null;
   pinTitle: string | null;
+  pinLat: number | null;
+  pinLng: number | null;
 }
 
 interface DbNotificationRow {
@@ -51,13 +53,15 @@ interface DbNotificationRow {
   } | null;
   pin: {
     title: string | null;
+    lat: number | null;
+    lng: number | null;
   } | null;
 }
 
 const SELECT = `
   id, kind, created_at, read_at, actor_id, pin_id,
   actor:profiles!actor_id(username, handle, avatar_url, role, hostel_name),
-  pin:pins!pin_id(title)
+  pin:pins!pin_id(title, lat, lng)
 `;
 
 function mapRow(row: DbNotificationRow): AppNotification {
@@ -74,6 +78,8 @@ function mapRow(row: DbNotificationRow): AppNotification {
     actorHostelName: row.actor?.hostel_name ?? null,
     pinId: row.pin_id,
     pinTitle: row.pin?.title ?? null,
+    pinLat: row.pin?.lat ?? null,
+    pinLng: row.pin?.lng ?? null,
   };
 }
 
@@ -127,7 +133,6 @@ export async function countUnread(): Promise<number> {
  * RLS already pins this to the caller's own rows; we still pass through
  * `.is('read_at', null)` so we don't generate a no-op UPDATE on already-read
  * notifications (cheaper write).
- */
 export async function markAllAsRead(): Promise<void> {
   const { data: userData } = await supabase.auth.getUser();
   const me = userData.user;
@@ -137,6 +142,20 @@ export async function markAllAsRead(): Promise<void> {
     .from('notifications')
     .update({ read_at: new Date().toISOString() })
     .eq('recipient_id', me.id)
+    .is('read_at', null);
+
+  if (error) throw error;
+}
+
+/**
+ * Mark a single notification as read by id. No-op if already read.
+ * RLS pins this to the current user's own rows.
+ */
+export async function markOneAsRead(notificationId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('id', notificationId)
     .is('read_at', null);
 
   if (error) throw error;
