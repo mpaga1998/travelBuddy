@@ -358,13 +358,19 @@ export function PinLayer({
     if (!selectedPin) return;
     const pin = selectedPin;
 
-    // On mobile the popup (hero image + title + 3 button rows) can be
-    // ~600px tall, so reserve most of the viewport above the pin. 180px was
-    // fine on desktop but clipped the popup against the FilterBar on phones.
+    // Reserve enough space above the pin that the popup (capped at 75dvh
+    // by PinPopup's wrapper — see that file's max-h class) ALWAYS fits in
+    // the viewport after easeTo lands. The 0.78 multiplier puts the pin at
+    // ~78% from the top of the screen, leaving 78% of viewport above it —
+    // strictly more than the popup's 75dvh cap, so the top of the popup
+    // can never extend above the visible map regardless of which pin the
+    // user clicks. Earlier 0.55 was too tight when the popup grew with the
+    // comments section in 5.5; bumping to 0.78 + tightening the popup's
+    // own max-h is the coordinated fix.
     const isMobileForPan = window.innerWidth < MOBILE_BREAKPOINT;
     const panTopPadding = isMobileForPan
-      ? Math.min(window.innerHeight * 0.55, 520)
-      : 180;
+      ? Math.round(window.innerHeight * 0.78)
+      : 240;
     map.easeTo({
       center: [pin.lng, pin.lat],
       duration: 400,

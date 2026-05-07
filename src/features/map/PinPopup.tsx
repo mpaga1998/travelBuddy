@@ -98,11 +98,14 @@ export function PinPopup({
       onClick={stop}
       onMouseDown={stop}
       onTouchStart={stop}
-      // max-h prevents the popup from overflowing the viewport on tall
-      // content (hero image + comments thread). The inner body section is
-      // `flex-1 overflow-y-auto` so the cap forces internal scroll instead
-      // of clipping the top off-screen above the pin marker.
-      className={`w-full max-w-full max-h-[calc(100dvh-96px)] text-[#111] font-sans flex flex-col overflow-hidden ${isMobile ? "min-w-0 text-[13px]" : "min-w-[360px] text-sm"}`}
+      // max-h is intentionally tighter than 100dvh so the popup ALWAYS
+      // fits in the space above the pin after easeTo lands. PinLayer's
+      // pan-padding reserves ~78% of viewport height above the pin; capping
+      // the popup at 75dvh leaves headroom so even a tall content stack
+      // (hero image + bio + actions + comments) can never extend above
+      // the visible map. Inner body is `flex-1 overflow-y-auto` so the
+      // cap forces internal scroll, never viewport clipping.
+      className={`w-full max-w-full max-h-[75dvh] text-[#111] font-sans flex flex-col overflow-hidden ${isMobile ? "min-w-0 text-[13px]" : "min-w-[360px] text-sm"}`}
     >
       {pin.imageUrls && pin.imageUrls.length > 0 && (
         <div
