@@ -61,11 +61,15 @@ export function PinLayer({
   // HTML marker bookkeeping: markers by id (persisted), and those currently in DOM.
   const markersRef = useRef<globalThis.Map<string, Marker>>(new globalThis.Map());
   const markersOnScreenRef = useRef<globalThis.Map<string, Marker>>(new globalThis.Map());
-  // Two-phase removal queue: markers that were missing from the last
-  // querySourceFeatures call. Only actually removed when missing for two
-  // consecutive frames. Smooths out one-frame cluster-recompute jitter that
-  // would otherwise look like flicker as the user pans.
-  const pendingRemoveRef = useRef<Set<string>>(new Set());
+  // Time-based removal: tracks the timestamp (performance.now()) at which each
+  // marker was first found missing from querySourceFeatures. A marker is only
+  // removed from the DOM once it has been continuously absent for ≥800ms.
+  // This survives the 200–800ms cluster-recompute window that follows zoomend,
+  // during which querySourceFeatures returns partial results even though
+  // isSourceLoaded() reports true. The old two-frame (≈33ms) grace was far
+  // too short for mid-tier mobile.
+  const firstMissingRef = useRef<globalThis.Map<string, number>>(new globalThis.Map());
+  const REMOVE_AFTER_MS = 800;
   // True while the map is mid-animation (pan or zoom). While animating we
   // ADD markers eagerly but NEVER remove — clustering recomputes constantly
   // during a zoom and reacting to that with marker removals causes flicker.
@@ -83,6 +87,10 @@ export function PinLayer({
   // suppressing removal here doesn't strand stale markers.
   const isDataPendingRef = useRef(false);
   const dataPendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Extra settle timer: after zoomend the cluster algorithm keeps recomputing
+  // for up to ~1500ms. We keep isDataPendingRef=true for that window so the
+  // render-loop's removal path stays suppressed.
+  const zoomSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Stash the animation listeners so the install effect's cleanup can detach.
   const animListenersRef = useRef<{
     onAnimationStart: () => void;
@@ -145,26 +153,35 @@ export function PinLayer({
       //     visible markers visible. The cluster algorithm thrashes during
       //     both windows and reacting to that with removals causes flicker.
       //     Mapbox auto-repositions existing markers as the map moves.
-      //   • At rest: two-phase removal. A marker only leaves the DOM if it
-      //     was missing on the previous frame too. Single-frame absences are
-      //     cluster-recompute jitter, not real changes.
+      //   • At rest: time-based removal. A marker is only evicted once it has
+      //     been continuously absent for ≥REMOVE_AFTER_MS (800ms). Single-frame
+      //     or sub-800ms absences are cluster-recompute jitter, not real changes.
       if (isAnimatingRef.current || isDataPendingRef.current) {
         for (const [id, marker] of markersOnScreenRef.current) {
           if (!next.has(id)) next.set(id, marker);
         }
-        pendingRemoveRef.current.clear();
+        firstMissingRef.current.clear();
       } else {
-        const newPending = new Set<string>();
+        const now = performance.now();
         for (const [id, marker] of markersOnScreenRef.current) {
-          if (next.has(id)) continue;
-          if (pendingRemoveRef.current.has(id)) {
-            marker.remove(); // missing for 2+ frames → really gone
+          if (next.has(id)) {
+            firstMissingRef.current.delete(id); // back on screen — reset timer
+            continue;
+          }
+          const since = firstMissingRef.current.get(id);
+          if (since === undefined) {
+            // First frame this marker is absent — start the grace timer.
+            firstMissingRef.current.set(id, now);
+            next.set(id, marker);
+          } else if (now - since >= REMOVE_AFTER_MS) {
+            // Absent for ≥800ms continuously → really gone.
+            marker.remove();
+            firstMissingRef.current.delete(id);
           } else {
-            newPending.add(id);
+            // Still within grace window — keep visible.
             next.set(id, marker);
           }
         }
-        pendingRemoveRef.current = newPending;
       }
       markersOnScreenRef.current = next;
     };
@@ -242,10 +259,16 @@ export function PinLayer({
       const onAnimationStart = () => { isAnimatingRef.current = true; };
       const onAnimationEnd = () => {
         isAnimatingRef.current = false;
-        // Drop any pending grace tokens so the post-settle reconcile makes
-        // a clean decision rather than carrying over animation-era state.
-        pendingRemoveRef.current.clear();
-        updateMarkers();
+        // Bridge the post-animation gap: cluster recompute on zoom can lag
+        // 500–1500ms behind zoomend. Keep removal suppressed across that window
+        // so partial querySourceFeatures results never evict real markers.
+        isDataPendingRef.current = true;
+        firstMissingRef.current.clear();
+        if (zoomSettleTimerRef.current) clearTimeout(zoomSettleTimerRef.current);
+        zoomSettleTimerRef.current = setTimeout(() => {
+          isDataPendingRef.current = false;
+          updateMarkers();
+        }, 1500);
       };
       map.on("movestart", onAnimationStart);
       map.on("zoomstart", onAnimationStart);
@@ -276,7 +299,8 @@ export function PinLayer({
         for (const m of markersOnScreenRef.current.values()) m.remove();
         markersOnScreenRef.current.clear();
         markersRef.current.clear();
-        pendingRemoveRef.current.clear();
+        firstMissingRef.current.clear();
+        if (zoomSettleTimerRef.current) clearTimeout(zoomSettleTimerRef.current);
         isAnimatingRef.current = false;
         if (map.getLayer(L_CLUSTER_COUNT)) map.removeLayer(L_CLUSTER_COUNT);
         if (map.getLayer(L_CLUSTERS)) map.removeLayer(L_CLUSTERS);
@@ -316,14 +340,14 @@ export function PinLayer({
       // installed via the render listener; no need to hold a ref.
     }, 800);
 
-    // Drop cached markers whose pin is gone  prevents stale DOM when a pin is deleted.
+    // Drop cached markers whose pin is gone — prevents stale DOM when a pin is deleted.
     const alive = new Set(pins.map((p) => p.id));
     for (const [id, marker] of markersRef.current) {
       if (!alive.has(id)) {
         marker.remove();
         markersRef.current.delete(id);
         markersOnScreenRef.current.delete(id);
-        pendingRemoveRef.current.delete(id);
+        firstMissingRef.current.delete(id);
       }
     }
   }, [map, pins]);

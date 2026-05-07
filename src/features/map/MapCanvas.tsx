@@ -59,8 +59,15 @@ export function MapCanvas({
       pitch: DEFAULT_PITCH,
     });
 
-    map.on("click", (e) => {
-      // Skip empty-map handler if the click hit any interactive layer.
+    // Defer the empty-map click by 300ms so a double-tap's dblclick event can
+    // cancel it before it fires. Without this, the first tap of every double-tap
+    // opens the create-pin modal (Mapbox fires "click" before it knows a second
+    // tap is coming). 300ms matches Mapbox's default dblclick recognition window.
+    let pendingClick: ReturnType<typeof setTimeout> | null = null;
+
+    const onClick = (e: mapboxgl.MapMouseEvent) => {
+      // Existing interactive-layer escape hatch — if the click hit a cluster or
+      // other interactive layer, don't schedule the empty-map handler at all.
       const layers = interactiveLayersRef.current;
       if (layers && layers.length) {
         const present = layers.filter((l) => map.getLayer(l));
@@ -69,8 +76,22 @@ export function MapCanvas({
           if (hits.length) return;
         }
       }
-      clickHandlerRef.current?.(e.lngLat);
-    });
+      if (pendingClick) clearTimeout(pendingClick);
+      pendingClick = setTimeout(() => {
+        pendingClick = null;
+        clickHandlerRef.current?.(e.lngLat);
+      }, 300);
+    };
+
+    const onDblClick = () => {
+      if (pendingClick) {
+        clearTimeout(pendingClick);
+        pendingClick = null;
+      }
+    };
+
+    map.on("click", onClick);
+    map.on("dblclick", onDblClick);
 
     map.on("load", () => {
       if (terrain) {
@@ -99,6 +120,9 @@ export function MapCanvas({
     onMapReady(map);
 
     return () => {
+      if (pendingClick) clearTimeout(pendingClick);
+      map.off("click", onClick);
+      map.off("dblclick", onDblClick);
       map.remove();
       mapRef.current = null;
     };
