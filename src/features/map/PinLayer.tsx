@@ -1,18 +1,33 @@
 import { useEffect, useRef } from "react";
-import mapboxgl, { Map as MapboxMap, Marker, GeoJSONSource } from "mapbox-gl";
+import mapboxgl, { Map as MapboxMap, GeoJSONSource } from "mapbox-gl";
 import { createRoot, type Root } from "react-dom/client";
+import Supercluster from "supercluster";
 import type { Pin } from "../pins/pinTypes";
-import { categoryEmoji, MOBILE_BREAKPOINT } from "./mapConstants";
+import { MOBILE_BREAKPOINT } from "./mapConstants";
 import { PinPopup } from "./PinPopup";
 
-// Source + layer ids. Exported so MapCanvas can skip empty-map clicks that
-// landed on the cluster bubble (see handleMapClick logic).
-const SRC = "pins";
+// Two plain (non-clustering) GeoJSON sources — populated by Supercluster running in JS.
+const SRC_CLUSTERS = "pins-clusters-src";
+const SRC_POINTS = "pins-points-src";
+
 export const L_CLUSTERS = "pins-clusters";
 export const L_CLUSTER_COUNT = "pins-cluster-count";
+// Native GL layers for unclustered individual pins.
+// NOTE: if you add a PinCategory, update the 'match' expression in
+// L_UNCLUSTERED_LABEL below AND the categoryEmoji helper in mapConstants.ts.
+export const L_UNCLUSTERED = "pins-points";
+export const L_UNCLUSTERED_LABEL = "pins-points-label";
 
-/** Layers whose clicks should NOT trigger the empty-map draft flow. */
-export const PIN_INTERACTIVE_LAYERS = [L_CLUSTERS, L_CLUSTER_COUNT];
+/** All layer ids that should swallow a map click (not trigger the draft flow). */
+export const PIN_INTERACTIVE_LAYERS = [
+  L_CLUSTERS,
+  L_CLUSTER_COUNT,
+  L_UNCLUSTERED,
+  L_UNCLUSTERED_LABEL,
+];
+
+/** Properties stored on each input point feature for the Supercluster index. */
+type PinProps = { pinId: string; category: string; createdByType: string };
 
 export type PinLayerProps = {
   map: MapboxMap | null;
@@ -31,12 +46,15 @@ export type PinLayerProps = {
 };
 
 /**
- * Hybrid clustering (2.2):
- *   - GeoJSON source with cluster:true handles aggregation.
- *   - Clusters render as native GL layers (circle + count)  scales to 10k+ pins.
- *   - Unclustered points render as HTML markers, synced from source features.
- *     Keeps emoji glyphs + lets DOM click handlers stopPropagation so the
- *     map's empty-click draft flow doesn't fire underneath.
+ * Supercluster-based pin rendering — replaces the HTML-marker and cluster:true
+ * approaches that both suffered from Mapbox's async cluster-recompute gap.
+ *
+ * Architecture:
+ *   scRef holds a Supercluster index loaded with all pins. updateClusters()
+ *   runs synchronously: getClusters() → split into cluster vs point features →
+ *   setData on two plain GeoJSON sources → Mapbox re-renders instantly.
+ *   Called on integer-zoom crossings, moveend, and whenever pins change.
+ *   No HTML markers, no reconciliation loop, no flicker.
  */
 export function PinLayer({
   map,
@@ -58,150 +76,73 @@ export function PinLayer({
   useEffect(() => { pinsRef.current = pins; }, [pins]);
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
 
-  // HTML marker bookkeeping: markers by id (persisted), and those currently in DOM.
-  const markersRef = useRef<globalThis.Map<string, Marker>>(new globalThis.Map());
-  const markersOnScreenRef = useRef<globalThis.Map<string, Marker>>(new globalThis.Map());
-  // Time-based removal: tracks the timestamp (performance.now()) at which each
-  // marker was first found missing from querySourceFeatures. A marker is only
-  // removed from the DOM once it has been continuously absent for ≥800ms.
-  // This survives the 200–800ms cluster-recompute window that follows zoomend,
-  // during which querySourceFeatures returns partial results even though
-  // isSourceLoaded() reports true. The old two-frame (≈33ms) grace was far
-  // too short for mid-tier mobile.
-  const firstMissingRef = useRef<globalThis.Map<string, number>>(new globalThis.Map());
-  const REMOVE_AFTER_MS = 800;
-  // True while the map is mid-animation (pan or zoom). While animating we
-  // ADD markers eagerly but NEVER remove — clustering recomputes constantly
-  // during a zoom and reacting to that with marker removals causes flicker.
-  // Mapbox's Marker class handles per-frame screen-space repositioning of
-  // existing markers automatically, so they keep tracking the map smoothly.
-  const isAnimatingRef = useRef(false);
-  // True for ~800ms after the pins source data changes (new pin added,
-  // pin deleted, filter changed). Mapbox's clusterer recomputes during
-  // this window and querySourceFeatures returns partial data — even
-  // though isSourceLoaded() reports true. Without this guard, existing
-  // markers get queued for removal mid-recluster and visibly flicker
-  // when a new pin is added. Real deletions are handled explicitly in
-  // the data-sync useEffect below (it iterates the new alive-set and
-  // calls marker.remove() for pins that genuinely went away), so
-  // suppressing removal here doesn't strand stale markers.
-  const isDataPendingRef = useRef(false);
-  const dataPendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Extra settle timer: after zoomend the cluster algorithm keeps recomputing
-  // for up to ~1500ms. We keep isDataPendingRef=true for that window so the
-  // render-loop's removal path stays suppressed.
-  const zoomSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Stash the animation listeners so the install effect's cleanup can detach.
-  const animListenersRef = useRef<{
-    onAnimationStart: () => void;
-    onAnimationEnd: () => void;
-  } | null>(null);
+  // Supercluster index — rebuilt whenever pins change.
+  const scRef = useRef<Supercluster<PinProps>>(
+    new Supercluster<PinProps>({ radius: 50, maxZoom: 14 })
+  );
+  // Tracks last integer zoom so we only re-cluster on zoom-level changes.
+  const lastZoomRef = useRef<number>(-1);
+  // Callable ref so the data-sync effect can trigger an update after rebuilding
+  // the index, without depending on the install effect's closure.
+  const updateClustersRef = useRef<(() => void) | null>(null);
+  // Stash listeners for cleanup.
+  const zoomListenerRef = useRef<(() => void) | null>(null);
+  // Stash the unclustered-click handler for cleanup.
+  const unclusteredClickRef = useRef<((e: mapboxgl.MapLayerMouseEvent) => void) | null>(null);
 
   const popupRef = useRef<mapboxgl.Popup | null>(null);
   const popupRootRef = useRef<Root | null>(null);
   const popupContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // --- Install source + cluster GL layers once the style is ready. --------
+  // --- Install sources + GL layers once map style is ready. ---------------
   useEffect(() => {
     if (!map) return;
 
-    const updateMarkers = () => {
-      if (!map.getSource(SRC)) return;
-      if (!map.isSourceLoaded(SRC)) return;
+    let destroyed = false;
 
-      const features = map.querySourceFeatures(SRC);
+    const updateClusters = () => {
+      if (!map.getSource(SRC_CLUSTERS)) return;
+      const zoom = Math.floor(map.getZoom());
+      lastZoomRef.current = zoom;
 
-      // Defensive: querySourceFeatures can briefly return [] during cluster
-      // recompute even when isSourceLoaded() is true. Bailing out when there
-      // are no features AND we have pins prevents a one-frame flash where
-      // every marker is removed and re-added next frame.
-      if (features.length === 0 && pinsRef.current.length > 0) return;
+      // World bbox — Mapbox handles viewport culling on the GL side.
+      // getClusters() is synchronous: no async gap, no flicker.
+      const all = scRef.current.getClusters([-180, -85, 180, 85], zoom);
+      const clusterFeats = all.filter((f) => f.properties?.cluster);
+      const pointFeats = all.filter((f) => !f.properties?.cluster);
 
-      const next = new globalThis.Map<string, Marker>();
-
-      for (const feat of features) {
-        const props = feat.properties;
-        if (!props) continue;
-        if (props.cluster) continue; // clusters handled by GL layer
-        const pinId = props.pinId as string;
-        if (!pinId) continue;
-        const coords = (feat.geometry as GeoJSON.Point).coordinates as [number, number];
-
-        let marker = markersRef.current.get(pinId);
-        if (!marker) {
-          const pin = pinsRef.current.find((p) => p.id === pinId);
-          if (!pin) continue;
-          const el = buildMarkerElement(pin);
-          el.addEventListener("click", (ev) => {
-            // Block the map's general click so handleMapClick doesn't open a draft.
-            ev.stopPropagation();
-            onSelectRef.current(pin);
-          });
-          marker = new mapboxgl.Marker({ element: el }).setLngLat(coords);
-          markersRef.current.set(pinId, marker);
-        } else {
-          marker.setLngLat(coords);
-        }
-
-        next.set(pinId, marker);
-        if (!markersOnScreenRef.current.has(pinId)) marker.addTo(map);
-      }
-
-      // Removal policy:
-      //   • While animating (pan/zoom) OR right after a setData (new pin /
-      //     deleted pin / filter change): NEVER remove. Keep currently-
-      //     visible markers visible. The cluster algorithm thrashes during
-      //     both windows and reacting to that with removals causes flicker.
-      //     Mapbox auto-repositions existing markers as the map moves.
-      //   • At rest: time-based removal. A marker is only evicted once it has
-      //     been continuously absent for ≥REMOVE_AFTER_MS (800ms). Single-frame
-      //     or sub-800ms absences are cluster-recompute jitter, not real changes.
-      if (isAnimatingRef.current || isDataPendingRef.current) {
-        for (const [id, marker] of markersOnScreenRef.current) {
-          if (!next.has(id)) next.set(id, marker);
-        }
-        firstMissingRef.current.clear();
-      } else {
-        const now = performance.now();
-        for (const [id, marker] of markersOnScreenRef.current) {
-          if (next.has(id)) {
-            firstMissingRef.current.delete(id); // back on screen — reset timer
-            continue;
-          }
-          const since = firstMissingRef.current.get(id);
-          if (since === undefined) {
-            // First frame this marker is absent — start the grace timer.
-            firstMissingRef.current.set(id, now);
-            next.set(id, marker);
-          } else if (now - since >= REMOVE_AFTER_MS) {
-            // Absent for ≥800ms continuously → really gone.
-            marker.remove();
-            firstMissingRef.current.delete(id);
-          } else {
-            // Still within grace window — keep visible.
-            next.set(id, marker);
-          }
-        }
-      }
-      markersOnScreenRef.current = next;
+      (map.getSource(SRC_CLUSTERS) as GeoJSONSource).setData({
+        type: "FeatureCollection",
+        features: clusterFeats as GeoJSON.Feature[],
+      });
+      (map.getSource(SRC_POINTS) as GeoJSONSource).setData({
+        type: "FeatureCollection",
+        features: pointFeats as GeoJSON.Feature[],
+      });
     };
 
-    const install = () => {
-      if (map.getSource(SRC)) return;
+    updateClustersRef.current = updateClusters;
 
-      map.addSource(SRC, {
+    const install = () => {
+      if (destroyed || map.getSource(SRC_CLUSTERS)) return;
+
+      // Load all current pins into the index before adding sources.
+      scRef.current.load(pinsToInput(pinsRef.current));
+
+      map.addSource(SRC_CLUSTERS, {
         type: "geojson",
-        data: pinsToFc(pinsRef.current),
-        cluster: true,
-        clusterRadius: 50,
-        clusterMaxZoom: 14,
+        data: { type: "FeatureCollection", features: [] },
+      });
+      map.addSource(SRC_POINTS, {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
       });
 
+      // ── Cluster layers ──────────────────────────────────────────────
       map.addLayer({
         id: L_CLUSTERS,
         type: "circle",
-        source: SRC,
-        filter: ["has", "point_count"],
+        source: SRC_CLUSTERS,
         paint: {
           "circle-color": [
             "step", ["get", "point_count"],
@@ -221,10 +162,9 @@ export function PinLayer({
       map.addLayer({
         id: L_CLUSTER_COUNT,
         type: "symbol",
-        source: SRC,
-        filter: ["has", "point_count"],
+        source: SRC_CLUSTERS,
         layout: {
-          "text-field": ["get", "point_count_abbreviated"],
+          "text-field": ["to-string", ["get", "point_count_abbreviated"]],
           "text-size": 13,
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
           "text-allow-overlap": true,
@@ -232,124 +172,124 @@ export function PinLayer({
         paint: { "text-color": "#ffffff" },
       });
 
-      // Cluster click  zoom in to the expansion level.
+      // ── Individual pin layers ───────────────────────────────────────
+      // Circle background — black for hostels, blue for travelers.
+      map.addLayer({
+        id: L_UNCLUSTERED,
+        type: "circle",
+        source: SRC_POINTS,
+        paint: {
+          "circle-color": [
+            "case",
+            ["==", ["get", "createdByType"], "hostel"],
+            "#111111",
+            "#2563eb",
+          ],
+          "circle-radius": 17,
+          "circle-stroke-width": 2,
+          "circle-stroke-color": "#ffffff",
+        },
+      });
+
+      // Emoji label. Keep in sync with PinCategory union in pinTypes.ts.
+      map.addLayer({
+        id: L_UNCLUSTERED_LABEL,
+        type: "symbol",
+        source: SRC_POINTS,
+        layout: {
+          "text-field": [
+            "match", ["get", "category"],
+            "food",      "🍽️",
+            "nightlife", "🍻",
+            "sight",     "📸",
+            "shop",      "🛍️",
+            "beach",     "🏖️",
+            "📍",
+          ],
+          "text-size": 16,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true,
+          "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+        },
+      });
+
+      // ── Cluster click → zoom in (synchronous expansion zoom) ────────────
       map.on("click", L_CLUSTERS, (e) => {
         const feat = e.features?.[0];
-        if (!feat) return;
-        const clusterId = feat.properties?.cluster_id;
-        const src = map.getSource(SRC) as GeoJSONSource | undefined;
-        if (!src || clusterId == null) return;
-        src.getClusterExpansionZoom(clusterId, (err, zoom) => {
-          if (err) return;
-          const coords = (feat.geometry as GeoJSON.Point).coordinates as [number, number];
-          map.easeTo({ center: coords, zoom: zoom ?? map.getZoom() + 2, duration: 400 });
-        });
+        if (!feat?.properties) return;
+        const clusterId = feat.properties.cluster_id as number | undefined;
+        if (clusterId == null) return;
+        const coords = (feat.geometry as GeoJSON.Point).coordinates as [number, number];
+        try {
+          const expansionZoom = scRef.current.getClusterExpansionZoom(clusterId);
+          map.easeTo({ center: coords, zoom: expansionZoom, duration: 400 });
+        } catch { /* stale cluster_id — safe to ignore */ }
       });
 
       map.on("mouseenter", L_CLUSTERS, () => { map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", L_CLUSTERS, () => { map.getCanvas().style.cursor = ""; });
 
-      // Sync HTML markers every frame (guarded by isSourceLoaded). This matches
-      // the Mapbox "cluster-html" example  cheap because the guard short-circuits.
-      map.on("render", updateMarkers);
-
-      // Animation gates: suppress marker REMOVAL during pan/zoom (see comment
-      // on isAnimatingRef). On settle we run a final reconcile so the steady-
-      // state marker set matches the visible features.
-      const onAnimationStart = () => { isAnimatingRef.current = true; };
-      const onAnimationEnd = () => {
-        isAnimatingRef.current = false;
-        // Bridge the post-animation gap: cluster recompute on zoom can lag
-        // 500–1500ms behind zoomend. Keep removal suppressed across that window
-        // so partial querySourceFeatures results never evict real markers.
-        isDataPendingRef.current = true;
-        firstMissingRef.current.clear();
-        if (zoomSettleTimerRef.current) clearTimeout(zoomSettleTimerRef.current);
-        zoomSettleTimerRef.current = setTimeout(() => {
-          isDataPendingRef.current = false;
-          updateMarkers();
-        }, 1500);
+      // ── Unclustered pin click → select ──────────────────────────────
+      const onUnclusteredClick = (e: mapboxgl.MapLayerMouseEvent) => {
+        const f = e.features?.[0];
+        if (!f?.properties) return;
+        const pinId = f.properties.pinId as string | undefined;
+        if (!pinId) return;
+        const pin = pinsRef.current.find((p) => p.id === pinId);
+        if (pin) onSelectRef.current(pin);
       };
-      map.on("movestart", onAnimationStart);
-      map.on("zoomstart", onAnimationStart);
-      map.on("moveend", onAnimationEnd);
-      map.on("zoomend", onAnimationEnd);
+      map.on("click", L_UNCLUSTERED, onUnclusteredClick);
+      map.on("click", L_UNCLUSTERED_LABEL, onUnclusteredClick);
+      map.on("mouseenter", L_UNCLUSTERED, () => { map.getCanvas().style.cursor = "pointer"; });
+      map.on("mouseleave", L_UNCLUSTERED, () => { map.getCanvas().style.cursor = ""; });
+      unclusteredClickRef.current = onUnclusteredClick;
 
-      // Stash so cleanup can remove them.
-      animListenersRef.current = { onAnimationStart, onAnimationEnd };
+      // ── Re-cluster on integer-zoom changes and pan ────────────────────
+      // Updating on every render frame is wasteful and unnecessary.
+      // Integer-zoom crossings cover cluster-boundary transitions smoothly.
+      // moveend handles pins newly entering the viewport after a pan.
+      const onZoom = () => {
+        if (Math.floor(map.getZoom()) !== lastZoomRef.current) updateClusters();
+      };
+      map.on("zoom", onZoom);
+      map.on("moveend", updateClusters);
+      zoomListenerRef.current = onZoom;
 
-      // Run once now in case source is already loaded (HMR etc).
-      updateMarkers();
+      // Initial population.
+      updateClusters();
     };
 
     if (map.isStyleLoaded()) install();
     else map.once("load", install);
 
     return () => {
+      destroyed = true;
       try {
-        map.off("render", updateMarkers);
-        if (animListenersRef.current) {
-          const { onAnimationStart, onAnimationEnd } = animListenersRef.current;
-          map.off("movestart", onAnimationStart);
-          map.off("zoomstart", onAnimationStart);
-          map.off("moveend", onAnimationEnd);
-          map.off("zoomend", onAnimationEnd);
-          animListenersRef.current = null;
+        const onClick = unclusteredClickRef.current;
+        if (onClick) {
+          map.off("click", L_UNCLUSTERED, onClick);
+          map.off("click", L_UNCLUSTERED_LABEL, onClick);
         }
-        for (const m of markersOnScreenRef.current.values()) m.remove();
-        markersOnScreenRef.current.clear();
-        markersRef.current.clear();
-        firstMissingRef.current.clear();
-        if (zoomSettleTimerRef.current) clearTimeout(zoomSettleTimerRef.current);
-        isAnimatingRef.current = false;
+        const onZoom = zoomListenerRef.current;
+        if (onZoom) map.off("zoom", onZoom);
+        map.off("moveend", updateClusters);
+        if (map.getLayer(L_UNCLUSTERED_LABEL)) map.removeLayer(L_UNCLUSTERED_LABEL);
+        if (map.getLayer(L_UNCLUSTERED)) map.removeLayer(L_UNCLUSTERED);
         if (map.getLayer(L_CLUSTER_COUNT)) map.removeLayer(L_CLUSTER_COUNT);
         if (map.getLayer(L_CLUSTERS)) map.removeLayer(L_CLUSTERS);
-        if (map.getSource(SRC)) map.removeSource(SRC);
-      } catch {
-        // style/map already gone
-      }
+        if (map.getSource(SRC_POINTS)) map.removeSource(SRC_POINTS);
+        if (map.getSource(SRC_CLUSTERS)) map.removeSource(SRC_CLUSTERS);
+      } catch { /* style/map already gone */ }
     };
   }, [map]);
 
-  // --- Data sync: push pins into the source whenever they change. ---------
-  // Track the last fingerprint so re-renders that produce a *new array with
-  // identical pins* (common after race-fixed reloads) don't re-call setData,
-  // which would force Mapbox to recluster and could briefly flash markers.
-  const lastFingerprintRef = useRef<string>("");
+  // --- Data sync: rebuild Supercluster index and refresh whenever pins change.
+  // Supercluster.load() is synchronous; updateClusters() calls setData() which
+  // Mapbox applies instantly. No async gap, no reconciliation loop needed.
   useEffect(() => {
     if (!map) return;
-    const fingerprint = pins
-      .map((p) => `${p.id}:${p.lat.toFixed(6)},${p.lng.toFixed(6)}`)
-      .join("|");
-    if (fingerprint === lastFingerprintRef.current) return;
-    lastFingerprintRef.current = fingerprint;
-
-    const src = map.getSource(SRC) as GeoJSONSource | undefined;
-    if (src) src.setData(pinsToFc(pins));
-
-    // Mark the recluster window so updateMarkers stops removing markers
-    // for ~800ms while Mapbox finishes reclustering. Fixes the "new pin
-    // appears then existing markers blink" UX bug.
-    isDataPendingRef.current = true;
-    if (dataPendingTimerRef.current) clearTimeout(dataPendingTimerRef.current);
-    dataPendingTimerRef.current = setTimeout(() => {
-      isDataPendingRef.current = false;
-      // One reconcile pass after the cluster settles so any genuinely-
-      // gone markers (e.g. filter change) actually leave the DOM.
-      // Loose-coupled: PinLayer dispatches to whatever updateMarkers is
-      // installed via the render listener; no need to hold a ref.
-    }, 800);
-
-    // Drop cached markers whose pin is gone — prevents stale DOM when a pin is deleted.
-    const alive = new Set(pins.map((p) => p.id));
-    for (const [id, marker] of markersRef.current) {
-      if (!alive.has(id)) {
-        marker.remove();
-        markersRef.current.delete(id);
-        markersOnScreenRef.current.delete(id);
-        firstMissingRef.current.delete(id);
-      }
-    }
+    scRef.current.load(pinsToInput(pins));
+    updateClustersRef.current?.();
   }, [map, pins]);
 
   // --- Popup ref cleanup on unmount. --------------------------------------
@@ -472,42 +412,15 @@ export function PinLayer({
   return null;
 }
 
-/** Flatten pins into a GeoJSON FeatureCollection for the clustering source. */
-function pinsToFc(pins: Pin[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
-  return {
-    type: "FeatureCollection",
-    features: pins.map((p) => ({
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [p.lng, p.lat] },
-      properties: {
-        pinId: p.id,
-        category: p.category,
-      },
-    })),
-  };
-}
-
-/** Original 2.1 marker  34px circle, emoji badge, black for hostels. */
-function buildMarkerElement(pin: Pin): HTMLDivElement {
-  const el = document.createElement("div");
-  el.style.width = "34px";
-  el.style.height = "34px";
-  el.style.borderRadius = "999px";
-  el.style.display = "flex";
-  el.style.alignItems = "center";
-  el.style.justifyContent = "center";
-  el.style.cursor = "pointer";
-  el.style.boxShadow = "0 6px 18px rgba(0,0,0,0.18)";
-  el.style.border = "2px solid white";
-  el.style.background = pin.createdByType === "hostel" ? "#111" : "#2563eb";
-  el.style.color = "white";
-  el.style.userSelect = "none";
-
-  const badge = document.createElement("div");
-  badge.setAttribute("data-badge", "1");
-  badge.textContent = categoryEmoji(pin.category);
-  badge.style.fontSize = "16px";
-  el.appendChild(badge);
-
-  return el;
+/** Build the input feature array for Supercluster.load(). */
+function pinsToInput(pins: Pin[]): GeoJSON.Feature<GeoJSON.Point, PinProps>[] {
+  return pins.map((p) => ({
+    type: "Feature",
+    geometry: { type: "Point", coordinates: [p.lng, p.lat] },
+    properties: {
+      pinId: p.id,
+      category: p.category,
+      createdByType: p.createdByType,
+    },
+  }));
 }
