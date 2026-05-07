@@ -108,8 +108,10 @@ export function PinLayer({
       // World bbox — Mapbox handles viewport culling on the GL side.
       // getClusters() is synchronous: no async gap, no flicker.
       const all = scRef.current.getClusters([-180, -85, 180, 85], zoom);
-      const clusterFeats = all.filter((f) => f.properties?.cluster);
-      const pointFeats = all.filter((f) => !f.properties?.cluster);
+      const isCluster = (f: (typeof all)[number]) =>
+        (f.properties as { cluster?: boolean } | null)?.cluster === true;
+      const clusterFeats = all.filter(isCluster);
+      const pointFeats = all.filter((f) => !isCluster(f));
 
       (map.getSource(SRC_CLUSTERS) as GeoJSONSource).setData({
         type: "FeatureCollection",
