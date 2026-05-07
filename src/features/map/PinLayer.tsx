@@ -175,6 +175,34 @@ export function PinLayer({
       });
 
       // ── Individual pin layers ───────────────────────────────────────
+      // Pre-render emoji to canvas images. Mapbox GL uses SDF (signed-distance
+      // field) font rendering which cannot display color emoji via text-field.
+      // Canvas 2D fillText renders OS color emoji natively; the result is then
+      // uploaded as a sprite image and referenced via icon-image.
+      const EMOJI_SIZE = 32;
+      const EMOJI_MAP: [string, string][] = [
+        ["pin-food",      "🍽️"],
+        ["pin-nightlife", "🍻"],
+        ["pin-sight",     "📸"],
+        ["pin-shop",      "🛍️"],
+        ["pin-beach",     "🏖️"],
+        ["pin-default",   "📍"],
+      ];
+      for (const [id, emoji] of EMOJI_MAP) {
+        if (map.hasImage(id)) continue;
+        const canvas = document.createElement("canvas");
+        canvas.width = EMOJI_SIZE;
+        canvas.height = EMOJI_SIZE;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.font = `${Math.round(EMOJI_SIZE * 0.8)}px serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(emoji, EMOJI_SIZE / 2, EMOJI_SIZE / 2);
+          map.addImage(id, ctx.getImageData(0, 0, EMOJI_SIZE, EMOJI_SIZE));
+        }
+      }
+
       // Circle background — black for hostels, blue for travelers.
       map.addLayer({
         id: L_UNCLUSTERED,
@@ -193,25 +221,25 @@ export function PinLayer({
         },
       });
 
-      // Emoji label. Keep in sync with PinCategory union in pinTypes.ts.
+      // Emoji icon (uses canvas-rendered images added above).
+      // Keep in sync with PinCategory union in pinTypes.ts + EMOJI_MAP above.
       map.addLayer({
         id: L_UNCLUSTERED_LABEL,
         type: "symbol",
         source: SRC_POINTS,
         layout: {
-          "text-field": [
+          "icon-image": [
             "match", ["get", "category"],
-            "food",      "🍽️",
-            "nightlife", "🍻",
-            "sight",     "📸",
-            "shop",      "🛍️",
-            "beach",     "🏖️",
-            "📍",
+            "food",      "pin-food",
+            "nightlife", "pin-nightlife",
+            "sight",     "pin-sight",
+            "shop",      "pin-shop",
+            "beach",     "pin-beach",
+            "pin-default",
           ],
-          "text-size": 16,
-          "text-allow-overlap": true,
-          "text-ignore-placement": true,
-          "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+          "icon-size": 0.5,
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
         },
       });
 
@@ -246,14 +274,17 @@ export function PinLayer({
       map.on("mouseleave", L_UNCLUSTERED, () => { map.getCanvas().style.cursor = ""; });
       unclusteredClickRef.current = onUnclusteredClick;
 
-      // ── Re-cluster on integer-zoom changes and pan ────────────────────
-      // Updating on every render frame is wasteful and unnecessary.
-      // Integer-zoom crossings cover cluster-boundary transitions smoothly.
-      // moveend handles pins newly entering the viewport after a pan.
+      // ── Re-cluster on zoom changes ─────────────────────────────────────
+      // onZoom fires during animation (on integer crossings) for smooth
+      // cluster-split transitions. zoomend + moveend are belt-and-suspenders
+      // to guarantee a final update after any camera animation completes,
+      // including double-click zoom where some Mapbox builds don't fire
+      // moveend reliably when only the zoom level changes.
       const onZoom = () => {
         if (Math.floor(map.getZoom()) !== lastZoomRef.current) updateClusters();
       };
       map.on("zoom", onZoom);
+      map.on("zoomend", updateClusters);
       map.on("moveend", updateClusters);
       zoomListenerRef.current = onZoom;
 
@@ -274,6 +305,7 @@ export function PinLayer({
         }
         const onZoom = zoomListenerRef.current;
         if (onZoom) map.off("zoom", onZoom);
+        map.off("zoomend", updateClusters);
         map.off("moveend", updateClusters);
         if (map.getLayer(L_UNCLUSTERED_LABEL)) map.removeLayer(L_UNCLUSTERED_LABEL);
         if (map.getLayer(L_UNCLUSTERED)) map.removeLayer(L_UNCLUSTERED);

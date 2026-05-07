@@ -59,15 +59,21 @@ export function MapCanvas({
       pitch: DEFAULT_PITCH,
     });
 
-    // Defer the empty-map click by 300ms so a double-tap's dblclick event can
-    // cancel it before it fires. Without this, the first tap of every double-tap
-    // opens the create-pin modal (Mapbox fires "click" before it knows a second
-    // tap is coming). 300ms matches Mapbox's default dblclick recognition window.
+    // Defer the empty-map click so a double-tap can cancel it before it fires.
+    // On mobile, browsers delay synthesised "click" events by ~300ms to detect
+    // double-taps, so "dblclick" can arrive BEFORE "click". We guard against
+    // both orderings:
+    //   • dblclick-before-click (mobile): lastDblClickTime lets onClick bail out
+    //   • dblclick-after-click  (desktop): pendingClick timer is cleared as usual
     let pendingClick: ReturnType<typeof setTimeout> | null = null;
+    let lastDblClickTime = -1000;
 
     const onClick = (e: mapboxgl.MapMouseEvent) => {
-      // Existing interactive-layer escape hatch — if the click hit a cluster or
-      // other interactive layer, don't schedule the empty-map handler at all.
+      // If a dblclick fired recently (covers mobile order: dblclick → click),
+      // ignore this click entirely.
+      if (Date.now() - lastDblClickTime < 600) return;
+
+      // Interactive-layer escape hatch — clicks on pins/clusters don't open draft.
       const layers = interactiveLayersRef.current;
       if (layers && layers.length) {
         const present = layers.filter((l) => map.getLayer(l));
@@ -84,6 +90,9 @@ export function MapCanvas({
     };
 
     const onDblClick = () => {
+      // Record time so onClick can bail if it fires after this (mobile order).
+      lastDblClickTime = Date.now();
+      // Also cancel any pending timer (desktop order: click → click → dblclick).
       if (pendingClick) {
         clearTimeout(pendingClick);
         pendingClick = null;
