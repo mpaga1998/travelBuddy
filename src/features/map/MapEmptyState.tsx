@@ -13,7 +13,7 @@ export function MapEmptyState({
   return (
     // Outer wrapper: pointer-events-none so the transparent gutter around
     // the card never swallows map touches. The card itself re-enables them.
-    <div className="absolute inset-x-0 bottom-6 flex justify-center px-4 pointer-events-none z-10">
+    <div className="absolute inset-x-0 bottom-24 flex justify-center px-4 pointer-events-none z-10">
       <div className="pointer-events-auto w-full max-w-[340px] bg-white rounded-2xl shadow-md border border-black/[0.08] p-4 flex flex-col gap-3">
         <div>
           <p className="text-sm font-semibold text-[#111]">It&apos;s quiet here.</p>

@@ -107,6 +107,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   const [viewerTips, setViewerTips] = useState<string[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteConfirmPinId, setDeleteConfirmPinId] = useState<string | null>(null);
+  const [emptyStateDismissed, setEmptyStateDismissed] = useState(false);
 
   // Keep refs of draft/selection so the map-click callback doesn't capture stale state.
   const draftRef = useRef<DraftPin | null>(null);
@@ -361,23 +362,10 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
 
           <CompassButton map={mapInstance} />
 
-          {!loading && mapRef.current && filteredPins.length === 0 && (
+          {!loading && mapRef.current && filteredPins.length === 0 && !emptyStateDismissed && (
             <MapEmptyState
               onPlanTrip={() => setItineraryModalOpen(true)}
-              onDropPin={() => {
-                const center = mapRef.current?.getCenter();
-                if (center) {
-                  setDraft({
-                    lat: center.lat,
-                    lng: center.lng,
-                    title: "",
-                    description: "",
-                    category: "other",
-                    tips: [],
-                    images: [],
-                  });
-                }
-              }}
+              onDropPin={() => setEmptyStateDismissed(true)}
             />
           )}
 
