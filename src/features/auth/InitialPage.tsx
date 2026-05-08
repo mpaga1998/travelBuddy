@@ -24,6 +24,10 @@ const topRoundBtnClass =
 export function InitialPage({ onGoToMap }: InitialPageProps) {
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [itineraryModalOpen, setItineraryModalOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('nook_welcome_dismissed') !== '1';
+  });
   const [searchActive, setSearchActive] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -135,6 +139,15 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
     setShowSuggestions(false);
   }
 
+  function dismissWelcome() {
+    setShowWelcome(false);
+    try {
+      localStorage.setItem('nook_welcome_dismissed', '1');
+    } catch {
+      /* private mode — no harm */
+    }
+  }
+
   async function handleSignOut() {
     setShowSignOutConfirm(false);
     await supabase.auth.signOut();
@@ -205,6 +218,37 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
       >
         👋
       </button>
+
+      {/* Welcome banner — first-time users only */}
+      {showWelcome && (
+        <div className="relative w-full max-w-[380px] bg-white/15 backdrop-blur-md border border-white/30 rounded-2xl p-4 mb-1">
+          {/* X dismiss */}
+          <button
+            type="button"
+            onClick={dismissWelcome}
+            className="absolute top-2.5 right-3 text-white/70 hover:text-white text-lg leading-none"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+
+          <p className="text-sm font-semibold text-white m-0 mb-0.5 pr-6">First time on nook?</p>
+          <p className="text-xs text-white/90 m-0 mb-3">
+            The fastest way in: plan a trip. The AI knows the corners.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => {
+              dismissWelcome();
+              setItineraryModalOpen(true);
+            }}
+            className="px-4 py-1.5 rounded-xl bg-white text-[#ff8c00] text-sm font-semibold active:scale-[0.98] transition-transform"
+          >
+            Plan a trip
+          </button>
+        </div>
+      )}
 
       {/* Buttons Container */}
       <div className="w-full max-w-[380px] flex flex-col gap-3">
