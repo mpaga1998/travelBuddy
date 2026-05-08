@@ -22,6 +22,7 @@ import { FeatureErrorBoundary } from "../../components/FeatureErrorBoundary";
 import { MapCanvas } from "./MapCanvas";
 import { PinLayer, PIN_INTERACTIVE_LAYERS } from "./PinLayer";
 import { FilterBar } from "./FilterBar";
+import { MapEmptyState } from "./MapEmptyState";
 import { CATEGORIES, categoryEmoji } from "./mapConstants";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useBookmarks } from "./hooks/useBookmarks";
@@ -359,6 +360,26 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
           />
 
           <CompassButton map={mapInstance} />
+
+          {!loading && mapRef.current && filteredPins.length === 0 && (
+            <MapEmptyState
+              onPlanTrip={() => setItineraryModalOpen(true)}
+              onDropPin={() => {
+                const center = mapRef.current?.getCenter();
+                if (center) {
+                  setDraft({
+                    lat: center.lat,
+                    lng: center.lng,
+                    title: "",
+                    description: "",
+                    category: "other",
+                    tips: [],
+                    images: [],
+                  });
+                }
+              }}
+            />
+          )}
 
           {!loading && limitReached && (
             <div
