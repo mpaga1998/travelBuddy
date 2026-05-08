@@ -221,19 +221,21 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
 
       {/* Welcome banner — first-time users only */}
       {showWelcome && (
-        <div className="relative w-full max-w-[380px] bg-white/15 backdrop-blur-md border border-white/30 rounded-2xl p-4 mb-1">
-          {/* X dismiss */}
-          <button
-            type="button"
-            onClick={dismissWelcome}
-            className="absolute top-2.5 right-3 text-white/70 hover:text-white text-lg leading-none"
-            aria-label="Dismiss"
-          >
-            ✕
-          </button>
+        <div className="w-full max-w-[380px] bg-white/15 backdrop-blur-md border border-white/30 rounded-2xl p-4 mb-1 flex flex-col gap-2">
+          {/* Header row: headline + X inline so text never clips */}
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-semibold text-white m-0 leading-snug">First time on nook?</p>
+            <button
+              type="button"
+              onClick={dismissWelcome}
+              className="shrink-0 bg-transparent border-0 p-0 w-6 h-6 flex items-center justify-center text-white/70 hover:text-white text-base leading-none cursor-pointer"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
 
-          <p className="text-sm font-semibold text-white m-0 mb-0.5 pr-6">First time on nook?</p>
-          <p className="text-xs text-white/90 m-0 mb-3">
+          <p className="text-xs text-white/90 m-0 leading-snug">
             The fastest way in: plan a trip. The AI knows the corners.
           </p>
 
@@ -243,7 +245,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
               dismissWelcome();
               setItineraryModalOpen(true);
             }}
-            className="px-4 py-1.5 rounded-xl bg-white text-[#ff8c00] text-sm font-semibold active:scale-[0.98] transition-transform"
+            className="self-start px-4 py-1.5 rounded-xl bg-white text-[#ff8c00] text-sm font-semibold active:scale-[0.98] transition-transform"
           >
             Plan a trip
           </button>
