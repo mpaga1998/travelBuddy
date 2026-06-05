@@ -33,7 +33,7 @@ to touch and a **Done when** check.
   Choose the real model, set it in one constant, document it in `.env.example`.
   **Done when** model name appears in exactly one place and matches the deployed
   env. 
-- [ ] **A1.2 Kill the dead second generation pipeline.** Decide: text-stream
+- [x] **A1.2 Kill the dead second generation pipeline.** Decide: text-stream
   (`openai.ts`) is the live path. Either wire up or delete the `dayBased*` set
   (`dayBasedGeneration/Prompt/Rendering/Validation` + `structuredPrompts`,
   `itinerarySchema`). **Done when** there's one generation path and no

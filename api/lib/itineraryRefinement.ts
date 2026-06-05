@@ -4,7 +4,6 @@
 
 import { TripInput } from './types.js';
 import { calculateNights } from './inputValidation.js';
-import { StructuredItinerary } from './itinerarySchema.js';
 
 export interface GenerationContext {
   nightsAvailable: number;
