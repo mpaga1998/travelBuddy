@@ -38,7 +38,7 @@ to touch and a **Done when** check.
   (`dayBasedGeneration/Prompt/Rendering/Validation` + `structuredPrompts`,
   `itinerarySchema`). **Done when** there's one generation path and no
   unreferenced exports (`npx ts-prune` is clean).
-- [ ] **A1.3 Replace the Italy-only travel-time matrix.** `dayBasedValidation.ts`
+- [x] **A1.3 Replace the Italy-only travel-time matrix.** `dayBasedValidation.ts`
   hardcodes `REALISTIC_TRAVEL_TIMES` for 5 Italian cities only — silently wrong
   for the rest of Europe. Swap for Mapbox Directions (driving/transit) distance,
   or haversine + mode heuristic, cached per city-pair. **Done when** a Berlin→
