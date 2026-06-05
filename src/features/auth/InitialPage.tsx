@@ -440,6 +440,18 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
           >
             Community Guidelines
           </a>
+          {' · '}
+          <a
+            href="/privacy"
+            onClick={(e) => {
+              e.preventDefault();
+              window.history.pushState({}, '', '/privacy');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="hover:underline"
+          >
+            Privacy Policy
+          </a>
         </span>
       </footer>
 

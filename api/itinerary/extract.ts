@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { requireAuth } from '../lib/requireAuth.js';
 import { validateBodySize } from '../lib/validateBodySize.js';
 import { extractPlacesOnly, extractAndPersistPlaces } from '../lib/extractPlaces.js';
+import { applyCors } from '../lib/cors.js';
 
 dotenv.config();
 
@@ -33,13 +34,7 @@ async function geocodeLocation(location: string): Promise<{ lat: number; lng: nu
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+  applyCors(req, res, { methods: 'GET,OPTIONS,POST' });
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
   if (req.method !== 'POST') { res.status(405).json({ success: false, error: 'Method not allowed' }); return; }
 

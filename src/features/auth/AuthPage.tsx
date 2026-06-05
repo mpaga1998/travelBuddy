@@ -196,7 +196,7 @@ export function AuthPage() {
               >
                 Terms of Service
               </a>
-              {' '}and{' '}
+              {', '}
               <a
                 href="/guidelines"
                 target="_blank"
@@ -204,6 +204,15 @@ export function AuthPage() {
                 className="underline text-slate-900"
               >
                 Community Guidelines
+              </a>
+              {' and '}
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-slate-900"
+              >
+                Privacy Policy
               </a>
             </span>
           </label>

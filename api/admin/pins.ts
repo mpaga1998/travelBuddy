@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { requireAdmin } from '../lib/requireAdmin.js';
 import { initSupabase } from '../lib/supabaseServer.js';
 import { captureApiError } from '../lib/sentryServer.js';
+import { applyCors } from '../lib/cors.js';
 
 dotenv.config();
 
@@ -107,10 +108,7 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+  applyCors(req, res, { methods: 'GET, OPTIONS', headers: 'Authorization, Content-Type' });
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();

@@ -4,6 +4,7 @@ import { requireAuth } from './lib/requireAuth.js';
 import { validateBodySize } from './lib/validateBodySize.js';
 import { moderateText } from './lib/moderation.js';
 import { captureApiError } from './lib/sentryServer.js';
+import { applyCors } from './lib/cors.js';
 
 dotenv.config();
 
@@ -27,12 +28,7 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
-  // CORS — mirror api/itinerary.ts so the browser can call us cross-origin
-  // when running locally against a deployed API.
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+  applyCors(req, res, { methods: 'POST, OPTIONS', headers: 'Authorization, Content-Type' });
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();

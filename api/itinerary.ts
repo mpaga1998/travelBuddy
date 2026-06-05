@@ -15,6 +15,7 @@ import { buildPracticalContext } from './lib/practicalContext.js';
 import { buildBudgetContext } from './lib/budgetContext.js';
 import { moderateText, MODERATION_REJECTION_MESSAGE } from './lib/moderation.js';
 import { captureApiError } from './lib/sentryServer.js';
+import { applyCors } from './lib/cors.js';
 
 // Load environment variables
 dotenv.config();
@@ -47,19 +48,8 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader(
-    'Access-Control-Allow-Methods',
-    'GET,OPTIONS,PATCH,DELETE,POST,PUT'
-  );
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+  applyCors(req, res);
 
-  // Handle preflight requests
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;

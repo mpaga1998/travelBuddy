@@ -47,11 +47,11 @@ to touch and a **Done when** check.
 
 ### A2. Security & launch gaps (roadmap 8.x carried forward)
 
-- [ ] **A2.1 Lock CORS** (roadmap 8.2). Replace `Access-Control-Allow-Origin: *`
+- [x] **A2.1 Lock CORS** (roadmap 8.2). Replace `Access-Control-Allow-Origin: *`
   in every `api/*` handler with an allowlist from `process.env.ALLOWED_ORIGINS`.
   Centralize in one `api/lib/cors.ts` helper. **Done when** a disallowed origin
   is rejected and the prod origin works.
-- [ ] **A2.2 Privacy policy + cookie notice** (roadmap 8.5) — needed before any
+- [x] **A2.2 Privacy policy + cookie notice** (roadmap 8.5) — needed before any
   real users, especially EU audience. **Done when** `/privacy` ships next to the
   existing `/terms` and `/guidelines`.
 

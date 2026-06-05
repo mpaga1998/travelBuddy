@@ -12,6 +12,7 @@ import { AdminPage } from "./features/admin/AdminPage";
 import { isCurrentUserAdmin } from "./features/admin/adminApi";
 import { TermsPage } from "./features/legal/TermsPage";
 import { GuidelinesPage } from "./features/legal/GuidelinesPage";
+import { PrivacyPage } from "./features/legal/PrivacyPage";
 import { PublicProfilePage } from "./features/profile/PublicProfilePage";
 import { FeedPage } from "./features/feed/FeedPage";
 import { NotificationsPage } from "./features/notifications/NotificationsPage";
@@ -28,6 +29,7 @@ type AppPage =
   | "notfound"
   | "terms"
   | "guidelines"
+  | "privacy"
   | "user"
   | "feed"
   | "notifications";
@@ -132,6 +134,10 @@ export default function App() {
     }
     if (pathname === '/guidelines') {
       setCurrentPage('guidelines');
+      return;
+    }
+    if (pathname === '/privacy') {
+      setCurrentPage('privacy');
       return;
     }
     if (parseUserHandle(pathname)) {
@@ -255,6 +261,17 @@ export default function App() {
     if (currentPage === "guidelines") {
       return (
         <GuidelinesPage
+          onBack={() => {
+            window.history.pushState({}, '', '/');
+            setPathname('/');
+          }}
+        />
+      );
+    }
+
+    if (currentPage === "privacy") {
+      return (
+        <PrivacyPage
           onBack={() => {
             window.history.pushState({}, '', '/');
             setPathname('/');
