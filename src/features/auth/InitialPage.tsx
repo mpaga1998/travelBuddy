@@ -160,7 +160,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
   }
 
   return (
-    <div className="relative w-screen h-[100dvh] bg-[#F5F1E3] flex flex-col items-center justify-center px-5 pb-5 box-border font-sans overflow-hidden">
+    <div className="relative w-screen h-[100dvh] bg-[#F5F1E3] flex flex-col items-center justify-start pt-[108px] px-5 box-border font-sans overflow-hidden">
 
       {/* Profile Button (Top Left) */}
       <button
@@ -206,13 +206,13 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
         <SignOut size={22} weight="light" color="#304D6D" />
       </button>
 
-      {/* Logo — compass icon + wordmark */}
-      <div className="flex flex-col items-center mb-6 mt-2">
-        <svg viewBox="0 0 400 500" width="56" height="70" aria-hidden="true">
+      {/* Logo — compass icon + wordmark, overlapping like Figma (icon top:108, wordmark top:153 → 45px overlap) */}
+      <div className="flex flex-col items-center mb-0">
+        <svg viewBox="0 0 400 500" width="72" height="90" aria-hidden="true">
           <path fill="#45B4B9" d="M199.85374,18.44993c-70.54955,0-130.90053,45.58634-153.14949,108.75948l150.35546,59.97013c23.43068-8.13731,46.86151-16.27463,70.29219-24.41178,20.44568-9.60174,40.39949-.2709,43.88289,10.97053,3.14734,10.15551-5.70655,26.52126-23.88896,32.91252-72.86679,23.89503-145.73374,47.7899-218.60053,71.68492,47.15138,94.80723,131.10844,203.21433,131.10844,203.21433,7.56488-9.0164,162.61081-211.47605,162.61081-300.78184S289.45205,20.33983,199.85374,18.44993Z"/>
           <path fill="#45B4B9" d="M39.48382,155.73892c-1.27642,8.16344-1.94837,16.52095-1.94837,25.02931,0,15.72444,4.82824,34.97006,12.81564,56.05271,15.95023-5.6882,31.43659-11.3282,43.99828-16.07262l-54.86555-65.0094Z"/>
         </svg>
-        <svg viewBox="0 0 595.276 400" width="200" aria-label="nook" className="mt-1">
+        <svg viewBox="0 0 595.276 400" width="220" aria-label="nook" className="-mt-[45px]">
           <path fill="#304D6D" d="M73.58626,184.44603c-9.06548,0-16.61238,2.25487-22.6407,6.78761s-10.53805,10.37699-13.57521,17.53273c-2.99115,7.15575-4.50973,15.07079-4.50973,23.74512v67.00174H4.88187v-69.83182c0-13.57521,2.62301-25.7699,7.91504-36.60706,5.26902-10.83716,12.99999-19.46548,23.1699-25.88494,10.19292-6.39646,22.70972-9.59469,37.61945-9.59469,15.25486,0,28.02476,3.19823,38.28671,9.59469,10.28495,6.41947,18.10796,15.04778,23.46901,25.88494,5.38407,10.83716,8.05309,22.93981,8.05309,36.33095v70.10793h-27.97875v-66.72563c0-8.65132-1.5646-16.63539-4.64779-23.88317-3.1292-7.24778-7.73097-13.13805-13.87433-17.67079-6.12035-4.53274-13.89734-6.78761-23.30795-6.78761Z"/>
           <path fill="#304D6D" d="M226.24775,302.91853c-13.94336,0-26.48317-3.31327-37.59644-9.8938-11.13628-6.60354-19.97167-15.41592-26.59822-26.43715-6.58053-11.04424-9.8938-23.23893-9.8938-36.63007,0-13.36813,3.31327-25.53981,9.8938-36.46901,6.62655-10.9292,15.46194-19.64955,26.59822-26.13804,11.11327-6.5115,23.65309-9.75575,37.59644-9.75575s26.48317,3.24425,37.59644,9.75575c11.13628,6.48849,19.87964,15.25486,26.2991,26.27609,6.41947,11.04424,9.61769,23.14689,9.61769,36.33095,0,13.39114-3.19823,25.58583-9.61769,36.63007-6.41947,11.02123-15.20884,19.83362-26.43715,26.43715-11.22831,6.58053-23.6991,9.8938-37.45839,9.8938ZM226.24775,276.34332c8.65132,0,16.42831-2.0708,23.33096-6.2354,6.85663-4.14159,12.28672-9.75575,16.24424-16.81946,3.95752-7.06371,5.93628-14.74867,5.93628-23.03185,0-8.49026-1.97876-16.22123-5.93628-23.19291-3.95752-6.97168-9.38761-12.58583-16.24424-16.81946-6.90265-4.23363-14.67964-6.37345-23.33096-6.37345-8.67433,0-16.45132,2.13982-23.33096,6.37345-6.87964,4.23363-12.37875,9.84778-16.52035,16.81946-4.1646,6.97168-6.2354,14.70265-6.2354,23.19291,0,8.28318,2.0708,15.96813,6.2354,23.03185,4.14159,7.06371,9.6407,12.67787,16.52035,16.81946,6.87964,4.1646,14.65663,6.2354,23.33096,6.2354Z"/>
           <path fill="#304D6D" d="M378.06551,302.91853c-13.96636,0-26.48317-3.31327-37.61945-9.8938-11.11327-6.60354-19.97167-15.41592-26.5522-26.43715-6.60354-11.04424-9.8938-23.23893-9.8938-36.63007,0-13.36813,3.29026-25.53981,9.8938-36.46901,6.58053-10.9292,15.43893-19.64955,26.5522-26.13804,11.13628-6.5115,23.65309-9.75575,37.61945-9.75575,13.94336,0,26.48317,3.24425,37.61945,9.75575,11.09026,6.48849,19.87964,15.25486,26.27609,26.27609,6.39646,11.04424,9.61769,23.14689,9.61769,36.33095,0,13.39114-3.22124,25.58583-9.61769,36.63007-6.39646,11.02123-15.23185,19.83362-26.43715,26.43715-11.2053,6.58053-23.6991,9.8938-37.45839,9.8938ZM378.06551,276.34332c8.67433,0,16.45132-2.0708,23.30795-6.2354,6.90265-4.14159,12.33274-9.75575,16.29026-16.81946,3.95752-7.06371,5.93628-14.74867,5.93628-23.03185,0-8.49026-1.97876-16.22123-5.93628-23.19291-3.95752-6.97168-9.38761-12.58583-16.29026-16.81946-6.85663-4.23363-14.63362-6.37345-23.30795-6.37345s-16.45132,2.13982-23.33096,6.37345c-6.87964,4.23363-12.40176,9.84778-16.54335,16.81946-4.14159,6.97168-6.21239,14.70265-6.21239,23.19291,0,8.28318,2.0708,15.96813,6.21239,23.03185,4.14159,7.06371,9.66371,12.67787,16.54335,16.81946,6.87964,4.1646,14.65663,6.2354,23.33096,6.2354Z"/>
@@ -222,8 +222,8 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
 
       {/* Tagline */}
       <p
-        style={{ fontFamily: "'Lora', Georgia, serif", fontStyle: "italic" }}
-        className="text-[17px] text-[#304D6D]/65 text-center m-0 mb-8 max-w-[280px] leading-[1.65]"
+        style={{ fontFamily: "'Lora', Georgia, serif", fontWeight: 600 }}
+        className="text-[16px] text-[#304D6D] text-center m-0 mt-[15px] mb-[80px] max-w-[280px] leading-[24px]"
       >
         Hidden corners, shared by travelers who actually went.
       </p>
@@ -263,20 +263,20 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
         {!searchActive ? (
           <button
             onClick={() => setSearchActive(true)}
-            className="w-full px-5 py-[17px] rounded-full bg-white border border-[#45B4B9] cursor-pointer flex items-center gap-3 transition-transform active:scale-[0.98] shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
+            className="w-full px-5 py-[17px] rounded-full bg-white cursor-pointer flex items-center gap-3 transition-transform active:scale-[0.98]"
           >
-            <GlobeHemisphereWest size={20} weight="light" color="#45B4B9" />
+            <GlobeHemisphereWest size={20} weight="light" color="rgba(69,180,185,0.4)" />
             <span
               style={{ fontFamily: "'DM Sans', sans-serif" }}
-              className="text-base text-[#304D6D]/40"
+              className="text-base font-semibold text-[#304D6D]/40"
             >
               Where next?
             </span>
           </button>
         ) : (
           <div ref={searchContainerRef} className="w-full relative">
-            <div className="w-full flex gap-3 items-center bg-white rounded-full px-5 py-[17px] border border-[#45B4B9] shadow-[0_2px_8px_rgba(0,0,0,0.06)] leading-none min-h-[56px] box-border">
-              <GlobeHemisphereWest size={20} weight="light" color="#45B4B9" className="shrink-0" />
+            <div className="w-full flex gap-3 items-center bg-white rounded-full px-5 py-[17px] leading-none min-h-[56px] box-border">
+              <GlobeHemisphereWest size={20} weight="light" color="rgba(69,180,185,0.4)" className="shrink-0" />
               <input
                 autoFocus
                 type="text"
@@ -321,10 +321,10 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
             if (searchActive) { setSearchActive(false); setSearchInput(""); setSuggestions([]); setShowSuggestions(false); }
             setItineraryModalOpen(true);
           }}
-          className="w-full px-5 py-[17px] rounded-2xl bg-[#DB7F67] text-white cursor-pointer flex items-center justify-center gap-3 transition-transform active:scale-[0.98] shadow-[0_4px_14px_rgba(219,127,103,0.35)]"
+          className="w-full px-5 py-[17px] rounded-full bg-[#DB7F67] text-white cursor-pointer flex items-center justify-center gap-3 transition-transform active:scale-[0.98]"
         >
           <Sparkle size={20} weight="light" color="white" />
-          <span style={{ fontFamily: "'DM Sans', sans-serif" }} className="text-lg font-semibold">
+          <span style={{ fontFamily: "'DM Sans', sans-serif" }} className="text-base font-semibold">
             Find your nook
           </span>
         </button>
@@ -335,10 +335,10 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
             window.history.pushState({}, '', '/feed');
             window.dispatchEvent(new PopStateEvent('popstate'));
           }}
-          className="w-full px-5 py-3 rounded-xl bg-transparent border border-[#304D6D]/20 text-[#304D6D]/70 cursor-pointer flex items-center justify-center gap-2 transition-colors hover:bg-[#304D6D]/[0.04]"
+          className="w-full px-5 py-[17px] rounded-full bg-[#304D6D] cursor-pointer flex items-center justify-center gap-2 opacity-50 transition-opacity hover:opacity-60"
         >
-          <Newspaper size={18} weight="light" />
-          <span style={{ fontFamily: "'DM Sans', sans-serif" }} className="text-base font-medium">
+          <Newspaper size={18} weight="light" color="white" />
+          <span style={{ fontFamily: "'DM Sans', sans-serif" }} className="text-base font-semibold text-white">
             Feed
           </span>
         </button>
@@ -411,9 +411,9 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
       )}
 
       {/* Legal footer */}
-      <footer className="absolute bottom-4 w-full flex justify-center gap-5 pointer-events-none" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <footer className="absolute bottom-[36px] w-full flex justify-between px-5 pointer-events-none" style={{ fontFamily: "'Inter', sans-serif" }}>
         {[
-          { label: 'Terms', path: '/terms' },
+          { label: 'Terms of Service', path: '/terms' },
           { label: 'Guidelines', path: '/guidelines' },
           { label: 'Privacy', path: '/privacy' },
         ].map(({ label, path }) => (
@@ -425,7 +425,8 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
               window.history.pushState({}, '', path);
               window.dispatchEvent(new PopStateEvent('popstate'));
             }}
-            className="pointer-events-auto text-xs text-[#304D6D]/40 hover:text-[#304D6D]/70 transition-colors"
+            className="pointer-events-auto text-[12px] text-center hover:opacity-80 transition-opacity"
+            style={{ color: 'rgba(48,77,109,0.6)', lineHeight: '24px' }}
           >
             {label}
           </a>
