@@ -86,8 +86,8 @@ export async function generateItinerary(
 
   // STEP 2: Stream text-based itinerary
   try {
-    // Default bumped from gpt-3.5-turbo -> gpt-4o-mini: faster TTFT, cheaper,
-    // better quality at similar latency. OPENAI_FALLBACK_MODEL still overrides.
+    // Model is configured via OPENAI_FALLBACK_MODEL env var (set in Vercel project settings).
+    // Default matches the deployed value — change it in one place only.
     const selectedModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-5.4-mini';
     const maxTokens = computeMaxTokens(input);
     console.log(

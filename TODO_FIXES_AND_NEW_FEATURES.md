@@ -15,20 +15,20 @@ to touch and a **Done when** check.
 
 ### A0. Repo hygiene & cruft (½ day, do today)
 
-- [ ] **A0.1 Delete dead/empty files.** Remove `src/features/pins/pinStore.ts`
+- [x] **A0.1 Delete dead/empty files.** Remove `src/features/pins/pinStore.ts`
   (0 lines), `src/features/map/MapView.tsx.bak`, and `src/app/App.tsx` +
   `src/app/routes.tsx` if empty/unused. **Done when** `grep -rn "pinStore" src/`
   is empty and the build still passes.
-- [ ] **A0.2 Stop committing build artifacts.** Add `dist/`, `build.log`,
+- [x] **A0.2 Stop committing build artifacts.** Add `dist/`, `build.log`,
   `test-results/`, `playwright-report/` to `.gitignore` and `git rm -r --cached`
   them. **Done when** `git status` shows them ignored.
-- [ ] **A0.3 Real README** (also roadmap 8.3). Replace the Vite template with:
+- [x] **A0.3 Real README** (also roadmap 8.3). Replace the Vite template with:
   what nook is, stack, env vars (point at `.env.example`), `npm i` → `dev` →
   `test:e2e`, deploy notes. **Done when** a new dev can run it in <30 min.
 
 ### A1. Correctness bugs that will bite in production
 
-- [ ] **A1.1 Pin down the OpenAI model.** `api/lib/openai.ts` defaults to
+- [x] **A1.1 Pin down the OpenAI model.** `api/lib/openai.ts` defaults to
   `'gpt-5.4-mini'` while `.env.example` says `gpt-3.5-turbo`/`gpt-4-turbo`.
   Choose the real model, set it in one constant, document it in `.env.example`.
   **Done when** model name appears in exactly one place and matches the deployed
