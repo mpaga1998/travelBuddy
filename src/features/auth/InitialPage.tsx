@@ -5,6 +5,14 @@ import { ProfileModal } from "../profile/profileModal";
 import { getMyProfile } from "../profile/profileApi";
 import { countUnread } from "../notifications/notificationsApi";
 import { FeatureErrorBoundary } from "../../components/FeatureErrorBoundary";
+import {
+  UserCircle,
+  Bell,
+  SignOut,
+  GlobeHemisphereWest,
+  Sparkle,
+  Newspaper,
+} from "@phosphor-icons/react";
 
 interface InitialPageProps {
   onGoToMap: (location: { lng: number; lat: number } | null) => void;
@@ -16,10 +24,8 @@ interface Suggestion {
   center: [number, number];
 }
 
-// Shared class for the top-left avatar / top-right sign-out round buttons.
-// Hover/touch brightness swap is handled by Tailwind's hover:/active: variants.
 const topRoundBtnClass =
-  "absolute top-5 w-11 h-11 rounded-full border-none bg-white/25 hover:bg-white/[0.35] active:bg-white/[0.35] cursor-pointer flex items-center justify-center backdrop-blur-md transition-colors";
+  "absolute top-5 w-11 h-11 rounded-full border-none bg-white shadow-[0_2px_8px_rgba(0,0,0,0.10)] hover:bg-gray-50 active:bg-gray-50 cursor-pointer flex items-center justify-center transition-colors";
 
 export function InitialPage({ onGoToMap }: InitialPageProps) {
   const [showComingSoon, setShowComingSoon] = useState(false);
@@ -154,22 +160,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
   }
 
   return (
-    <div className="relative w-screen h-[100dvh] bg-gradient-to-br from-[#ff8c00] to-[#ff6b00] flex flex-col items-center justify-center p-5 box-border text-white font-sans overflow-hidden">
-      {/* Logo / Icon */}
-      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-[48px] mb-8 shadow-[0_8px_24px_rgba(0,0,0,0.2)]">
-        🧭
-      </div>
-
-      {/* Title */}
-      <h1 className="text-4xl font-bold m-0 mb-3 text-center">
-        nook
-      </h1>
-
-      {/* Subtitle — wedge-aligned positioning. Echoes the "travelers"
-          noun in the itinerary CTA below for a coherent voice. */}
-      <p className="text-base font-normal m-0 mb-12 text-center opacity-95 max-w-[320px]">
-        Hidden corners, shared by travelers who actually went.
-      </p>
+    <div className="relative w-screen h-[100dvh] bg-[#F5F1E3] flex flex-col items-center justify-center px-5 pb-5 box-border font-sans overflow-hidden">
 
       {/* Profile Button (Top Left) */}
       <button
@@ -179,30 +170,26 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
         title="Profile"
       >
         {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt="avatar"
-            className="w-full h-full object-cover"
-          />
+          <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover rounded-full" />
         ) : (
-          <span className="text-xl text-white">🙂</span>
+          <UserCircle size={22} weight="light" color="#304D6D" />
         )}
       </button>
 
-      {/* Notifications Bell (Top Right, left of sign-out) */}
+      {/* Notifications Bell */}
       <button
         onClick={() => {
           window.history.pushState({}, '', '/notifications');
           window.dispatchEvent(new PopStateEvent('popstate'));
         }}
-        className={`${topRoundBtnClass} right-[76px] text-white text-xl`}
+        className={`${topRoundBtnClass} right-[68px]`}
         title="Notifications"
         aria-label={unread > 0 ? `Notifications (${unread} unread)` : 'Notifications'}
       >
-        🔔
+        <Bell size={22} weight="light" color="#304D6D" />
         {unread > 0 && (
           <span
-            className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center border-2 border-[#ff8c00]"
+            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-[#F5F1E3]"
             aria-hidden="true"
           >
             {unread > 99 ? '99+' : unread}
@@ -210,104 +197,115 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
         )}
       </button>
 
-      {/* Sign Out Button (Top Right) */}
+      {/* Sign Out Button */}
       <button
         onClick={() => setShowSignOutConfirm(true)}
-        className={`${topRoundBtnClass} right-5 text-white text-xl`}
+        className={`${topRoundBtnClass} right-5`}
         title="Sign out"
       >
-        👋
+        <SignOut size={22} weight="light" color="#304D6D" />
       </button>
+
+      {/* Logo — compass icon + wordmark */}
+      <div className="flex flex-col items-center mb-6 mt-2">
+        <svg viewBox="0 0 400 500" width="56" height="70" aria-hidden="true">
+          <path fill="#45B4B9" d="M199.85374,18.44993c-70.54955,0-130.90053,45.58634-153.14949,108.75948l150.35546,59.97013c23.43068-8.13731,46.86151-16.27463,70.29219-24.41178,20.44568-9.60174,40.39949-.2709,43.88289,10.97053,3.14734,10.15551-5.70655,26.52126-23.88896,32.91252-72.86679,23.89503-145.73374,47.7899-218.60053,71.68492,47.15138,94.80723,131.10844,203.21433,131.10844,203.21433,7.56488-9.0164,162.61081-211.47605,162.61081-300.78184S289.45205,20.33983,199.85374,18.44993Z"/>
+          <path fill="#45B4B9" d="M39.48382,155.73892c-1.27642,8.16344-1.94837,16.52095-1.94837,25.02931,0,15.72444,4.82824,34.97006,12.81564,56.05271,15.95023-5.6882,31.43659-11.3282,43.99828-16.07262l-54.86555-65.0094Z"/>
+        </svg>
+        <svg viewBox="0 0 595.276 400" width="200" aria-label="nook" className="mt-1">
+          <path fill="#304D6D" d="M73.58626,184.44603c-9.06548,0-16.61238,2.25487-22.6407,6.78761s-10.53805,10.37699-13.57521,17.53273c-2.99115,7.15575-4.50973,15.07079-4.50973,23.74512v67.00174H4.88187v-69.83182c0-13.57521,2.62301-25.7699,7.91504-36.60706,5.26902-10.83716,12.99999-19.46548,23.1699-25.88494,10.19292-6.39646,22.70972-9.59469,37.61945-9.59469,15.25486,0,28.02476,3.19823,38.28671,9.59469,10.28495,6.41947,18.10796,15.04778,23.46901,25.88494,5.38407,10.83716,8.05309,22.93981,8.05309,36.33095v70.10793h-27.97875v-66.72563c0-8.65132-1.5646-16.63539-4.64779-23.88317-3.1292-7.24778-7.73097-13.13805-13.87433-17.67079-6.12035-4.53274-13.89734-6.78761-23.30795-6.78761Z"/>
+          <path fill="#304D6D" d="M226.24775,302.91853c-13.94336,0-26.48317-3.31327-37.59644-9.8938-11.13628-6.60354-19.97167-15.41592-26.59822-26.43715-6.58053-11.04424-9.8938-23.23893-9.8938-36.63007,0-13.36813,3.31327-25.53981,9.8938-36.46901,6.62655-10.9292,15.46194-19.64955,26.59822-26.13804,11.11327-6.5115,23.65309-9.75575,37.59644-9.75575s26.48317,3.24425,37.59644,9.75575c11.13628,6.48849,19.87964,15.25486,26.2991,26.27609,6.41947,11.04424,9.61769,23.14689,9.61769,36.33095,0,13.39114-3.19823,25.58583-9.61769,36.63007-6.41947,11.02123-15.20884,19.83362-26.43715,26.43715-11.22831,6.58053-23.6991,9.8938-37.45839,9.8938ZM226.24775,276.34332c8.65132,0,16.42831-2.0708,23.33096-6.2354,6.85663-4.14159,12.28672-9.75575,16.24424-16.81946,3.95752-7.06371,5.93628-14.74867,5.93628-23.03185,0-8.49026-1.97876-16.22123-5.93628-23.19291-3.95752-6.97168-9.38761-12.58583-16.24424-16.81946-6.90265-4.23363-14.67964-6.37345-23.33096-6.37345-8.67433,0-16.45132,2.13982-23.33096,6.37345-6.87964,4.23363-12.37875,9.84778-16.52035,16.81946-4.1646,6.97168-6.2354,14.70265-6.2354,23.19291,0,8.28318,2.0708,15.96813,6.2354,23.03185,4.14159,7.06371,9.6407,12.67787,16.52035,16.81946,6.87964,4.1646,14.65663,6.2354,23.33096,6.2354Z"/>
+          <path fill="#304D6D" d="M378.06551,302.91853c-13.96636,0-26.48317-3.31327-37.61945-9.8938-11.11327-6.60354-19.97167-15.41592-26.5522-26.43715-6.60354-11.04424-9.8938-23.23893-9.8938-36.63007,0-13.36813,3.29026-25.53981,9.8938-36.46901,6.58053-10.9292,15.43893-19.64955,26.5522-26.13804,11.13628-6.5115,23.65309-9.75575,37.61945-9.75575,13.94336,0,26.48317,3.24425,37.61945,9.75575,11.09026,6.48849,19.87964,15.25486,26.27609,26.27609,6.39646,11.04424,9.61769,23.14689,9.61769,36.33095,0,13.39114-3.22124,25.58583-9.61769,36.63007-6.39646,11.02123-15.23185,19.83362-26.43715,26.43715-11.2053,6.58053-23.6991,9.8938-37.45839,9.8938ZM378.06551,276.34332c8.67433,0,16.45132-2.0708,23.30795-6.2354,6.90265-4.14159,12.33274-9.75575,16.29026-16.81946,3.95752-7.06371,5.93628-14.74867,5.93628-23.03185,0-8.49026-1.97876-16.22123-5.93628-23.19291-3.95752-6.97168-9.38761-12.58583-16.29026-16.81946-6.85663-4.23363-14.63362-6.37345-23.30795-6.37345s-16.45132,2.13982-23.33096,6.37345c-6.87964,4.23363-12.40176,9.84778-16.54335,16.81946-4.14159,6.97168-6.21239,14.70265-6.21239,23.19291,0,8.28318,2.0708,15.96813,6.21239,23.03185,4.14159,7.06371,9.66371,12.67787,16.54335,16.81946,6.87964,4.1646,14.65663,6.2354,23.33096,6.2354Z"/>
+          <path fill="#304D6D" d="M488.32692,299.51322h-28.00176V97.08147h28.00176v202.43176ZM483.51807,240.70263v-22.04247h31.08494v22.04247h-31.08494ZM590.11802,299.51322h-34.51326l-44.08493-48.34157c-5.66017-6.39646-8.51327-13.48318-8.51327-21.21415,0-7.33982,2.94513-14.21946,8.78938-20.63893l44.38405-48.34157h34.21414l-59.66192,65.02298c-.75929.57522-1.35752,1.19646-1.84071,1.84071-.48319.66726-.71327,1.38053-.71327,2.11681,0,.57522.23009,1.19646.71327,1.84071.48319.66726,1.08142,1.38053,1.84071,2.11681l59.38581,65.5982Z"/>
+        </svg>
+      </div>
+
+      {/* Tagline */}
+      <p
+        style={{ fontFamily: "'Lora', Georgia, serif", fontStyle: "italic" }}
+        className="text-[17px] text-[#304D6D]/65 text-center m-0 mb-8 max-w-[280px] leading-[1.65]"
+      >
+        Hidden corners, shared by travelers who actually went.
+      </p>
 
       {/* Welcome banner — first-time users only */}
       {showWelcome && (
-        <div className="w-full max-w-[380px] bg-white/15 backdrop-blur-md border border-white/30 rounded-2xl p-4 mb-1 flex flex-col gap-2">
-          {/* Header row: headline + X inline so text never clips */}
+        <div className="w-full max-w-[380px] bg-white/70 border border-[#304D6D]/10 rounded-2xl p-4 mb-4 flex flex-col gap-2">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-semibold text-white m-0 leading-snug">First time on nook?</p>
+            <p className="text-sm font-semibold text-[#304D6D] m-0 leading-snug">First time on nook?</p>
             <button
               type="button"
               onClick={dismissWelcome}
-              className="shrink-0 bg-transparent border-0 p-0 w-6 h-6 flex items-center justify-center text-white/70 hover:text-white text-base leading-none cursor-pointer"
+              className="shrink-0 bg-transparent border-0 p-0 w-6 h-6 flex items-center justify-center text-[#304D6D]/40 hover:text-[#304D6D] text-base leading-none cursor-pointer"
               aria-label="Dismiss"
             >
               ✕
             </button>
           </div>
-
-          <p className="text-xs text-white/90 m-0 leading-snug">
+          <p className="text-xs text-[#304D6D]/60 m-0 leading-snug">
             The fastest way in: plan a trip. The AI knows the corners.
           </p>
-
           <button
             type="button"
-            onClick={() => {
-              dismissWelcome();
-              setItineraryModalOpen(true);
-            }}
-            className="self-start px-4 py-1.5 rounded-xl bg-white text-[#ff8c00] text-sm font-semibold active:scale-[0.98] transition-transform"
+            onClick={() => { dismissWelcome(); setItineraryModalOpen(true); }}
+            className="self-start px-4 py-1.5 rounded-xl bg-[#45B4B9] text-white text-sm font-semibold active:scale-[0.98] transition-transform"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
-            Plan a trip
+            Find your nook
           </button>
         </div>
       )}
 
-      {/* Buttons Container */}
+      {/* Action Buttons */}
       <div className="w-full max-w-[380px] flex flex-col gap-3">
-        {/* Button 1: Where Next? - Transforms into search bar */}
+
+        {/* Search */}
         {!searchActive ? (
           <button
             onClick={() => setSearchActive(true)}
-            className="w-full px-5 py-[18px] text-lg font-semibold border-none rounded-2xl bg-white text-[#ff8c00] cursor-pointer flex items-center justify-center gap-3 transition-transform active:scale-[0.98] shadow-[0_4px_12px_rgba(0,0,0,0.15)]"
+            className="w-full px-5 py-[17px] rounded-full bg-white border border-[#45B4B9] cursor-pointer flex items-center gap-3 transition-transform active:scale-[0.98] shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
           >
-            <span>🌍</span>
-            <span>Where next?</span>
+            <GlobeHemisphereWest size={20} weight="light" color="#45B4B9" />
+            <span
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+              className="text-base text-[#304D6D]/40"
+            >
+              Where next?
+            </span>
           </button>
         ) : (
           <div ref={searchContainerRef} className="w-full relative">
-            <div className="w-full flex gap-3 items-center justify-between bg-white rounded-2xl px-5 py-[18px] shadow-[0_4px_12px_rgba(0,0,0,0.15)] text-[#111] leading-none min-h-[56px] box-border">
-              <span className="text-lg shrink-0 flex items-center">🌍</span>
+            <div className="w-full flex gap-3 items-center bg-white rounded-full px-5 py-[17px] border border-[#45B4B9] shadow-[0_2px_8px_rgba(0,0,0,0.06)] leading-none min-h-[56px] box-border">
+              <GlobeHemisphereWest size={20} weight="light" color="#45B4B9" className="shrink-0" />
               <input
                 autoFocus
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && suggestions.length > 0) {
-                    handleSearchSubmit(suggestions[0]);
-                  }
-                  if (e.key === "Escape") {
-                    setSearchActive(false);
-                    setSearchInput("");
-                    setSuggestions([]);
-                    setShowSuggestions(false);
-                  }
+                  if (e.key === "Enter" && suggestions.length > 0) handleSearchSubmit(suggestions[0]);
+                  if (e.key === "Escape") { setSearchActive(false); setSearchInput(""); setSuggestions([]); setShowSuggestions(false); }
                 }}
                 placeholder="Search location..."
-                className="flex-1 border-none text-base outline-none font-[inherit] text-[#111] bg-transparent h-auto m-0 p-0 leading-none appearance-none"
+                className="flex-1 border-none text-base outline-none text-[#304D6D] bg-transparent p-0 leading-none appearance-none"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
               />
               <button
-                onClick={() => {
-                  setSearchActive(false);
-                  setSearchInput("");
-                  setSuggestions([]);
-                  setShowSuggestions(false);
-                }}
-                className="border-none bg-transparent cursor-pointer text-base px-1 flex items-center justify-center text-[#111] shrink-0 h-auto min-w-[24px] leading-none"
+                onClick={() => { setSearchActive(false); setSearchInput(""); setSuggestions([]); setShowSuggestions(false); }}
+                className="border-none bg-transparent cursor-pointer flex items-center justify-center text-[#304D6D]/40 shrink-0"
                 title="Cancel"
               >
                 ✕
               </button>
             </div>
-
-            {/* Suggestions Dropdown - Scrollable */}
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.2)] max-h-[220px] overflow-hidden z-[1000]">
+              <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] max-h-[220px] overflow-hidden z-[1000]">
                 {suggestions.map((suggestion, idx) => (
                   <div
                     key={suggestion.id}
                     onClick={() => handleSearchSubmit(suggestion)}
-                    className={`px-4 py-3.5 cursor-pointer transition-colors text-[#111] text-[15px] whitespace-nowrap overflow-hidden text-ellipsis hover:bg-[#ff8c00]/[0.08] ${idx < suggestions.length - 1 ? "border-b border-black/[0.08]" : ""}`}
+                    className={`px-4 py-3.5 cursor-pointer text-[#304D6D] text-[15px] whitespace-nowrap overflow-hidden text-ellipsis hover:bg-[#45B4B9]/[0.06] ${idx < suggestions.length - 1 ? "border-b border-[#304D6D]/[0.06]" : ""}`}
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
                   >
                     📍 {suggestion.place_name}
                   </div>
@@ -317,63 +315,61 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
           </div>
         )}
 
-        {/* Button 2: Create Itinerary (closes search bar if active) */}
+        {/* Find your nook — itinerary CTA */}
         <button
           onClick={() => {
-            if (searchActive) {
-              setSearchActive(false);
-              setSearchInput("");
-              setSuggestions([]);
-              setShowSuggestions(false);
-            }
+            if (searchActive) { setSearchActive(false); setSearchInput(""); setSuggestions([]); setShowSuggestions(false); }
             setItineraryModalOpen(true);
           }}
-          className="w-full px-5 py-[18px] text-lg font-semibold border-none rounded-2xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white cursor-pointer flex items-center justify-center gap-3 transition-transform active:scale-[0.98] shadow-[0_6px_16px_rgba(102,126,234,0.4)]"
+          className="w-full px-5 py-[17px] rounded-2xl bg-[#DB7F67] text-white cursor-pointer flex items-center justify-center gap-3 transition-transform active:scale-[0.98] shadow-[0_4px_14px_rgba(219,127,103,0.35)]"
         >
-          <span>✨</span>
-          <span>Plan the trip the algorithm wouldn't give you</span>
+          <Sparkle size={20} weight="light" color="white" />
+          <span style={{ fontFamily: "'DM Sans', sans-serif" }} className="text-lg font-semibold">
+            Find your nook
+          </span>
         </button>
 
-        {/* Button 3: Feed — secondary action, intentionally lighter so it
-            doesn't compete with the two headline CTAs. Uses a translucent
-            white pill that sits well on the orange gradient backdrop, same
-            language as the top-corner round buttons. */}
+        {/* Feed */}
         <button
           onClick={() => {
             window.history.pushState({}, '', '/feed');
             window.dispatchEvent(new PopStateEvent('popstate'));
           }}
-          className="w-full px-5 py-3 text-base font-semibold border border-white/30 rounded-2xl bg-white/15 hover:bg-white/[0.22] active:bg-white/[0.22] text-white cursor-pointer flex items-center justify-center gap-2 transition-colors backdrop-blur-md"
+          className="w-full px-5 py-3 rounded-xl bg-transparent border border-[#304D6D]/20 text-[#304D6D]/70 cursor-pointer flex items-center justify-center gap-2 transition-colors hover:bg-[#304D6D]/[0.04]"
         >
-          <span>📰</span>
-          <span>Feed</span>
+          <Newspaper size={18} weight="light" />
+          <span style={{ fontFamily: "'DM Sans', sans-serif" }} className="text-base font-medium">
+            Feed
+          </span>
         </button>
       </div>
 
       {/* Sign Out Confirmation Modal */}
       {showSignOutConfirm && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000]"
+          className="fixed inset-0 bg-black/30 flex items-center justify-center z-[10000]"
           onClick={() => setShowSignOutConfirm(false)}
         >
           <div
-            className="bg-white rounded-[20px] p-6 max-w-[300px] shadow-[0_12px_48px_rgba(0,0,0,0.3)]"
+            className="bg-white rounded-2xl p-6 max-w-[300px] shadow-[0_12px_48px_rgba(0,0,0,0.15)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="m-0 mb-3 text-lg text-[#111]">Sign out?</h3>
-            <p className="m-0 mb-6 text-sm text-[#666] leading-normal">
-              Are you sure you want to sign out? You'll need to sign in again to access your profile.
+            <h3 className="m-0 mb-2 text-base font-semibold text-[#304D6D]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Sign out?</h3>
+            <p className="m-0 mb-6 text-sm text-[#304D6D]/60 leading-normal" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              You'll need to sign in again to access your profile.
             </p>
             <div className="flex gap-2.5 justify-end">
               <button
                 onClick={() => setShowSignOutConfirm(false)}
-                className="px-5 py-2.5 rounded-[10px] border border-black/[0.18] bg-white cursor-pointer text-sm font-semibold text-[#111]"
+                className="px-5 py-2.5 rounded-xl border border-[#304D6D]/15 bg-white cursor-pointer text-sm font-medium text-[#304D6D]"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleSignOut}
-                className="px-5 py-2.5 rounded-[10px] border-none bg-[#ff4444] cursor-pointer text-sm font-semibold text-white"
+                className="px-5 py-2.5 rounded-xl border-none bg-[#DB7F67] cursor-pointer text-sm font-semibold text-white"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 Sign out
               </button>
@@ -415,44 +411,25 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
       )}
 
       {/* Legal footer */}
-      <footer className="absolute bottom-4 w-full text-center text-xs text-gray-500 pointer-events-none">
-        <span className="pointer-events-auto">
+      <footer className="absolute bottom-4 w-full flex justify-center gap-5 pointer-events-none" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        {[
+          { label: 'Terms', path: '/terms' },
+          { label: 'Guidelines', path: '/guidelines' },
+          { label: 'Privacy', path: '/privacy' },
+        ].map(({ label, path }) => (
           <a
-            href="/terms"
+            key={path}
+            href={path}
             onClick={(e) => {
               e.preventDefault();
-              window.history.pushState({}, '', '/terms');
+              window.history.pushState({}, '', path);
               window.dispatchEvent(new PopStateEvent('popstate'));
             }}
-            className="hover:underline"
+            className="pointer-events-auto text-xs text-[#304D6D]/40 hover:text-[#304D6D]/70 transition-colors"
           >
-            Terms of Service
+            {label}
           </a>
-          {' · '}
-          <a
-            href="/guidelines"
-            onClick={(e) => {
-              e.preventDefault();
-              window.history.pushState({}, '', '/guidelines');
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }}
-            className="hover:underline"
-          >
-            Community Guidelines
-          </a>
-          {' · '}
-          <a
-            href="/privacy"
-            onClick={(e) => {
-              e.preventDefault();
-              window.history.pushState({}, '', '/privacy');
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }}
-            className="hover:underline"
-          >
-            Privacy Policy
-          </a>
-        </span>
+        ))}
       </footer>
 
       {/* Coming Soon Popup */}
