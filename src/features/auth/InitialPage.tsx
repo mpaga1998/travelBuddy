@@ -25,7 +25,7 @@ interface Suggestion {
 }
 
 const topRoundBtnClass =
-  "absolute top-5 w-11 h-11 rounded-full border-none bg-white shadow-[0_2px_8px_rgba(0,0,0,0.10)] hover:bg-gray-50 active:bg-gray-50 cursor-pointer flex items-center justify-center transition-colors";
+  "absolute top-5 w-10 h-10 rounded-full border-none bg-white shadow-[0_2px_8px_rgba(0,0,0,0.10)] hover:bg-gray-50 active:bg-gray-50 cursor-pointer flex items-center justify-center transition-colors";
 
 export function InitialPage({ onGoToMap }: InitialPageProps) {
   const [showComingSoon, setShowComingSoon] = useState(false);
@@ -181,7 +181,7 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
           window.history.pushState({}, '', '/notifications');
           window.dispatchEvent(new PopStateEvent('popstate'));
         }}
-        className={`${topRoundBtnClass} right-[68px]`}
+        className={`${topRoundBtnClass} right-[72px]`}
         title="Notifications"
         aria-label={unread > 0 ? `Notifications (${unread} unread)` : 'Notifications'}
       >
