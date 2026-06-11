@@ -60,11 +60,11 @@ to touch and a **Done when** check.
 - [x] **A3.1 Structured logging** (roadmap 6.1). Replace `console.log` in `api/`
   with `pino`, tag every request with `x-vercel-id` (or a generated id). One
   `api/lib/log.ts`. **Done when** logs are JSON with a request id.
-- [ ] **A3.2 AI eval harness.** `tests/evals/` with 20–30 trip inputs + a
+- [x] **A3.2 AI eval harness.** `tests/evals/` with 20–30 trip inputs + a
   rubric (has real venues, geocodes, respects budget/pace, no banned vocab).
   Run on prompt/model change. **Done when** `npm run eval` prints pass/fail per
   case. *Protects the moat — highest-value test work.*
-- [ ] **A3.3 Unit tests for the pure logic** that has no coverage:
+- [x] **A3.3 Unit tests for the pure logic** that has no coverage:
   `inputValidation`, `budgetContext`, `travelContext`, `extractPlaces` parsing,
   geocoding fallbacks. **Done when** Vitest covers these branches.
 

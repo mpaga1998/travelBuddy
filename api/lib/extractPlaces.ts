@@ -38,7 +38,7 @@ export interface ExtractedPlace {
 // OpenAI extraction
 // ---------------------------------------------------------------------------
 
-interface RawPlace {
+export interface RawPlace {
   name: string;
   day: number;
   type: string;
@@ -55,6 +55,42 @@ const EXTRACTION_USER = (markdown: string) =>
   `- context: the single sentence from the itinerary that mentions it\n\n` +
   `Itinerary:\n${markdown.slice(0, 12000)}`; // cap to avoid excessive token use
 
+/**
+ * Pure: strip markdown fences from a raw LLM response and parse it as a
+ * RawPlace array. Returns an empty array on any parse or validation error.
+ * Exported for unit testing.
+ */
+export function parseRawPlacesJson(raw: string): RawPlace[] {
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+  try {
+    const parsed: unknown = JSON.parse(cleaned);
+    if (!Array.isArray(parsed)) return [];
+    return (parsed as unknown[])
+      .filter(
+        (p) =>
+          p !== null &&
+          typeof p === 'object' &&
+          typeof (p as Record<string, unknown>).name === 'string' &&
+          (typeof (p as Record<string, unknown>).day === 'number' ||
+            typeof (p as Record<string, unknown>).day === 'string') &&
+          typeof (p as Record<string, unknown>).type === 'string' &&
+          typeof (p as Record<string, unknown>).context === 'string'
+      )
+      .map((p): RawPlace => {
+        const rec = p as Record<string, unknown>;
+        return {
+          name: rec.name as string,
+          day: Number(rec.day) || 1,
+          type: rec.type as string,
+          context: rec.context as string,
+        };
+      });
+  } catch {
+    logger.warn({ sample: cleaned.slice(0, 200) }, 'EXTRACT: JSON parse failed');
+    return [];
+  }
+}
+
 async function extractPlacesFromMarkdown(markdown: string): Promise<RawPlace[]> {
   const model = process.env.OPENAI_FALLBACK_MODEL || 'gpt-5.4-mini';
   const response = await openai.chat.completions.create({
@@ -68,31 +104,15 @@ async function extractPlacesFromMarkdown(markdown: string): Promise<RawPlace[]> 
   });
 
   const raw = response.choices[0]?.message?.content?.trim() ?? '[]';
-  // Strip markdown fences if the model wraps the JSON anyway
-  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-  try {
-    const parsed = JSON.parse(cleaned);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter(
-        (p) =>
-          typeof p?.name === 'string' &&
-          (typeof p?.day === 'number' || typeof p?.day === 'string') &&
-          typeof p?.type === 'string' &&
-          typeof p?.context === 'string'
-      )
-      .map((p): RawPlace => ({ ...p, day: Number(p.day) || 1 }));
-  } catch {
-    logger.warn({ sample: cleaned.slice(0, 200) }, 'EXTRACT: JSON parse failed');
-    return [];
-  }
+  return parseRawPlacesJson(raw);
 }
 
 // ---------------------------------------------------------------------------
 // Geocoding
 // ---------------------------------------------------------------------------
 
-async function geocodePlace(
+/** Exported for unit testing. */
+export async function geocodePlace(
   name: string,
   biasLat: number,
   biasLng: number
