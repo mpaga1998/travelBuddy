@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { logger } from './log.js';
 
 let supabaseServerInstance: SupabaseClient | null = null;
 
@@ -52,18 +53,11 @@ export function initSupabase(): SupabaseClient {
   }
 
   if (!serviceRoleKey) {
-    console.warn(
-      '[SUPABASE] No SUPABASE_SERVICE_ROLE_KEY - falling back to anon key. ' +
-        'This is only OK for local dev. Cross-user lookups (e.g. fetchFirstName) will fail silently under RLS.'
-    );
+    logger.warn('SUPABASE: No SUPABASE_SERVICE_ROLE_KEY - falling back to anon key. Only OK for local dev.');
   }
 
   if (process.env.VITE_SUPABASE_SERVICE_KEY && !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.warn(
-      '[SUPABASE] Using deprecated VITE_SUPABASE_SERVICE_KEY. Please rename to ' +
-        'SUPABASE_SERVICE_ROLE_KEY in your env config - the VITE_ prefix risks bundling ' +
-        'the key into the browser.'
-    );
+    logger.warn('SUPABASE: Using deprecated VITE_SUPABASE_SERVICE_KEY — rename to SUPABASE_SERVICE_ROLE_KEY to avoid bundling into browser.');
   }
 
   const apiKey = serviceRoleKey || anonKey!;

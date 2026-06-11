@@ -4,6 +4,7 @@ import { requireAuth } from '../lib/requireAuth.js';
 import { validateBodySize } from '../lib/validateBodySize.js';
 import { extractPlacesOnly, extractAndPersistPlaces } from '../lib/extractPlaces.js';
 import { applyCors } from '../lib/cors.js';
+import { createLogger } from '../lib/log.js';
 
 dotenv.config();
 
@@ -74,7 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
     res.status(200).json({ success: true, places });
   } catch (err) {
-    console.error('[EXTRACT endpoint] error:', err);
+    createLogger(req).error({ err }, 'EXTRACT endpoint: unhandled error');
     res.status(500).json({ success: false, error: 'Failed to extract places' });
   }
 }

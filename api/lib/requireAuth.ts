@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { initSupabase } from './supabaseServer.js';
+import { logger } from './log.js';
 
 /**
  * Authenticated user attached to the request after `requireAuth` succeeds.
@@ -44,7 +45,7 @@ export async function requireAuth(
   const token = extractBearerToken(req.headers['authorization']);
 
   if (!token) {
-    console.warn('🔐 [AUTH] Missing or malformed Authorization header on', req.method, req.url);
+    logger.warn({ method: req.method, url: req.url }, 'AUTH: Missing or malformed Authorization header');
     res.status(401).json({
       success: false,
       error: 'Missing or malformed Authorization header. Expected: Authorization: Bearer <token>',
@@ -56,7 +57,7 @@ export async function requireAuth(
   try {
     supabase = initSupabase();
   } catch (e) {
-    console.error('🔐 [AUTH] Supabase client failed to initialize:', e);
+    logger.error({ err: e }, 'AUTH: Supabase client failed to initialize');
     res.status(500).json({
       success: false,
       error: 'Auth backend not configured',
@@ -68,7 +69,7 @@ export async function requireAuth(
     const { data, error } = await supabase.auth.getUser(token);
 
     if (error || !data?.user) {
-      console.warn('🔐 [AUTH] Token rejected:', error?.message ?? 'no user returned');
+      logger.warn({ err: error?.message ?? 'no user returned' }, 'AUTH: Token rejected');
       res.status(401).json({
         success: false,
         error: 'Invalid or expired token',
@@ -81,7 +82,7 @@ export async function requireAuth(
       email: data.user.email ?? undefined,
     };
   } catch (e) {
-    console.error('🔐 [AUTH] Unexpected error verifying token:', e);
+    logger.error({ err: e }, 'AUTH: Unexpected error verifying token');
     res.status(401).json({
       success: false,
       error: 'Authentication failed',

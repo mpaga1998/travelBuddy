@@ -5,6 +5,7 @@ import { validateBodySize } from './lib/validateBodySize.js';
 import { moderateText } from './lib/moderation.js';
 import { captureApiError } from './lib/sentryServer.js';
 import { applyCors } from './lib/cors.js';
+import { createLogger } from './lib/log.js';
 
 dotenv.config();
 
@@ -62,7 +63,7 @@ export default async function handler(
     res.status(200).json({ success: true, flagged, categories: categories ?? [] });
   } catch (err) {
     captureApiError(err);
-    console.error('❌ [MODERATE] handler error:', err);
+    createLogger(req).error({ err }, 'MODERATE: handler error');
     res.status(500).json({ success: false, error: 'Moderation check failed' });
   }
 }

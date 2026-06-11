@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { requireAuth, type AuthenticatedUser } from './requireAuth.js';
 import { initSupabase } from './supabaseServer.js';
+import { logger } from './log.js';
 
 /**
  * 4.5: Verify the caller is signed in AND has profiles.is_admin = true.
@@ -31,7 +32,7 @@ export async function requireAdmin(
   try {
     supabase = initSupabase();
   } catch (e) {
-    console.error('🛡️ [ADMIN] Supabase client failed to initialize:', e);
+    logger.error({ err: e }, 'ADMIN: Supabase client failed to initialize');
     res.status(500).json({ success: false, error: 'Auth backend not configured' });
     return null;
   }
@@ -44,7 +45,7 @@ export async function requireAdmin(
       .single();
 
     if (error) {
-      console.warn('🛡️ [ADMIN] is_admin lookup failed:', error.message);
+      logger.warn({ err: error.message }, 'ADMIN: is_admin lookup failed');
       res.status(403).json({ success: false, error: 'Forbidden' });
       return null;
     }
@@ -58,7 +59,7 @@ export async function requireAdmin(
 
     return user;
   } catch (e) {
-    console.error('🛡️ [ADMIN] Unexpected error verifying admin status:', e);
+    logger.error({ err: e }, 'ADMIN: Unexpected error verifying admin status');
     res.status(403).json({ success: false, error: 'Forbidden' });
     return null;
   }

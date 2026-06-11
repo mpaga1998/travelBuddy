@@ -13,6 +13,8 @@
  * location from the context so generation still proceeds.
  */
 
+import { logger } from './log.js';
+
 const MAPBOX_TOKEN = process.env.VITE_MAPBOX_TOKEN ?? process.env.MAPBOX_TOKEN ?? '';
 
 /** How long to wait for a single Mapbox request before giving up. */
@@ -154,7 +156,7 @@ export async function fetchPlacesContext(
   stops?: string[]
 ): Promise<PlacesContext> {
   if (!MAPBOX_TOKEN) {
-    console.warn('[placesContext] No Mapbox token — skipping places fetch');
+    logger.warn('PLACES: No Mapbox token — skipping places fetch');
     return { byLocation: [], geocodedCoords: new Map() };
   }
 

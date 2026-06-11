@@ -57,7 +57,7 @@ to touch and a **Done when** check.
 
 ### A3. Observability & quality (so you can debug + not regress)
 
-- [ ] **A3.1 Structured logging** (roadmap 6.1). Replace `console.log` in `api/`
+- [x] **A3.1 Structured logging** (roadmap 6.1). Replace `console.log` in `api/`
   with `pino`, tag every request with `x-vercel-id` (or a generated id). One
   `api/lib/log.ts`. **Done when** logs are JSON with a request id.
 - [ ] **A3.2 AI eval harness.** `tests/evals/` with 20–30 trip inputs + a

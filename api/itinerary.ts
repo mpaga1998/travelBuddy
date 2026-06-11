@@ -16,6 +16,7 @@ import { buildBudgetContext } from './lib/budgetContext.js';
 import { moderateText, MODERATION_REJECTION_MESSAGE } from './lib/moderation.js';
 import { captureApiError } from './lib/sentryServer.js';
 import { applyCors } from './lib/cors.js';
+import { createLogger, logger } from './lib/log.js';
 
 // Load environment variables
 dotenv.config();
@@ -34,12 +35,12 @@ async function fetchFirstName(userId: string): Promise<string | undefined> {
       .eq('id', userId)
       .single();
     if (error) {
-      console.warn('⚠️ [ITINERARY] profile lookup failed:', error.message);
+      logger.warn({ err: error.message }, 'ITINERARY: profile lookup failed');
       return undefined;
     }
     return data?.first_name || undefined;
   } catch (e) {
-    console.warn('⚠️ [ITINERARY] profile lookup threw:', e instanceof Error ? e.message : e);
+    logger.warn({ err: e instanceof Error ? e.message : e }, 'ITINERARY: profile lookup threw');
     return undefined;
   }
 }
@@ -49,6 +50,7 @@ export default async function handler(
   res: VercelResponse
 ): Promise<void> {
   applyCors(req, res);
+  const log = createLogger(req);
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -93,16 +95,7 @@ export default async function handler(
       tripType: body.tripType,
     };
 
-    console.log('📝 [API] Received itinerary request:', {
-      userId: user.id,
-      arrival: `${tripInput.arrival?.location} on ${tripInput.arrival?.date} at ${tripInput.arrival?.time || 'unspecified'}`,
-      departure: `${tripInput.departure?.location} on ${tripInput.departure?.date} at ${tripInput.departure?.time || 'unspecified'}`,
-      stops: tripInput.stops,
-      attractions: tripInput.desiredAttractions,
-      pace: tripInput.travelPace,
-      budget: tripInput.budget,
-      tripType: tripInput.tripType ?? 'unspecified',
-    });
+    log.info({ userId: user.id, arrival: tripInput.arrival?.location, departure: tripInput.departure?.location, stops: tripInput.stops, pace: tripInput.travelPace, budget: tripInput.budget, tripType: tripInput.tripType ?? 'unspecified' }, 'ITINERARY: Request received');
 
     // Validation
     if (!tripInput.arrival?.date || !tripInput.departure?.date) {
@@ -130,12 +123,7 @@ export default async function handler(
     if (userText) {
       const moderation = await moderateText(userText);
       if (moderation.flagged) {
-        console.warn(
-          '🛡️ [ITINERARY] Rejected for',
-          user.id,
-          'categories:',
-          moderation.categories?.join(', ') ?? '(none)'
-        );
+        log.warn({ userId: user.id, categories: moderation.categories }, 'ITINERARY: Request rejected by moderation');
         const response: ItineraryResponse = {
           success: false,
           itinerary: '',
@@ -165,14 +153,7 @@ export default async function handler(
       tripInput.departure.date,
       allLocations
     );
-    console.log('🌍 [TRAVEL CONTEXT]', {
-      country: travelContext.countryName,
-      currency: travelContext.currency,
-      units: travelContext.units,
-      holidays: travelContext.holidays.length,
-      religiousPeriods: travelContext.religiousPeriods.length,
-      transportHints: travelContext.transportHints.length,
-    });
+    log.info({ country: travelContext.countryName, currency: travelContext.currency, holidays: travelContext.holidays.length }, 'ITINERARY: Travel context built');
 
     // B1 + B2: Fetch real nearby places; share geocoded coords with community pins
     // to avoid a second round of Mapbox geocoding. Both are best-effort —
@@ -186,8 +167,7 @@ export default async function handler(
       placesContext.geocodedCoords,
       tripInput.interests
     );
-    console.log('📍 [PLACES]', placesContext.byLocation.map((l) => `${l.location.split(',')[0]}: ${l.restaurants.length}r/${l.cafes.length}c/${l.attractions.length}a`));
-    console.log('💎 [COMMUNITY PINS]', communityPinsContext.pins.length, 'pins found');
+    log.info({ locations: placesContext.byLocation.map((l) => l.location.split(',')[0]), communityPins: communityPinsContext.pins.length }, 'ITINERARY: Places + community pins fetched');
 
     // C1: Weather — runs in parallel with community-pins fetch above; reuses
     // geocoded coords from B1 so no extra Mapbox calls are needed. Best-effort.
@@ -212,8 +192,7 @@ export default async function handler(
       tripInput.budget as 'budget' | 'mid-range' | 'luxury' | undefined,
       travelContext.currency
     );
-    console.log('🧳 [PRACTICAL]', practicalContext ? `${practicalContext.countryName} found` : 'no data');
-    console.log('💰 [BUDGET CAL]', budgetContext ? `${budgetContext.countryName} ${budgetContext.costBand}` : 'no data');
+    log.info({ hasPractical: !!practicalContext, hasBudget: !!budgetContext, costBand: budgetContext?.costBand }, 'ITINERARY: Practical + budget context ready');
 
     // If the client asked for streaming (default for our UI), push tokens as
     // they arrive. Otherwise fall back to the old JSON-blob response for any
@@ -238,7 +217,7 @@ export default async function handler(
       }
 
       const firstName = await firstNamePromise;
-      console.log('⏱️ [TIMING] Starting itinerary stream...');
+      log.info('ITINERARY: Starting stream');
 
       await generateItinerary(tripInput, {
         firstName,
@@ -254,21 +233,17 @@ export default async function handler(
       });
 
       const generationTime = Date.now() - routeStartTime;
-      console.log(
-        `⏱️ [TIMING] API TOTAL TIME: ${generationTime}ms (${(generationTime / 1000).toFixed(2)}s)`
-      );
+      log.info({ durationMs: generationTime }, 'ITINERARY: Stream complete');
       res.end();
       return;
     }
 
     // Legacy JSON path — buffer the full result, return one response.
     const firstName = await firstNamePromise;
-    console.log('⏱️ [TIMING] Starting itinerary generation (non-stream)...');
+    log.info('ITINERARY: Starting non-stream generation');
     const itinerary = await generateItinerary(tripInput, { firstName, travelContext, placesContext, communityPinsContext, weatherContext, practicalContext, budgetContext });
     const generationTime = Date.now() - routeStartTime;
-    console.log(
-      `⏱️ [TIMING] API TOTAL TIME: ${generationTime}ms (${(generationTime / 1000).toFixed(2)}s)`
-    );
+    log.info({ durationMs: generationTime }, 'ITINERARY: Non-stream generation complete');
 
     const response: ItineraryResponse = {
       success: true,
@@ -276,7 +251,7 @@ export default async function handler(
     };
     res.status(200).json(response);
   } catch (error) {
-    console.error('Itinerary generation error:', error);
+    log.error({ err: error instanceof Error ? error.message : error }, 'ITINERARY: Generation error');
     captureApiError(error, { userId: user.id });
 
     let statusCode = 500;

@@ -13,6 +13,8 @@
  * undefined so itinerary generation always proceeds.
  */
 
+import { logger } from './log.js';
+
 /** How long to wait for the Open-Meteo request before giving up. */
 const FETCH_TIMEOUT_MS = 3000;
 
@@ -79,7 +81,7 @@ export async function fetchWeatherContext(
     }
 
     if (!res.ok) {
-      console.warn(`⚠️ [WEATHER] Open-Meteo returned ${res.status}`);
+      logger.warn({ status: res.status }, 'WEATHER: Open-Meteo returned non-OK status');
       return undefined;
     }
 
@@ -105,7 +107,7 @@ export async function fetchWeatherContext(
 
     const monthName = new Date(refYear, month - 1, 1).toLocaleString('en-US', { month: 'long' });
 
-    console.log(`🌤️ [WEATHER] ${location} ${monthName}: high ${avgHighC}°C / low ${avgLowC}°C / ${rainyDays} rainy days`);
+    logger.info({ location, monthName, avgHighC, avgLowC, rainyDays }, 'WEATHER: Fetched climate data');
 
     return {
       location: location.split(',')[0].trim(),
@@ -117,7 +119,7 @@ export async function fetchWeatherContext(
     };
   } catch (err) {
     if (err instanceof Error && err.name !== 'AbortError') {
-      console.warn('⚠️ [WEATHER] fetch threw:', err.message);
+      logger.warn({ err: err.message }, 'WEATHER: fetch threw');
     }
     return undefined;
   }

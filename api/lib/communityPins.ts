@@ -16,6 +16,7 @@
  */
 
 import { initSupabase } from './supabaseServer.js';
+import { logger } from './log.js';
 
 /** ~0.135 degrees ≈ 15 km at mid-latitudes. */
 const BBOX_DEGREES = 0.135;
@@ -101,7 +102,7 @@ async function queryPinsNear(
 
     const { data, error } = await query;
     if (error) {
-      console.warn('[communityPins] Supabase query error:', error.message);
+      logger.warn({ err: error.message }, 'communityPins: Supabase query error');
       return [];
     }
 
@@ -136,7 +137,7 @@ async function queryPinsNear(
       };
     });
   } catch (err) {
-    console.warn('[communityPins] Unexpected error:', err);
+    logger.warn({ err }, 'communityPins: Unexpected error');
     return [];
   }
 }

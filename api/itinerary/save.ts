@@ -5,6 +5,7 @@ import { requireAuth } from '../lib/requireAuth.js';
 import { validateBodySize } from '../lib/validateBodySize.js';
 import { captureApiError } from '../lib/sentryServer.js';
 import { applyCors } from '../lib/cors.js';
+import { createLogger } from '../lib/log.js';
 
 // Load environment variables
 dotenv.config();
@@ -35,8 +36,9 @@ export default async function handler(
   // 📦 Reject oversized payloads (saved itineraries can be long — still cap at 100KB).
   if (!validateBodySize(req, res)) return;
 
+  const log = createLogger(req);
   try {
-    console.log('📌 [SAVE] Route called for user', user.id);
+    log.info({ userId: user.id }, 'SAVE: Route called');
 
     // NB: any `userId` in the body is ignored. The verified user from the JWT is
     // the only source of truth for ownership.
@@ -53,19 +55,11 @@ export default async function handler(
       tripType,
     } = req.body ?? {};
 
-    console.log('📌 [SAVE] Received payload:', {
-      userId: user.id,
-      title: title ? `✅ "${title}"` : '❌ missing',
-      markdown: markdown ? `✅ (${markdown.length} chars)` : '❌ missing',
-      arrivalLocation,
-      departureLocation,
-      startDate,
-      endDate,
-    });
+    log.info({ userId: user.id, hasTitle: !!title, markdownLen: markdown?.length ?? 0, arrivalLocation, departureLocation, startDate, endDate }, 'SAVE: Received payload');
 
     // Validate required fields
     if (!title || !markdown) {
-      console.error('❌ [SAVE] Validation failed - missing required fields');
+      log.error('SAVE: Validation failed — missing required fields');
       res.status(400).json({
         success: false,
         error: 'Missing required fields: title, markdown',
@@ -77,7 +71,7 @@ export default async function handler(
     try {
       supabase = initSupabase();
     } catch (e) {
-      console.error('❌ [SAVE] Supabase initialization failed:', e);
+      log.error({ err: e }, 'SAVE: Supabase initialization failed');
       res.status(500).json({
         success: false,
         error: e instanceof Error ? e.message : 'Supabase not configured',
@@ -85,7 +79,7 @@ export default async function handler(
       return;
     }
 
-    console.log('✅ [SAVE] Validation passed, attempting to insert...');
+    log.info('SAVE: Validation passed, attempting insert');
 
     // Insert into itineraries table — user_id comes from verified JWT, not the body.
     const { data, error } = await supabase
@@ -115,12 +109,7 @@ export default async function handler(
         details?: string;
         hint?: string;
       };
-      console.error('❌ [SAVE] Database error:', {
-        message: dbErr.message,
-        code: dbErr.code,
-        details: dbErr.details,
-        hint: dbErr.hint,
-      });
+      log.error({ message: dbErr.message, code: dbErr.code, details: dbErr.details, hint: dbErr.hint }, 'SAVE: Database error');
       res.status(400).json({
         success: false,
         error: `Database error: ${dbErr.message}`,
@@ -130,7 +119,7 @@ export default async function handler(
     }
 
     if (!data) {
-      console.error('❌ [SAVE] No data returned after insert');
+      log.error('SAVE: No data returned after insert');
       res.status(400).json({
         success: false,
         error: 'Failed to save itinerary - no ID returned',
@@ -138,7 +127,7 @@ export default async function handler(
       return;
     }
 
-    console.log('✅ [SAVE] Successfully saved itinerary:', { itineraryId: data.id, title, userId: user.id });
+    log.info({ itineraryId: data.id, title, userId: user.id }, 'SAVE: Itinerary saved successfully');
 
     res.status(200).json({
       success: true,
@@ -147,11 +136,7 @@ export default async function handler(
     });
   } catch (error) {
     captureApiError(error);
-    console.error('❌ [SAVE] Catch block error:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      type: typeof error,
-    });
+    log.error({ err: error instanceof Error ? error.message : String(error) }, 'SAVE: Unhandled error');
 
     res.status(500).json({
       success: false,

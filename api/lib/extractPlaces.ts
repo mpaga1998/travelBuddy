@@ -17,6 +17,7 @@
 
 import OpenAI from 'openai';
 import { initSupabase } from './supabaseServer.js';
+import { logger } from './log.js';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const MAPBOX_TOKEN = process.env.VITE_MAPBOX_TOKEN ?? process.env.MAPBOX_TOKEN ?? '';
@@ -82,7 +83,7 @@ async function extractPlacesFromMarkdown(markdown: string): Promise<RawPlace[]> 
       )
       .map((p): RawPlace => ({ ...p, day: Number(p.day) || 1 }));
   } catch {
-    console.warn('⚠️ [EXTRACT] JSON parse failed:', cleaned.slice(0, 200));
+    logger.warn({ sample: cleaned.slice(0, 200) }, 'EXTRACT: JSON parse failed');
     return [];
   }
 }
@@ -134,9 +135,9 @@ async function persistPlaces(itineraryId: string, places: ExtractedPlace[]): Pro
   }));
   const { error } = await supabase.from('itinerary_places').insert(rows);
   if (error) {
-    console.warn('⚠️ [EXTRACT] Supabase insert failed:', error.message);
+    logger.warn({ err: error.message }, 'EXTRACT: Supabase insert failed');
   } else {
-    console.log(`✅ [EXTRACT] Persisted ${rows.length} places for itinerary ${itineraryId}`);
+    logger.info({ count: rows.length, itineraryId }, 'EXTRACT: Persisted places');
   }
 }
 
@@ -186,13 +187,13 @@ export async function extractAndPersistPlaces(
   biasLng: number
 ): Promise<ExtractedPlace[]> {
   try {
-    console.log(`🔍 [EXTRACT] Starting extraction for itinerary ${itineraryId}`);
+    logger.info({ itineraryId }, 'EXTRACT: Starting extraction');
     const places = await extractPlacesOnly(markdown, biasLat, biasLng);
-    console.log(`📍 [EXTRACT] Geocoded ${places.length} places`);
+    logger.info({ count: places.length }, 'EXTRACT: Geocoded places');
     await persistPlaces(itineraryId, places);
     return places;
   } catch (err) {
-    console.warn('⚠️ [EXTRACT] top-level failure:', err instanceof Error ? err.message : err);
+    logger.warn({ err: err instanceof Error ? err.message : err }, 'EXTRACT: top-level failure');
     return [];
   }
 }
@@ -210,7 +211,7 @@ export async function fetchPlacesForItinerary(itineraryId: string): Promise<Extr
     .order('day', { ascending: true });
 
   if (error) {
-    console.warn('⚠️ [EXTRACT] fetch failed:', error.message);
+    logger.warn({ err: error.message }, 'EXTRACT: fetch failed');
     return [];
   }
   return (data ?? []) as ExtractedPlace[];

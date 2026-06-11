@@ -8,6 +8,7 @@
  */
 
 import Holidays from 'date-holidays';
+import { logger } from './log.js';
 
 // ISO-3166 alpha-2 -> { currency (ISO-4217), units } for the ~70 most-traveled
 // countries. Lookup falls through to USD + metric if a country isn't listed,
@@ -673,7 +674,7 @@ export function buildTravelContext(
   const meta = iso2 ? COUNTRY_META[iso2] : undefined;
 
   // Public holidays via date-holidays, filtered to the trip window.
-  let holidays: Array<{ date: string; name: string }> = [];
+  const holidays: Array<{ date: string; name: string }> = [];
   if (iso2) {
     try {
       const hd = new Holidays(iso2);
@@ -690,7 +691,7 @@ export function buildTravelContext(
         }
       }
     } catch (e) {
-      console.warn('[travelContext] date-holidays failed for', iso2, e);
+      logger.warn({ iso2, err: e }, 'TRAVEL: date-holidays failed');
     }
   }
 

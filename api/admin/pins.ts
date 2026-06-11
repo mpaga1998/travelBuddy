@@ -4,6 +4,7 @@ import { requireAdmin } from '../lib/requireAdmin.js';
 import { initSupabase } from '../lib/supabaseServer.js';
 import { captureApiError } from '../lib/sentryServer.js';
 import { applyCors } from '../lib/cors.js';
+import { createLogger } from '../lib/log.js';
 
 dotenv.config();
 
@@ -155,7 +156,7 @@ export default async function handler(
     res.status(200).json({ success: true, reported, hidden });
   } catch (err) {
     captureApiError(err);
-    console.error('🛡️ [ADMIN] /api/admin/pins failed:', err);
+    createLogger(req).error({ err }, 'ADMIN: /api/admin/pins failed');
     res.status(500).json({
       success: false,
       error: err instanceof Error ? err.message : 'Failed to load admin pins',

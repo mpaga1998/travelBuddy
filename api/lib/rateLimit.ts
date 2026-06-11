@@ -1,5 +1,6 @@
 import type { VercelResponse } from '@vercel/node';
 import { initSupabase } from './supabaseServer.js';
+import { logger } from './log.js';
 
 /**
  * Per-user sliding-window rate limiter backed by a Supabase table.
@@ -72,7 +73,7 @@ export async function checkRateLimit(
       .order('created_at', { ascending: true });
 
     if (selectErr) {
-      console.warn('🚦 [RATE] Select failed, failing open:', selectErr.message);
+      logger.warn({ err: selectErr.message }, 'RATE: Select failed, failing open');
       return { ok: true, remaining: limit };
     }
 
@@ -96,12 +97,12 @@ export async function checkRateLimit(
       .insert({ user_id: userId, bucket });
 
     if (insertErr) {
-      console.warn('🚦 [RATE] Insert failed (request still allowed):', insertErr.message);
+      logger.warn({ err: insertErr.message }, 'RATE: Insert failed (request still allowed)');
     }
 
     return { ok: true, remaining: Math.max(0, limit - count - 1) };
   } catch (e) {
-    console.warn('🚦 [RATE] Unexpected error, failing open:', e instanceof Error ? e.message : e);
+    logger.warn({ err: e instanceof Error ? e.message : e }, 'RATE: Unexpected error, failing open');
     return { ok: true, remaining: limit };
   }
 }
@@ -130,9 +131,7 @@ export async function enforceRateLimit(
   if (!result.ok) {
     const retry = result.retryAfterSec ?? 60;
     res.setHeader('Retry-After', String(retry));
-    console.warn(
-      `🚦 [RATE] Denied user=${userId} bucket=${options.bucket} retryAfter=${retry}s`
-    );
+    logger.warn({ userId, bucket: options.bucket, retryAfterSec: retry }, 'RATE: Request denied — limit exceeded');
     res.status(429).json({
       success: false,
       error: `Rate limit exceeded. Try again in ${retry} seconds.`,

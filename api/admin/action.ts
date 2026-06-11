@@ -5,6 +5,7 @@ import { captureApiError } from '../lib/sentryServer.js';
 import { validateBodySize } from '../lib/validateBodySize.js';
 import { initSupabase } from '../lib/supabaseServer.js';
 import { applyCors } from '../lib/cors.js';
+import { createLogger } from '../lib/log.js';
 
 dotenv.config();
 
@@ -65,13 +66,14 @@ export default async function handler(
     return;
   }
 
+  const log = createLogger(req);
   try {
     const supabase = initSupabase();
 
     if (action === 'delete') {
       const { error } = await supabase.from('pins').delete().eq('id', pinId);
       if (error) throw error;
-      console.log(`🛡️ [ADMIN] ${admin.id} deleted pin ${pinId}`);
+      log.info({ adminId: admin.id, pinId }, 'ADMIN: Pin deleted');
       res.status(200).json({ success: true });
       return;
     }
@@ -83,11 +85,11 @@ export default async function handler(
       .update({ is_hidden: isHidden })
       .eq('id', pinId);
     if (error) throw error;
-    console.log(`🛡️ [ADMIN] ${admin.id} ${action}d pin ${pinId}`);
+    log.info({ adminId: admin.id, pinId, action }, 'ADMIN: Pin updated');
     res.status(200).json({ success: true });
   } catch (err) {
     captureApiError(err);
-    console.error('🛡️ [ADMIN] /api/admin/action failed:', err);
+    log.error({ err }, 'ADMIN: /api/admin/action failed');
     res.status(500).json({
       success: false,
       error: err instanceof Error ? err.message : 'Action failed',

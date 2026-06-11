@@ -21,6 +21,7 @@
  */
 
 import OpenAI from 'openai';
+import { logger } from './log.js';
 
 // Module-level lazy singleton mirrors api/lib/openai.ts. Two clients in the
 // same Node process is fine — the SDK is just an HTTP wrapper, no shared
@@ -49,7 +50,7 @@ export async function moderateText(text: string): Promise<ModerationResult> {
 
   // No key configured → fail open and warn loudly so it surfaces in logs.
   if (!process.env.OPENAI_API_KEY) {
-    console.warn('🛡️ [MODERATION] OPENAI_API_KEY not set; skipping moderation (fail open)');
+    logger.warn('MODERATION: OPENAI_API_KEY not set; skipping moderation (fail open)');
     return { flagged: false };
   }
 
@@ -61,7 +62,7 @@ export async function moderateText(text: string): Promise<ModerationResult> {
 
     const first = result.results?.[0];
     if (!first) {
-      console.warn('🛡️ [MODERATION] Empty results array; failing open');
+      logger.warn('MODERATION: Empty results array; failing open');
       return { flagged: false };
     }
 
@@ -72,17 +73,11 @@ export async function moderateText(text: string): Promise<ModerationResult> {
       .filter(([, on]) => Boolean(on))
       .map(([name]) => name);
 
-    console.warn(
-      '🛡️ [MODERATION] Content flagged:',
-      categories.join(', ') || '(no categories)'
-    );
+    logger.warn({ categories }, 'MODERATION: Content flagged');
     return { flagged: true, categories };
   } catch (err) {
     // Network error, rate limit, parse failure — fail open.
-    console.warn(
-      '🛡️ [MODERATION] Endpoint failed (failing open):',
-      err instanceof Error ? err.message : err
-    );
+    logger.warn({ err: err instanceof Error ? err.message : err }, 'MODERATION: Endpoint failed (failing open)');
     return { flagged: false };
   }
 }

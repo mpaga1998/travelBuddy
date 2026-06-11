@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { logger } from './log.js';
 
 /**
  * Hard cap on accepted request body size.
@@ -37,9 +38,7 @@ export function validateBodySize(
   if (contentLengthStr) {
     const contentLength = Number.parseInt(contentLengthStr, 10);
     if (Number.isFinite(contentLength) && contentLength > maxBytes) {
-      console.warn(
-        `📦 [SIZE] Rejecting oversized request: Content-Length=${contentLength}B > ${maxBytes}B on ${req.method} ${req.url}`
-      );
+      logger.warn({ contentLength, maxBytes, method: req.method, url: req.url }, 'SIZE: Rejecting oversized request (Content-Length)');
       res.status(413).json({
         success: false,
         error: `Request body too large. Max ${maxBytes} bytes.`,
@@ -56,9 +55,7 @@ export function validateBodySize(
         typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
       const byteLength = Buffer.byteLength(serialized, 'utf8');
       if (byteLength > maxBytes) {
-        console.warn(
-          `📦 [SIZE] Rejecting oversized parsed body: ${byteLength}B > ${maxBytes}B on ${req.method} ${req.url}`
-        );
+        logger.warn({ byteLength, maxBytes, method: req.method, url: req.url }, 'SIZE: Rejecting oversized parsed body');
         res.status(413).json({
           success: false,
           error: `Request body too large. Max ${maxBytes} bytes.`,

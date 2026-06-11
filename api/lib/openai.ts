@@ -4,6 +4,7 @@
  */
 
 import OpenAI from 'openai';
+import { logger } from './log.js';
 import { TripInput } from './types.js';
 import { validateTripInput, calculateNights } from './inputValidation.js';
 import { buildSystemPrompt, buildUserPrompt } from './prompts.js';
@@ -70,19 +71,19 @@ export async function generateItinerary(
     throw new Error('OPENAI_API_KEY is not set in environment variables');
   }
 
-  console.log('📋 [Itinerary] Generating text-based itinerary for:', input.arrival.location);
+  logger.info({ location: input.arrival.location }, 'OPENAI: Generating itinerary');
 
   // STEP 1: Validate input
   const validationErrors = validateTripInput(input);
   if (validationErrors.length > 0) {
-    console.error('❌ Input validation failed:', validationErrors);
+    logger.error({ validationErrors }, 'OPENAI: Input validation failed');
     throw new Error(
       `Input validation failed: ${validationErrors.map((e) => `${e.field}: ${e.message}`).join('; ')}`
     );
   }
 
   const firstName = options.firstName;
-  console.log('✅ Input validated. Planning for:', firstName || 'traveler');
+  logger.info({ firstName: firstName || 'traveler' }, 'OPENAI: Input validated');
 
   // STEP 2: Stream text-based itinerary
   try {
@@ -90,9 +91,7 @@ export async function generateItinerary(
     // Default matches the deployed value — change it in one place only.
     const selectedModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-5.4-mini';
     const maxTokens = computeMaxTokens(input);
-    console.log(
-      `📄 Streaming itinerary using model: ${selectedModel} (max_tokens=${maxTokens})`
-    );
+    logger.info({ model: selectedModel, maxTokens }, 'OPENAI: Streaming itinerary');
 
     const stream = await openai.chat.completions.create({
       model: selectedModel,
@@ -117,13 +116,10 @@ export async function generateItinerary(
       throw new Error('No content received from OpenAI');
     }
 
-    console.log('✅ Itinerary streamed successfully');
+    logger.info('OPENAI: Itinerary streamed successfully');
     return full;
   } catch (error) {
-    console.error(
-      '❌ Itinerary generation failed:',
-      error instanceof Error ? error.message : error
-    );
+    logger.error({ err: error instanceof Error ? error.message : error }, 'OPENAI: Itinerary generation failed');
     throw error;
   }
 }
