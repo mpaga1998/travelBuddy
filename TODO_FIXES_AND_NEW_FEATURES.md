@@ -73,7 +73,7 @@ to touch and a **Done when** check.
 - [x] **A4.1 Model abstraction + fallback.** Wrap OpenAI behind
   `api/lib/llm.ts`; add a secondary model/provider for outages. **Done when**
   flipping an env var switches provider with no call-site changes.
-- [ ] **A4.2 Itinerary + geocode cache.** Cache geocoding results (Mapbox) and
+- [x] **A4.2 Itinerary + geocode cache.** Cache geocoding results (Mapbox) and
   itineraries by normalized trip signature in a Supabase `*_cache` table or KV.
   **Done when** a repeat geocode/trip is served without an upstream call.
 - [ ] **A4.3 Router refactor + lazy routes** (unblocks perf 9.4 *and* Feature

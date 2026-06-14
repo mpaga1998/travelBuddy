@@ -17,6 +17,7 @@ import { moderateText, MODERATION_REJECTION_MESSAGE } from './lib/moderation.js'
 import { captureApiError } from './lib/sentryServer.js';
 import { applyCors } from './lib/cors.js';
 import { createLogger, logger } from './lib/log.js';
+import { buildTripKey, getCachedItinerary, setCachedItinerary } from './lib/itineraryCache.js';
 
 // Load environment variables
 dotenv.config();
@@ -105,6 +106,27 @@ export default async function handler(
         error: 'Arrival and departure dates are required',
       };
       res.status(400).json(response);
+      return;
+    }
+
+    // ⚡ Itinerary cache check — if the same user submitted this exact trip
+    // within the last 24 hours, serve the cached result and skip all I/O.
+    const tripKey = buildTripKey(tripInput);
+    const cachedMarkdown = await getCachedItinerary(user.id, tripKey);
+    if (cachedMarkdown) {
+      log.info({ tripKey: tripKey.slice(0, 8) }, 'ITINERARY: Serving from cache');
+      const wantsCachedStream = (req.headers.accept ?? '').includes('text/plain');
+      if (wantsCachedStream) {
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-transform');
+        res.setHeader('X-Itinerary-Cache', 'hit');
+        res.status(200);
+        res.write(cachedMarkdown);
+        res.end();
+      } else {
+        res.setHeader('X-Itinerary-Cache', 'hit');
+        res.status(200).json({ success: true, itinerary: cachedMarkdown });
+      }
       return;
     }
 
@@ -219,6 +241,7 @@ export default async function handler(
       const firstName = await firstNamePromise;
       log.info('ITINERARY: Starting stream');
 
+      let streamedMarkdown = '';
       await generateItinerary(tripInput, {
         firstName,
         travelContext,
@@ -228,6 +251,7 @@ export default async function handler(
         practicalContext,
         budgetContext,
         onToken: (delta) => {
+          streamedMarkdown += delta;
           res.write(delta);
         },
       });
@@ -235,6 +259,9 @@ export default async function handler(
       const generationTime = Date.now() - routeStartTime;
       log.info({ durationMs: generationTime }, 'ITINERARY: Stream complete');
       res.end();
+
+      // Write to cache after the response is sent (non-blocking).
+      void setCachedItinerary(user.id, tripKey, streamedMarkdown);
       return;
     }
 
@@ -244,6 +271,8 @@ export default async function handler(
     const itinerary = await generateItinerary(tripInput, { firstName, travelContext, placesContext, communityPinsContext, weatherContext, practicalContext, budgetContext });
     const generationTime = Date.now() - routeStartTime;
     log.info({ durationMs: generationTime }, 'ITINERARY: Non-stream generation complete');
+    // Cache the result (non-blocking).
+    void setCachedItinerary(user.id, tripKey, itinerary);
 
     const response: ItineraryResponse = {
       success: true,

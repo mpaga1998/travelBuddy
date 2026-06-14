@@ -18,6 +18,7 @@
 import OpenAI from 'openai';
 import { initSupabase } from './supabaseServer.js';
 import { logger } from './log.js';
+import { getCachedGeocode, setCachedGeocode } from './geocodeCache.js';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const MAPBOX_TOKEN = process.env.VITE_MAPBOX_TOKEN ?? process.env.MAPBOX_TOKEN ?? '';
@@ -118,6 +119,12 @@ export async function geocodePlace(
   biasLng: number
 ): Promise<{ lat: number; lng: number } | null> {
   if (!MAPBOX_TOKEN) return null;
+
+  // Cache check — venue names are stable; avoid repeat Mapbox calls.
+  const cacheKey = `venue:${name}`;
+  const cached = await getCachedGeocode(cacheKey);
+  if (cached) return cached;
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GEOCODE_TIMEOUT_MS);
   try {
@@ -129,7 +136,10 @@ export async function geocodePlace(
     const json = (await res.json()) as { features?: { geometry?: { coordinates?: [number, number] } }[] };
     const coords = json.features?.[0]?.geometry?.coordinates;
     if (!coords) return null;
-    return { lat: coords[1], lng: coords[0] };
+    const result = { lat: coords[1], lng: coords[0] };
+    // Fire-and-forget cache write.
+    void setCachedGeocode(cacheKey, result.lat, result.lng);
+    return result;
   } catch {
     return null;
   } finally {

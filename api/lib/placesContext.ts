@@ -14,6 +14,7 @@
  */
 
 import { logger } from './log.js';
+import { getCachedGeocode, setCachedGeocode } from './geocodeCache.js';
 
 const MAPBOX_TOKEN = process.env.VITE_MAPBOX_TOKEN ?? process.env.MAPBOX_TOKEN ?? '';
 
@@ -57,6 +58,14 @@ interface GeocodedPoint {
  */
 async function geocodeLocation(location: string): Promise<GeocodedPoint | null> {
   if (!MAPBOX_TOKEN) return null;
+
+  // Cache check — avoids a Mapbox round-trip for recently seen locations.
+  const cached = await getCachedGeocode(location);
+  if (cached) {
+    logger.info({ location }, 'PLACES: geocode cache hit');
+    return cached;
+  }
+
   try {
     const query = encodeURIComponent(location.split(',')[0].trim());
     const url =
@@ -71,7 +80,11 @@ async function geocodeLocation(location: string): Promise<GeocodedPoint | null> 
     };
     const center = data.features?.[0]?.center;
     if (!center) return null;
-    return { lng: center[0], lat: center[1] };
+
+    const coords = { lng: center[0], lat: center[1] };
+    // Fire-and-forget — don't hold up the response for a cache write.
+    void setCachedGeocode(location, coords.lat, coords.lng);
+    return coords;
   } catch {
     return null;
   }
