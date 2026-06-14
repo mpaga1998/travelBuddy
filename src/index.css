@@ -124,9 +124,12 @@ button:hover {
   border-color: #646cff;
 }
 
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+/* A4.4: Keyboard focus ring — overrides Tailwind's .outline-none so keyboard
+   users always see a visible indicator on every interactive element. */
+:focus-visible {
+  outline: 2px solid #2563eb !important;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* Mobile optimizations */

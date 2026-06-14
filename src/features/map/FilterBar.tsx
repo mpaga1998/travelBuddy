@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PinCategory } from "../pins/pinTypes";
 import { AGE_RANGES, CATEGORIES, categoryEmoji, type MapType } from "./mapConstants";
 import { useIsMobile } from "./hooks/useIsMobile";
@@ -211,9 +211,17 @@ function MobileFilterDrawer({
   toggleAge: (v: string) => void;
   onClose: () => void;
 }) {
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => { closeBtnRef.current?.focus(); }, []);
+
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Filters"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+      tabIndex={-1}
       className="fixed inset-0 bg-black/40 z-[100]"
     >
       <div
@@ -223,8 +231,9 @@ function MobileFilterDrawer({
         <div className="flex justify-between items-center px-3 pt-3">
           <span className="text-sm font-semibold text-[#111]">Filters</span>
           <button
+            ref={closeBtnRef}
             onClick={onClose}
-            aria-label="Close"
+            aria-label="Close filters"
             className="border-none bg-transparent text-2xl cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] outline-none"
           >
             ✕

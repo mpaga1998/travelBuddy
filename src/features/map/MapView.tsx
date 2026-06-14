@@ -483,9 +483,17 @@ function DraftModal({
   setDraft: (d: DraftPin | null) => void;
   onSubmit: () => void | Promise<void>;
 }) {
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => { titleInputRef.current?.focus(); }, []);
+
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Add a pin"
       onClick={() => setDraft(null)}
+      onKeyDown={(e) => { if (e.key === "Escape") setDraft(null); }}
+      tabIndex={-1}
       className={`fixed inset-0 bg-black/25 flex justify-center z-[1000] ${isMobile ? "items-end p-0" : "items-center p-4"}`}
     >
       <div
@@ -511,6 +519,7 @@ function DraftModal({
 
         <div className="mt-2.5 grid gap-2.5">
           <input
+            ref={titleInputRef}
             value={draft.title}
             onChange={(e) => setDraft({ ...draft, title: e.target.value })}
             placeholder="Title (required)"
@@ -549,7 +558,7 @@ function DraftModal({
                 {draft.tips.length > 1 && (
                   <button
                     onClick={() => setDraft({ ...draft, tips: draft.tips.filter((_, i) => i !== idx) })}
-                    title="Remove this tip"
+                    aria-label={`Remove tip ${idx + 1}`}
                     className={`rounded-lg border border-red-600/[0.35] bg-red-600/[0.08] text-red-900 cursor-pointer font-bold mt-2.5 text-sm min-h-[44px] ${
                       isMobile ? "px-3 py-2.5" : "px-2 py-2.5"
                     }`}
@@ -607,7 +616,7 @@ function DraftModal({
                     />
                     <button
                       onClick={() => setDraft({ ...draft, images: draft.images.filter((_, i) => i !== idx) })}
-                      title="Remove image"
+                      aria-label={`Remove image ${idx + 1}`}
                       className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white border-none cursor-pointer p-0 flex items-center justify-center text-xs font-bold"
                     >
                       ✕
@@ -660,9 +669,17 @@ function TipsViewer({
   isMobile: boolean;
   onClose: () => void;
 }) {
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => { closeBtnRef.current?.focus(); }, []);
+
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Tips"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+      tabIndex={-1}
       className="fixed inset-0 flex items-center justify-center z-[10000] p-4"
     >
       <div
@@ -672,8 +689,9 @@ function TipsViewer({
         }`}
       >
         <button
+          ref={closeBtnRef}
           onClick={onClose}
-          aria-label="Close"
+          aria-label="Close tips"
           className="absolute top-2 right-2 border-none bg-transparent text-xl cursor-pointer px-2 py-1 text-[#999] font-bold"
         >
           ✕
@@ -705,7 +723,12 @@ function DeleteConfirm({
 }) {
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Delete pin"
       onClick={onCancel}
+      onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
+      tabIndex={-1}
       className="fixed inset-0 bg-black/35 flex items-center justify-center p-4 z-[9999]"
     >
       <div
@@ -722,6 +745,7 @@ function DeleteConfirm({
         <div className="flex gap-2.5 justify-center">
           <button
             onClick={onCancel}
+            autoFocus
             className="px-4 py-2.5 rounded-[10px] border border-black/[0.18] bg-white text-[#111] cursor-pointer font-extrabold"
           >
             No

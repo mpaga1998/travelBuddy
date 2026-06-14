@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useRef,
   useState,
   type ReactNode,
@@ -103,6 +104,7 @@ function PromptDialog({
   onSubmit: (value: string) => void;
   onCancel: () => void;
 }) {
+  const titleId = useId();
   const [value, setValue] = useState(defaultValue);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -128,11 +130,12 @@ function PromptDialog({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={title}
+      aria-labelledby={titleId}
       onClick={onCancel}
       onKeyDown={(e) => {
         if (e.key === "Escape") onCancel();
       }}
+      tabIndex={-1}
       className="fixed inset-0 bg-black/40 flex items-center justify-center z-[2000] p-4"
     >
       <form
@@ -140,7 +143,7 @@ function PromptDialog({
         onSubmit={handleSubmit}
         className="bg-white rounded-2xl shadow-[0_18px_48px_rgba(0,0,0,0.22)] max-w-md w-full p-5 flex flex-col gap-3"
       >
-        <h3 className="text-lg font-bold text-slate-900 m-0">{title}</h3>
+        <h3 id={titleId} className="text-lg font-bold text-slate-900 m-0">{title}</h3>
         {message && <p className="text-sm text-slate-600 m-0">{message}</p>}
         <input
           ref={inputRef}

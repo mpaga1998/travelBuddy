@@ -1,24 +1,40 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { Toaster } from "sonner";
 import { supabase } from "./lib/supabaseClient";
 import { ensureProfile } from "./lib/ensureProfile";
 
-import { AuthPage } from "./features/auth/AuthPage";
+// ── Eager imports — shown on the critical path (every visit) ────────────────
+import { AuthPage }    from "./features/auth/AuthPage";
 import { LoadingPage } from "./features/auth/LoadingPage";
 import { InitialPage } from "./features/auth/InitialPage";
-import { MapView } from "./features/map/MapView";
-import { AdminPage } from "./features/admin/AdminPage";
-import { isCurrentUserAdmin } from "./features/admin/adminApi";
-import { TermsPage } from "./features/legal/TermsPage";
-import { GuidelinesPage } from "./features/legal/GuidelinesPage";
-import { PrivacyPage } from "./features/legal/PrivacyPage";
-import { PublicProfilePage } from "./features/profile/PublicProfilePage";
-import { FeedPage } from "./features/feed/FeedPage";
-import { NotificationsPage } from "./features/notifications/NotificationsPage";
 import { FeatureErrorBoundary } from "./components/FeatureErrorBoundary";
 import { ConfirmDialogProvider } from "./components/ConfirmDialog";
 import { PromptDialogProvider } from "./components/PromptDialog";
+
+// adminApi is called in a useEffect (not render), so we import it statically.
+// The heavy AdminPage component itself is lazy.
+import { isCurrentUserAdmin } from "./features/admin/adminApi";
+
+// ── Lazy imports — loaded only when the user navigates to that route ─────────
+// Named-export components need the `.then(m => ({ default: m.X }))` wrapper
+// so React.lazy (which expects a default export) works correctly.
+const MapView           = lazy(() => import("./features/map/MapView")
+  .then(m => ({ default: m.MapView })));
+const AdminPage         = lazy(() => import("./features/admin/AdminPage")
+  .then(m => ({ default: m.AdminPage })));
+const TermsPage         = lazy(() => import("./features/legal/TermsPage")
+  .then(m => ({ default: m.TermsPage })));
+const GuidelinesPage    = lazy(() => import("./features/legal/GuidelinesPage")
+  .then(m => ({ default: m.GuidelinesPage })));
+const PrivacyPage       = lazy(() => import("./features/legal/PrivacyPage")
+  .then(m => ({ default: m.PrivacyPage })));
+const PublicProfilePage = lazy(() => import("./features/profile/PublicProfilePage")
+  .then(m => ({ default: m.PublicProfilePage })));
+const FeedPage          = lazy(() => import("./features/feed/FeedPage")
+  .then(m => ({ default: m.FeedPage })));
+const NotificationsPage = lazy(() => import("./features/notifications/NotificationsPage")
+  .then(m => ({ default: m.NotificationsPage })));
 
 type AppPage =
   | "loading"
@@ -198,7 +214,11 @@ export default function App() {
     <ConfirmDialogProvider>
       <PromptDialogProvider>
         <Toaster position="top-center" richColors closeButton />
-        {renderPage()}
+        {/* Suspense catches lazy chunks while they load.
+            LoadingPage is eager so it renders instantly as the fallback. */}
+        <Suspense fallback={<LoadingPage onLoadingComplete={() => {}} />}>
+          {renderPage()}
+        </Suspense>
       </PromptDialogProvider>
     </ConfirmDialogProvider>
   );

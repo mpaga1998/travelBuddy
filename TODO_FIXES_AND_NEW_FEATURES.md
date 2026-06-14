@@ -76,10 +76,10 @@ to touch and a **Done when** check.
 - [x] **A4.2 Itinerary + geocode cache.** Cache geocoding results (Mapbox) and
   itineraries by normalized trip signature in a Supabase `*_cache` table or KV.
   **Done when** a repeat geocode/trip is served without an upstream call.
-- [ ] **A4.3 Router refactor + lazy routes** (unblocks perf 9.4 *and* Feature
+- [x] **A4.3 Router refactor + lazy routes** (unblocks perf 9.4 *and* Feature
   shareable pages). Adopt a small router; `React.lazy` each feature route.
   **Done when** initial JS bundle drops measurably (Lighthouse before/after).
-- [ ] **A4.4 Accessibility pass** (roadmap 9.2) — ARIA on icon buttons, modal
+- [x] **A4.4 Accessibility pass** (roadmap 9.2) — ARIA on icon buttons, modal
   keyboard nav, focus states. **Done when** axe-core shows no critical issues on
   the main flows.
 

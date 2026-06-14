@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { saveItineraryToProfile } from './itineraryApi';
 import { track } from '../../lib/analytics';
@@ -17,6 +17,7 @@ interface ItineraryModalProps {
 export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const draft = useItineraryDraft();
   const prompt = usePrompt();
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   // 7.1: track the role so we can conditionally hide the trip-type picker
   // for hostel accounts — the backpacker-coded vibes (Solo wanderer, etc.)
@@ -26,6 +27,11 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
   const [userRole, setUserRole] = useState<'traveler' | 'hostel' | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [formKey, setFormKey] = useState(0);
+
+  // Move focus to close button when modal opens (keyboard accessibility).
+  useEffect(() => {
+    if (open) closeBtnRef.current?.focus();
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -118,7 +124,12 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="itinerary-modal-title"
       onClick={handleClose}
+      onKeyDown={(e) => { if (e.key === "Escape") handleClose(); }}
+      tabIndex={-1}
       className={`fixed inset-0 bg-black/40 flex justify-center z-[1001] ${isMobile ? 'items-end p-0' : 'items-center p-4'}`}
     >
       <div
@@ -130,7 +141,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
           className={`flex justify-between items-start border-b border-black/[0.08] flex-shrink-0 gap-3 ${isMobile ? 'p-4' : 'p-5'}`}
         >
           <div className="flex-1">
-            <h2 className={`m-0 font-bold text-slate-900 ${isMobile ? 'text-lg' : 'text-xl'}`}>
+            <h2 id="itinerary-modal-title" className={`m-0 font-bold text-slate-900 ${isMobile ? 'text-lg' : 'text-xl'}`}>
               ✈️ Plan Your Itinerary
             </h2>
             <p className={`mt-1.5 font-semibold text-gray-500 ${isMobile ? 'text-xs' : 'text-[13px]'}`}>
@@ -138,9 +149,10 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
             </p>
           </div>
           <button
+            ref={closeBtnRef}
             onClick={handleClose}
             className="border-none bg-transparent text-2xl cursor-pointer px-2 py-1 text-gray-400 flex-shrink-0"
-            aria-label="Close"
+            aria-label="Close itinerary planner"
           >
             ✕
           </button>

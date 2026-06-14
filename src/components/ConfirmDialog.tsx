@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useId,
   useRef,
   useState,
   type ReactNode,
@@ -91,7 +92,7 @@ function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmOptions & { onConfirm: () => void; onCancel: () => void }) {
-  // Esc cancels, Enter confirms. Attach at window level while mounted.
+  const titleId = useId();
   const confirmBtnClass = destructive
     ? "px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold text-sm min-h-[40px] cursor-pointer border-none"
     : "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm min-h-[40px] cursor-pointer border-none";
@@ -100,7 +101,7 @@ function ConfirmDialog({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={title}
+      aria-labelledby={titleId}
       onClick={onCancel}
       onKeyDown={(e) => {
         if (e.key === "Escape") onCancel();
@@ -113,7 +114,7 @@ function ConfirmDialog({
         onClick={(e) => e.stopPropagation()}
         className="bg-white rounded-2xl shadow-[0_18px_48px_rgba(0,0,0,0.22)] max-w-md w-full p-5 flex flex-col gap-3"
       >
-        <h3 className="text-lg font-bold text-slate-900 m-0">{title}</h3>
+        <h3 id={titleId} className="text-lg font-bold text-slate-900 m-0">{title}</h3>
         {message && <p className="text-sm text-slate-600 m-0">{message}</p>}
         <div className="flex gap-2 justify-end mt-2">
           <button
