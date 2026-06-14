@@ -3,9 +3,9 @@
  * Implements the structured itinerary generation pipeline
  */
 
-import OpenAI from 'openai';
 import { logger } from './log.js';
 import { TripInput } from './types.js';
+import { streamCompletion } from './llm.js';
 import { validateTripInput, calculateNights } from './inputValidation.js';
 import { buildSystemPrompt, buildUserPrompt } from './prompts.js';
 import type { TravelContext } from './travelContext.js';
@@ -14,10 +14,6 @@ import type { CommunityPinsContext } from './communityPins.js';
 import type { WeatherContext } from './weatherContext.js';
 import type { PracticalContext } from './practicalContext.js';
 import type { BudgetContext } from './budgetContext.js';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export interface GenerationResult {
   markdown: string;
@@ -67,10 +63,6 @@ export async function generateItinerary(
     budgetContext?: BudgetContext;
   } = {}
 ): Promise<string> {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is not set in environment variables');
-  }
-
   logger.info({ location: input.arrival.location }, 'OPENAI: Generating itinerary');
 
   // STEP 1: Validate input
@@ -85,35 +77,38 @@ export async function generateItinerary(
   const firstName = options.firstName;
   logger.info({ firstName: firstName || 'traveler' }, 'OPENAI: Input validated');
 
-  // STEP 2: Stream text-based itinerary
+  // STEP 2: Stream itinerary via the LLM abstraction layer (llm.ts).
+  // Provider is controlled by LLM_PROVIDER env var (default: openai).
+  // Automatic cross-provider fallback on rate-limit / 5xx.
   try {
-    // Model is configured via OPENAI_FALLBACK_MODEL env var (set in Vercel project settings).
-    // Default matches the deployed value — change it in one place only.
-    const selectedModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-5.4-mini';
     const maxTokens = computeMaxTokens(input);
-    logger.info({ model: selectedModel, maxTokens }, 'OPENAI: Streaming itinerary');
+    logger.info({ maxTokens }, 'OPENAI: Streaming itinerary');
 
-    const stream = await openai.chat.completions.create({
-      model: selectedModel,
-      stream: true,
-      messages: [
-        { role: 'system', content: buildSystemPrompt() },
-        { role: 'user', content: buildUserPrompt(input, firstName, options.travelContext, options.placesContext, options.communityPinsContext, options.weatherContext, options.practicalContext, options.budgetContext) },
-      ],
-      max_completion_tokens: maxTokens,
-      temperature: 0.7,
-    });
+    const messages = [
+      { role: 'system' as const, content: buildSystemPrompt() },
+      {
+        role: 'user' as const,
+        content: buildUserPrompt(
+          input,
+          firstName,
+          options.travelContext,
+          options.placesContext,
+          options.communityPinsContext,
+          options.weatherContext,
+          options.practicalContext,
+          options.budgetContext,
+        ),
+      },
+    ];
 
     let full = '';
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (!delta) continue;
+    for await (const delta of streamCompletion(messages, { maxTokens, temperature: 0.7 })) {
       full += delta;
       options.onToken?.(delta);
     }
 
     if (!full) {
-      throw new Error('No content received from OpenAI');
+      throw new Error('No content received from LLM');
     }
 
     logger.info('OPENAI: Itinerary streamed successfully');

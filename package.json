@@ -20,6 +20,7 @@
     "eval": "tsx tests/evals/runner.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
     "@mapbox/point-geometry": "^1.1.0",
     "@phosphor-icons/react": "^2.1.10",
     "@sentry/node": "^10.51.0",

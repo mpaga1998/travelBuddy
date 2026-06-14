@@ -70,7 +70,7 @@ to touch and a **Done when** check.
 
 ### A4. Robustness & cost (compounds with the new features)
 
-- [ ] **A4.1 Model abstraction + fallback.** Wrap OpenAI behind
+- [x] **A4.1 Model abstraction + fallback.** Wrap OpenAI behind
   `api/lib/llm.ts`; add a secondary model/provider for outages. **Done when**
   flipping an env var switches provider with no call-site changes.
 - [ ] **A4.2 Itinerary + geocode cache.** Cache geocoding results (Mapbox) and
