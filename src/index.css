@@ -124,9 +124,13 @@ button:hover {
   border-color: #646cff;
 }
 
-/* A4.4: Keyboard focus ring — overrides Tailwind's .outline-none so keyboard
-   users always see a visible indicator on every interactive element. */
-:focus-visible {
+/* A4.4: Keyboard focus ring for buttons/links only.
+   Scoped to non-input elements so text inputs keep their own border feedback
+   and mobile users don't see an unwanted rectangle when tapping a field. */
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+[tabindex]:not(input):not(textarea):not(select):focus-visible {
   outline: 2px solid #2563eb !important;
   outline-offset: 2px;
   border-radius: 4px;
