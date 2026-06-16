@@ -15,6 +15,8 @@ import { checkContentAllowed, MODERATION_REJECTION_MESSAGE } from "../../lib/mod
 import { toast } from "sonner";
 
 import { ItineraryModal } from "../itinerary/ItineraryModal";
+import { ImportFromLinkModal } from "../import/ImportFromLinkModal";
+import type { SocialCandidate, SocialAttribution } from "../import/socialImportApi";
 import { supabase } from "../../lib/supabaseClient";
 import { getLocationNameFromCoordinates } from "../../lib/mapbox";
 import { FeatureErrorBoundary } from "../../components/FeatureErrorBoundary";
@@ -103,6 +105,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftPin | null>(null);
   const [itineraryModalOpen, setItineraryModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [tipsViewerOpen, setTipsViewerOpen] = useState(false);
   const [viewerTips, setViewerTips] = useState<string[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -187,6 +190,22 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       console.error("Bookmark toggle failed:", e);
     }
   }, [toggleBookmarkHook]);
+
+  // --- Social import -------------------------------------------------------
+  const handlePlaceSelected = useCallback(
+    (candidate: SocialCandidate, _attribution: SocialAttribution) => {
+      setImportModalOpen(false);
+      // Fly the map to the confirmed place so the user sees it immediately.
+      // Part C will also persist it to saved_places once that table exists.
+      mapRef.current?.flyTo({
+        center: [candidate.lng, candidate.lat],
+        zoom: 15,
+        duration: 900,
+      });
+      toast.success(`📍 Showing ${candidate.name} on the map`);
+    },
+    []
+  );
 
   // --- Draft submit -------------------------------------------------------
   async function onSubmitDraft() {
@@ -326,6 +345,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
           onLogoClick={() => {
             mapRef.current?.easeTo({ bearing: 0, pitch: 0, duration: 600 });
           }}
+          onImportLink={() => setImportModalOpen(true)}
           mapType={mapType}
           setMapType={setMapType}
           activeCategory={activeCategory}
@@ -392,6 +412,15 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
               <ItineraryModal
                 open={itineraryModalOpen}
                 onClose={() => setItineraryModalOpen(false)}
+              />
+            </FeatureErrorBoundary>
+          )}
+
+          {importModalOpen && (
+            <FeatureErrorBoundary featureName="Import">
+              <ImportFromLinkModal
+                onClose={() => setImportModalOpen(false)}
+                onPlaceSelected={handlePlaceSelected}
               />
             </FeatureErrorBoundary>
           )}

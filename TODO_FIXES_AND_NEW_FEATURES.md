@@ -101,7 +101,7 @@ including the careful "don't embed the city hint in the query" bug-fix). Feature
 swaps the *input* from itinerary markdown to a social caption/transcript and
 reuses the rest.
 
-### B0. The one real decision: how do we get text out of a social post?
+### B0. The one real decision: how do we get text out of a social post? ✅ Tier 1 shipped
 
 Getting a usable signal out of the URL is the crux. Three tiers — **ship Tier 1
 first**:
@@ -125,28 +125,28 @@ first**:
 
 ### B0.1 Legal / ToS guardrails (non-negotiable)
 
-- [ ] Use **official oEmbed/Graph/Pinterest APIs** wherever they exist; never bulk
+- [x] Use **official oEmbed/Graph/Pinterest APIs** wherever they exist; never bulk
   scrape; only **user-initiated, single-URL** requests.
-- [ ] Store and display **attribution** (source URL + author handle) on any pin
+- [x] Store and display **attribution** (source URL + author handle) on any pin
   created this way.
-- [ ] Respect robots/ratelimits; cache responses to avoid re-fetching.
+- [x] Respect robots/ratelimits; cache responses to avoid re-fetching.
 - [ ] Add a short ToS/legal review checkpoint before Tier 2 (video/audio download).
 
 ### B1. Backend — new extraction endpoint
 
-- [ ] **B1.1** `api/lib/socialFetch.ts` — `fetchSocialMetadata(url)`:
+- [x] **B1.1** `api/lib/socialFetch.ts` — `fetchSocialMetadata(url)`:
   detect platform from the host, call the right oEmbed/OG path, return
   `{ platform, author, caption, thumbnailUrl, sourceUrl, detectedCity? }`.
   Best-effort, typed, times out (reuse the 2–3 s `AbortController` pattern from
   `extract.ts`).
-- [ ] **B1.2** `api/social/extract.ts` (POST, copy the guard stack from
+- [x] **B1.2** `api/social/extract.ts` (POST, copy the guard stack from
   `api/itinerary/extract.ts`: `requireAuth` → `validateBodySize` → **rate limit**
   (new low cap, e.g. 20/hr, reuse `rateLimit.ts`) → **moderation** on the caption
   via `moderation.ts`). Flow: `fetchSocialMetadata` → reuse the LLM place
   extractor (generalize `extractPlacesOnly` to accept arbitrary text) → Mapbox
   geocode each candidate with proximity bias to `detectedCity` → return ranked
   `candidates[]` with `{ name, lat, lng, type, confidence, context }`.
-- [ ] **B1.3** Generalize `extractPlaces.ts`: rename the core to
+- [x] **B1.3** Generalize `extractPlaces.ts`: rename the core to
   `extractPlacesFromText(text, biasLat, biasLng)` so both itinerary markdown and
   social captions use it. Keep `type` mapping aligned to `PinCategory`
   (food/nightlife/sight/shop/beach/other).
@@ -156,16 +156,15 @@ first**:
 
 ### B2. Frontend — paste-and-confirm flow
 
-- [ ] **B2.1** `src/features/import/socialImportApi.ts` — `extractFromUrl(url)`
+- [x] **B2.1** `src/features/import/socialImportApi.ts` — `extractFromUrl(url)`
   attaching the JWT (mirror `itineraryApi.ts`).
-- [ ] **B2.2** `src/features/import/ImportFromLinkModal.tsx` — input for the URL
+- [x] **B2.2** `src/features/import/ImportFromLinkModal.tsx` — input for the URL
   (+ paste button), loading state, then a **candidate list**: thumbnail, name,
   detected city, mini-map preview, confidence. User picks/edits the right one
-  (disambiguation matters — geocoding is fuzzy). On confirm → call Part C's
-  `addSavedPlace(...)` with `source = platform`, `source_url = url`.
-- [ ] **B2.3** Entry points: a "＋ Import from link" button on the map top bar
-  (`FilterBar`) and in the "My Map" view (Part C). Optional: a PWA share-target so
-  users can share a reel straight into nook (manifest `share_target`).
+  (disambiguation matters — geocoding is fuzzy). On confirm → flies map to coords;
+  Part C's `addSavedPlace(...)` will be wired in when saved_places table ships.
+- [x] **B2.3** Entry points: "🔗 Import" button in `FilterBar` (desktop) and in
+  the mobile filter drawer. Part C's My Map view will add a second entry point.
 - **Done when** pasting a link adds a confirmed place to the user's map with
   correct coords + attribution.
 

@@ -6,6 +6,8 @@ import { useIsMobile } from "./hooks/useIsMobile";
 export type FilterBarProps = {
   onBack?: () => void;
   onLogoClick?: () => void;
+  /** Opens the "Import from link" modal. */
+  onImportLink?: () => void;
 
   mapType: MapType;
   setMapType: (t: MapType) => void;
@@ -36,6 +38,7 @@ function ageRangeBtnClass(active: boolean, extra = "") {
 export function FilterBar({
   onBack,
   onLogoClick,
+  onImportLink,
   mapType,
   setMapType,
   activeCategory,
@@ -125,6 +128,17 @@ export function FilterBar({
 
         <div className="flex-1" />
 
+        {/* Import from link — desktop */}
+        {!isMobile && onImportLink && (
+          <button
+            onClick={onImportLink}
+            aria-label="Import place from link"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.18] bg-white text-[#111] text-sm font-semibold cursor-pointer hover:bg-gray-50 transition-colors"
+          >
+            🔗 Import
+          </button>
+        )}
+
         {isMobile && (
           <button
             onClick={() => setMobileMenuOpen((o) => !o)}
@@ -151,6 +165,7 @@ export function FilterBar({
           selectedAgeRanges={selectedAgeRanges}
           toggleAge={toggleAge}
           onClose={() => setMobileMenuOpen(false)}
+          onImportLink={onImportLink ? () => { setMobileMenuOpen(false); onImportLink(); } : undefined}
         />
       )}
     </div>
@@ -202,6 +217,7 @@ function MobileFilterDrawer({
   selectedAgeRanges,
   toggleAge,
   onClose,
+  onImportLink,
 }: {
   mapType: MapType;
   setMapType: (t: MapType) => void;
@@ -210,6 +226,7 @@ function MobileFilterDrawer({
   selectedAgeRanges: string[];
   toggleAge: (v: string) => void;
   onClose: () => void;
+  onImportLink?: () => void;
 }) {
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => { closeBtnRef.current?.focus(); }, []);
@@ -275,6 +292,18 @@ function MobileFilterDrawer({
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Import from link — mobile drawer */}
+        {onImportLink && (
+          <div className="px-3 pb-4">
+            <button
+              onClick={onImportLink}
+              className="w-full px-4 py-3 rounded-[10px] border border-black/[0.18] bg-white text-[#111] text-sm font-semibold cursor-pointer text-left min-h-[44px]"
+            >
+              🔗 Import place from link
+            </button>
           </div>
         )}
       </div>

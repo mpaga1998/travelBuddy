@@ -149,3 +149,15 @@ export const ITINERARY_RATE_LIMIT: RateLimitOptions = {
   limit: 10,
   windowMs: 60 * 60 * 1000, // 1 hour
 };
+
+/**
+ * Pre-built config for the social URL extraction endpoint (B1.2).
+ * Lower than itinerary — social extraction burns fewer tokens but is an
+ * easy endpoint to hammer. 20/hour is generous for real use and still
+ * cheap to protect.
+ */
+export const SOCIAL_EXTRACT_RATE_LIMIT: RateLimitOptions = {
+  bucket: 'social_extract',
+  limit: 20,
+  windowMs: 60 * 60 * 1000, // 1 hour
+};

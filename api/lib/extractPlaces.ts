@@ -112,11 +112,11 @@ async function extractPlacesFromMarkdown(markdown: string): Promise<RawPlace[]> 
 // Geocoding
 // ---------------------------------------------------------------------------
 
-/** Exported for unit testing. */
+/** Exported for unit testing. Bias is optional — omit for unbiased global search. */
 export async function geocodePlace(
   name: string,
-  biasLat: number,
-  biasLng: number
+  biasLat?: number,
+  biasLng?: number
 ): Promise<{ lat: number; lng: number } | null> {
   if (!MAPBOX_TOKEN) return null;
 
@@ -128,9 +128,11 @@ export async function geocodePlace(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GEOCODE_TIMEOUT_MS);
   try {
+    const hasBias = biasLat != null && biasLng != null;
     const url =
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(name)}.json` +
-      `?access_token=${MAPBOX_TOKEN}&limit=1&proximity=${biasLng},${biasLat}`;
+      `?access_token=${MAPBOX_TOKEN}&limit=1` +
+      (hasBias ? `&proximity=${biasLng},${biasLat}` : '');
     const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) return null;
     const json = (await res.json()) as { features?: { geometry?: { coordinates?: [number, number] } }[] };
@@ -245,4 +247,166 @@ export async function fetchPlacesForItinerary(itineraryId: string): Promise<Extr
     return [];
   }
   return (data ?? []) as ExtractedPlace[];
+}
+
+// =============================================================================
+// B1.3: Social place extraction
+// =============================================================================
+// Separate from the itinerary pipeline: different prompt (no `day` field,
+// adds `city` + `confidence`), different return type, no Supabase persistence.
+// The itinerary functions above are unchanged for backward compatibility.
+
+export type SocialConfidence = 'high' | 'medium' | 'low';
+
+/** Raw extraction result from the LLM for a social caption. */
+export interface RawSocialPlace {
+  name: string;
+  /** City / area hint extracted from the caption — used for Mapbox proximity bias. */
+  city?: string;
+  type: string;
+  context: string;
+  confidence: SocialConfidence;
+}
+
+/** Geocoded, ready-to-display candidate returned to the frontend. */
+export interface SocialCandidate {
+  name: string;
+  lat: number;
+  lng: number;
+  type: PlaceType;
+  context: string;
+  confidence: SocialConfidence;
+  /** City / area hint if the caption mentioned one. */
+  city?: string;
+}
+
+const SOCIAL_EXTRACTION_SYSTEM =
+  `You are a place-extraction assistant. Extract every specifically named place from a social media caption. ` +
+  `Only include places with a proper name (a specific restaurant, landmark, beach, hotel, neighbourhood, etc.) — ` +
+  `not vague descriptions like "a little café" or "some viewpoint". Return ONLY a JSON array, no prose, no markdown fences.`;
+
+const SOCIAL_EXTRACTION_USER = (caption: string) =>
+  `Extract all named places from this social media caption. For each return:\n` +
+  `- name: the exact place name (as written or clearly implied)\n` +
+  `- city: the city or area it's in (omit if unknown)\n` +
+  `- type: one of "food" | "sight" | "nightlife" | "shop" | "accommodation" | "other"\n` +
+  `- context: the phrase or sentence that mentions this place\n` +
+  `- confidence: "high" (specific named venue) | "medium" (named neighbourhood/area) | "low" (only city implied)\n\n` +
+  `Caption:\n${caption.slice(0, 4000)}`;
+
+/**
+ * Parse the raw LLM JSON for social places. Returns [] on any error.
+ * Exported for unit testing.
+ */
+export function parseRawSocialPlacesJson(raw: string): RawSocialPlace[] {
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+  try {
+    const parsed: unknown = JSON.parse(cleaned);
+    if (!Array.isArray(parsed)) return [];
+    return (parsed as unknown[])
+      .filter(
+        (p) =>
+          p !== null &&
+          typeof p === 'object' &&
+          typeof (p as Record<string, unknown>).name === 'string' &&
+          typeof (p as Record<string, unknown>).type === 'string' &&
+          typeof (p as Record<string, unknown>).context === 'string'
+      )
+      .map((p): RawSocialPlace => {
+        const rec = p as Record<string, unknown>;
+        const conf = rec.confidence;
+        return {
+          name: rec.name as string,
+          city: typeof rec.city === 'string' ? rec.city : undefined,
+          type: rec.type as string,
+          context: rec.context as string,
+          confidence:
+            conf === 'high' || conf === 'medium' || conf === 'low' ? conf : 'medium',
+        };
+      });
+  } catch {
+    logger.warn({ sample: cleaned.slice(0, 200) }, 'SOCIAL_EXTRACT: JSON parse failed');
+    return [];
+  }
+}
+
+/** Call the LLM to extract raw place candidates from a social caption. */
+async function extractRawSocialPlaces(caption: string): Promise<RawSocialPlace[]> {
+  const model = process.env.OPENAI_FALLBACK_MODEL || 'gpt-4o-mini';
+  const response = await openai.chat.completions.create({
+    model,
+    messages: [
+      { role: 'system', content: SOCIAL_EXTRACTION_SYSTEM },
+      { role: 'user', content: SOCIAL_EXTRACTION_USER(caption) },
+    ],
+    max_completion_tokens: 1500,
+  });
+  const raw = response.choices[0]?.message?.content?.trim() ?? '[]';
+  return parseRawSocialPlacesJson(raw);
+}
+
+/**
+ * Extract named places from a social caption and geocode each one.
+ *
+ * Uses the `city` field extracted by the LLM as a Mapbox proximity bias so
+ * "Café Central" resolves to Vienna rather than some other city.
+ * City geocodes are deduplicated within the call so a caption mentioning
+ * the same city many times only fires one extra Mapbox request.
+ *
+ * Best-effort: places that fail to geocode are silently dropped.
+ */
+export async function extractAndGeocodeSocialPlaces(
+  caption: string
+): Promise<SocialCandidate[]> {
+  if (!caption.trim()) return [];
+
+  const rawPlaces = await extractRawSocialPlaces(caption);
+  if (!rawPlaces.length) return [];
+
+  // Pre-geocode unique city names so we reuse coords across places in the same city.
+  const cityCoordCache = new Map<string, { lat: number; lng: number } | null>();
+  const uniqueCities = [...new Set(rawPlaces.map((p) => p.city).filter(Boolean) as string[])];
+  await Promise.all(
+    uniqueCities.map(async (city) => {
+      // Prefer the geocode cache; fall back to a fresh Mapbox call.
+      const cached = await getCachedGeocode(city).catch(() => null);
+      if (cached) { cityCoordCache.set(city, cached); return; }
+      const coords = await geocodePlace(city); // unbiased — it IS the city
+      cityCoordCache.set(city, coords);
+      if (coords) void setCachedGeocode(city, coords.lat, coords.lng);
+    })
+  );
+
+  const settled = await Promise.allSettled(
+    rawPlaces.map(async (p): Promise<SocialCandidate | null> => {
+      const cityCoords = p.city ? cityCoordCache.get(p.city) : undefined;
+      const coords = await geocodePlace(
+        p.name,
+        cityCoords?.lat,
+        cityCoords?.lng
+      );
+      if (!coords) return null;
+
+      const validTypes: PlaceType[] = [
+        'food', 'sight', 'nightlife', 'shop', 'transport', 'accommodation',
+      ];
+      const type: PlaceType = validTypes.includes(p.type as PlaceType)
+        ? (p.type as PlaceType)
+        : 'sight';
+
+      return {
+        name: p.name,
+        lat: coords.lat,
+        lng: coords.lng,
+        type,
+        context: p.context,
+        confidence: p.confidence,
+        city: p.city,
+      };
+    })
+  );
+
+  return settled
+    .map((r) => (r.status === 'fulfilled' ? r.value : null))
+    .filter((c): c is SocialCandidate => c !== null);
 }
