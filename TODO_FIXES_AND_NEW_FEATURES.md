@@ -198,7 +198,7 @@ hold **private/external places** (imports, manual drops) that aren't in the publ
 
 ### C1. Migration
 
-- [ ] **C1.1** `supabase/migrations/<date>_add_saved_places.sql`:
+- [x] **C1.1** `supabase/migrations/<date>_add_saved_places.sql`:
   ```
   saved_places(
     id uuid pk default gen_random_uuid(),
@@ -225,13 +225,13 @@ hold **private/external places** (imports, manual drops) that aren't in the publ
 
 ### C2. Backend / data access
 
-- [ ] **C2.1** `src/features/savedPlaces/savedPlacesApi.ts`:
+- [x] **C2.1** `src/features/savedPlaces/savedPlacesApi.ts`:
   `listSavedPlaces(bounds?, { visited? })`, `addSavedPlace(input)`,
   `updateSavedPlace(id, patch)` (note/visited/category), `deleteSavedPlace(id)`,
   `saveCommunityPin(pin)` (writes a row with `pin_id` + `source:'community_pin'`).
   Reuse the bounding-box query shape from `pinApi.listPins`. **Done when** CRUD
   works and bbox filtering returns only in-view places.
-- [ ] **C2.2** `src/features/savedPlaces/useSavedPlaces.ts` — hook mirroring
+- [x] **C2.2** `src/features/savedPlaces/useSavedPlaces.ts` — hook mirroring
   `useBookmarks` (owns the set + optimistic toggles for `visited` and add/remove).
 
 ### C3. Frontend — the map + list
