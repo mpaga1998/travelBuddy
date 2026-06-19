@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { Skeleton } from '../../components/Skeleton';
 import { getMyProfile, type Profile } from './profileApi';
 import { ProfileInfoTab } from './tabs/ProfileInfoTab';
-import { BookmarkedPinsTab } from './tabs/BookmarkedPinsTab';
+import { MyPlacesTab } from './tabs/MyPlacesTab';
 import { SavedItinerariesTab } from './tabs/SavedItinerariesTab';
 
 type Props = {
@@ -122,7 +122,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
             onSignOut={onSignOut}
           />
         ) : selectedSection === 'saved' ? (
-          <BookmarkedPinsTab isMobile={isMobile} />
+          <MyPlacesTab isMobile={isMobile} />
         ) : selectedSection === 'itineraries' ? (
           <SavedItinerariesTab />
         ) : null}
@@ -182,11 +182,11 @@ function MenuScreen({ onPick }: { onPick: (s: Section) => void }) {
     },
     {
       section: 'saved',
-      emoji: '🔖',
-      label: '🔖 Saved',
-      color: '#16a34a',
-      shadow: '0 4px 12px rgba(22, 163, 74, 0.12)',
-      hoverBg: 'rgba(22, 163, 74, 0.05)',
+      emoji: '⭐',
+      label: '⭐ My Places',
+      color: '#45B4B9',
+      shadow: '0 4px 12px rgba(69, 180, 185, 0.12)',
+      hoverBg: 'rgba(69, 180, 185, 0.05)',
     },
     {
       section: 'itineraries',

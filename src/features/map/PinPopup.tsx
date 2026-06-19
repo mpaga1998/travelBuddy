@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Pin } from "../pins/pinTypes";
-import { isBookmarked, reportPin } from "../pins/pinApi";
+import { reportPin } from "../pins/pinApi";
 import { track } from '../../lib/analytics';
 import { PinComments } from "../pins/PinComments";
 import { categoryEmoji, MOBILE_BREAKPOINT } from "./mapConstants";
@@ -11,12 +11,8 @@ import { imgPopup } from "../../lib/imageTransforms";
 export type PinPopupProps = {
   pin: Pin;
   currentUserId: string | null;
-  /** True if the pin is in the user's bookmark set (parent's source of truth). */
-  isBookmarkedByUser: boolean;
   /** Fired on heart/broken-heart. Parent handles the API call + count refresh. */
   onReact?: (kind: "like" | "dislike") => void | Promise<void>;
-  /** Fired on bookmark button. Parent calls useBookmarks.toggle(pin.id). */
-  onToggleBookmark?: () => void | Promise<void>;
   /** Fired when the user wants to see the tips popover. */
   onShowTips: (tips: string[]) => void;
   /** Fired on the main image click — parent opens the lightbox. */
@@ -57,9 +53,7 @@ function pillBtnClass(extra = "") {
 export function PinPopup({
   pin,
   currentUserId,
-  isBookmarkedByUser,
   onReact,
-  onToggleBookmark,
   onShowTips,
   onShowImages,
   onRequestDelete,
@@ -70,36 +64,9 @@ export function PinPopup({
 }: PinPopupProps) {
   const isMobile = typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT;
 
-  // Confirm bookmark state against server once — the parent's set is an
-  // optimistic cache; if it disagrees with reality (e.g. bookmarked in
-  // another tab), we want the button to reflect truth.
-  const [bookmarkedConfirmed, setBookmarkedConfirmed] = useState<boolean | null>(null);
-  const [bookmarkBusy, setBookmarkBusy] = useState(false);
   const [saveToMyMapBusy, setSaveToMyMapBusy] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
-
-  useEffect(() => {
-    // Itinerary pins are ephemeral — skip the server round-trip.
-    if (isItineraryPin) {
-      setBookmarkedConfirmed(false);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const truth = await isBookmarked(pin.id);
-        if (!cancelled) setBookmarkedConfirmed(truth);
-      } catch {
-        if (!cancelled) setBookmarkedConfirmed(isBookmarkedByUser);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [pin.id, isItineraryPin]);
-
-  const bookmarked = bookmarkedConfirmed ?? isBookmarkedByUser;
 
   // Stop map clicks from bubbling — popup must feel isolated.
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
@@ -216,32 +183,6 @@ export function PinPopup({
               className={pillBtnClass("!bg-[#fffaeb] !text-[#b8860b] flex-[1_1_140px]")}
             >
               💡 Tips ({pin.tips.length})
-            </button>
-          )}
-
-          {!isItineraryPin && !isMyMapPin && (
-            <button
-              onClick={async (e) => {
-                e.stopPropagation();
-                if (bookmarkBusy) return;
-                setBookmarkBusy(true);
-                try {
-                  await onToggleBookmark?.();
-                  // Flip the confirmed state optimistically — parent will have
-                  // updated its set by now, but we drive our button off this.
-                  setBookmarkedConfirmed((prev) => !(prev ?? isBookmarkedByUser));
-                } finally {
-                  setBookmarkBusy(false);
-                }
-              }}
-              disabled={bookmarkBusy || bookmarkedConfirmed === null}
-              className={`flex-[1_1_100px] px-2.5 py-2 rounded-[10px] border-2 border-green-600 font-extrabold text-[13px] outline-none transition-all ${bookmarkBusy ? "cursor-wait" : "cursor-pointer"} ${bookmarked ? "bg-green-600 text-white" : "bg-white text-[#111]"}`}
-            >
-              {bookmarkedConfirmed === null
-                ? "⏳ Loading..."
-                : bookmarked
-                  ? "🔖 Bookmarked"
-                  : "🔖 Bookmark"}
             </button>
           )}
 

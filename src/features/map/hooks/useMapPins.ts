@@ -47,7 +47,7 @@ function getBoundsForZoom(map: MapboxMap): PinBounds | undefined {
   return getBoundsWithBuffer(map) ?? undefined;
 }
 
-export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null) {
+export function useMapPins(map: MapboxMap | null) {
   const [pins, setPins] = useState<Pin[]>([]);
   const [loading, setLoading] = useState(true);
   const [limitReached, setLimitReached] = useState(false);
@@ -130,14 +130,6 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
       setLoading(false);
       return;
     }
-    // Bookmarked mode: fetch without bounds so off-screen bookmarks appear.
-    // For traveler/hostel modes, wait for the map to mount before fetching —
-    // otherwise we kick off an unbounded query that races the bounded one
-    // dispatched milliseconds later when onMapReady fires, causing flicker.
-    if (mapType === "bookmarked") {
-      reload();
-      return;
-    }
     if (!map) return;
     reload(getBoundsForZoom(map));
   }, [reload, mapType, activeCategory, map]);
@@ -154,7 +146,6 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
     // — we skip those because a popup-recentering pan never brings new pins
     // into view, and a refetch there just churns the marker layer + popup.
     const onMoveEnd = (e: { originalEvent?: Event }) => {
-      if (mapTypeRef.current === "bookmarked") return;
       if (mapTypeRef.current === "my_map") return;
       if (!e.originalEvent) return;
       if (timer) clearTimeout(timer);
@@ -170,16 +161,11 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
     };
   }, [map, reload]);
 
-  // category and creatorType are now applied server-side in listPins.
-  // This memo only handles:
-  //   • bookmarked mode (pin-id set membership, purely client-side)
-  //   • age ranges (no DB column — derived from profiles.dob at query time)
+  // Age ranges have no DB column — derived from profiles.dob at query time.
+  // All other filtering (category, creatorType) is applied server-side in listPins.
   const filteredPins = useMemo(() => {
-    return pins.filter((p) => {
-      if (mapType === "bookmarked") return bookmarkedPinIds.has(p.id);
-      return isAgeInSelectedRanges(p.createdByAge, selectedAgeRanges);
-    });
-  }, [pins, selectedAgeRanges, mapType, bookmarkedPinIds]);
+    return pins.filter((p) => isAgeInSelectedRanges(p.createdByAge, selectedAgeRanges));
+  }, [pins, selectedAgeRanges]);
 
   return {
     pins,

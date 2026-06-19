@@ -241,7 +241,7 @@ hold **private/external places** (imports, manual drops) that aren't in the publ
   existing `PinLayer`/clustering with a **distinct marker style** (e.g. ★/heart,
   greyed when `visited`). Reuse everything — `PinLayer` already takes a pin list.
   **Done when** saved places cluster and render with their own style.
-- [ ] **C3.2 Manual add.** Reuse the existing draft-pin drop flow in `MapView`
+- [x] **C3.2 Manual add.** Reuse the existing draft-pin drop flow in `MapView`
   (long-press / "drop a pin" → the draft form), but in My-Map mode it writes to
   `saved_places` instead of public `pins`. Add a place search box (Mapbox
   geocoder) so users can add by name, not just by dropping. **Done when** a user
@@ -249,7 +249,7 @@ hold **private/external places** (imports, manual drops) that aren't in the publ
 - [x] **C3.3 Save from community.** Add a "Save to my map" (★) button in
   `PinPopup` next to the existing bookmark/report actions → `saveCommunityPin`.
   **Done when** a public pin appears on My Map with a back-reference.
-- [ ] **C3.4 List view + travel log.** New profile tab "My Places" (clone
+- [x] **C3.4 List view + travel log.** New profile tab "My Places" (clone
   `BookmarkedPinsTab` layout): grid/list of saved places, filter by
   want-to-visit / visited / city, edit note, toggle visited, "View on map",
   delete. **Done when** the tab lists, filters, and edits saved places.

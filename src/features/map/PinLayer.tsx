@@ -43,9 +43,7 @@ export type PinLayerProps = {
   onCloseSelection: () => void;
 
   currentUserId: string | null;
-  bookmarkedPinIds: Set<string>;
   onReact: (pin: Pin, kind: "like" | "dislike") => void | Promise<void>;
-  onToggleBookmark: (pin: Pin) => void | Promise<void>;
   onShowTips: (tips: string[]) => void;
   onShowImages: (urls: string[]) => void;
   onRequestDelete: (pin: Pin) => void;
@@ -78,9 +76,7 @@ export function PinLayer({
   onSelect,
   onCloseSelection,
   currentUserId,
-  bookmarkedPinIds,
   onReact,
-  onToggleBookmark,
   onShowTips,
   onShowImages,
   onRequestDelete,
@@ -444,9 +440,7 @@ export function PinLayer({
         <PinPopup
           pin={pin}
           currentUserId={currentUserId}
-          isBookmarkedByUser={bookmarkedPinIds.has(pin.id)}
           onReact={(kind) => onReact(pin, kind)}
-          onToggleBookmark={() => onToggleBookmark(pin)}
           onShowTips={onShowTips}
           onShowImages={onShowImages}
           onRequestDelete={() => onRequestDelete(pin)}

@@ -59,4 +59,4 @@ export function isAgeInSelectedRanges(age: number | null, selectedRanges: string
   });
 }
 
-export type MapType = "travelers" | "hostels" | "bookmarked" | "my_map";
+export type MapType = "travelers" | "hostels" | "my_map";

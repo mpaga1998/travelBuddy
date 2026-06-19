@@ -27,7 +27,6 @@ import { FilterBar } from "./FilterBar";
 import { MapEmptyState } from "./MapEmptyState";
 import { CATEGORIES, categoryEmoji } from "./mapConstants";
 import { useIsMobile } from "./hooks/useIsMobile";
-import { useBookmarks } from "./hooks/useBookmarks";
 import { useMapPins } from "./hooks/useMapPins";
 import { useSavedPlaces } from "../savedPlaces/useSavedPlaces";
 import type { SavedPlace } from "../savedPlaces/savedPlacesApi";
@@ -72,6 +71,14 @@ type DraftPin = {
   images: File[];
 };
 
+type MyMapDraft = {
+  lat: number;
+  lng: number;
+  title: string;
+  note: string;
+  category: string;
+};
+
 type MapViewProps = {
   onBack?: () => void;
   initialCenter?: { lng: number; lat: number } | null;
@@ -113,7 +120,6 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   }, []);
 
   // --- Data hooks ---------------------------------------------------------
-  const { bookmarkedPinIds, toggle: toggleBookmarkHook } = useBookmarks(currentUserId);
   const {
     filteredPins,
     loading,
@@ -125,7 +131,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     setActiveCategory,
     selectedAgeRanges,
     setSelectedAgeRanges,
-  } = useMapPins(bookmarkedPinIds, mapInstance);
+  } = useMapPins(mapInstance);
 
   const savedPlacesHook = useSavedPlaces(currentUserId);
 
@@ -147,6 +153,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   // --- Selection + draft + modals ----------------------------------------
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftPin | null>(null);
+  const [myMapDraft, setMyMapDraft] = useState<MyMapDraft | null>(null);
   const [itineraryModalOpen, setItineraryModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [tipsViewerOpen, setTipsViewerOpen] = useState(false);
@@ -158,6 +165,8 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   // Keep refs of draft/selection so the map-click callback doesn't capture stale state.
   const draftRef = useRef<DraftPin | null>(null);
   useEffect(() => { draftRef.current = draft; }, [draft]);
+  const myMapDraftRef = useRef<MyMapDraft | null>(null);
+  useEffect(() => { myMapDraftRef.current = myMapDraft; }, [myMapDraft]);
   const selectedPinIdRef = useRef<string | null>(null);
   useEffect(() => { selectedPinIdRef.current = selectedPinId; }, [selectedPinId]);
   const mapTypeRef = useRef(mapType);
@@ -186,9 +195,13 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       setSelectedPinId(null);
       return;
     }
-    if (draftRef.current) return;
-    // My Map mode: draft flow writes to saved_places (C3.2 — not yet implemented).
-    if (mapTypeRef.current === 'my_map') return;
+    if (draftRef.current || myMapDraftRef.current) return;
+
+    if (mapTypeRef.current === 'my_map') {
+      const locationName = await getLocationNameFromCoordinates(lngLat.lng, lngLat.lat);
+      setMyMapDraft({ lat: lngLat.lat, lng: lngLat.lng, title: locationName, note: '', category: 'other' });
+      return;
+    }
 
     const locationName = await getLocationNameFromCoordinates(lngLat.lng, lngLat.lat);
     setDraft({
@@ -228,15 +241,6 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       console.error("Delete failed:", e);
     }
   }, [reload]);
-
-  // --- Bookmarks bridge ---------------------------------------------------
-  const handleToggleBookmark = useCallback(async (pin: Pin) => {
-    try {
-      await toggleBookmarkHook(pin.id);
-    } catch (e) {
-      console.error("Bookmark toggle failed:", e);
-    }
-  }, [toggleBookmarkHook]);
 
   // --- Social import (C4.1 — persist confirmed places to saved_places) -----
   const handlePlaceSelected = useCallback(
@@ -284,6 +288,28 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     },
     [savedPlacesHook]
   );
+
+  // --- My Map draft submit (C3.2) -----------------------------------------
+  async function onSubmitMyMapDraft() {
+    if (!myMapDraft) return;
+    const title = myMapDraft.title.trim();
+    if (!title) return;
+    try {
+      await savedPlacesHook.add({
+        title,
+        note: myMapDraft.note.trim() || undefined,
+        category: myMapDraft.category,
+        lat: myMapDraft.lat,
+        lng: myMapDraft.lng,
+        source: 'manual',
+      });
+      setMyMapDraft(null);
+      toast.success('⭐ Place saved to My Map!');
+    } catch (e) {
+      console.error('My Map save failed:', e);
+      toast.error('Failed to save place.');
+    }
+  }
 
   // --- Draft submit -------------------------------------------------------
   async function onSubmitDraft() {
@@ -450,9 +476,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
             onSelect={(p) => { setDraft(null); setSelectedPinId(p.id); }}
             onCloseSelection={() => { setSelectedPinId(null); setTipsViewerOpen(false); }}
             currentUserId={currentUserId}
-            bookmarkedPinIds={bookmarkedPinIds}
             onReact={handleReact}
-            onToggleBookmark={handleToggleBookmark}
             onShowTips={(tips) => { setViewerTips(tips); setTipsViewerOpen(true); }}
             onShowImages={(urls) => showImageLightbox(urls)}
             onRequestDelete={handleRequestDelete}
@@ -479,13 +503,23 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
             </div>
           )}
 
-          {/* ---- Draft-pin modal (not split in 2.1 — next follow-up) ---- */}
+          {/* ---- Draft-pin modal (public pins) ---- */}
           {draft && (
             <DraftModal
               draft={draft}
               isMobile={isMobile}
               setDraft={setDraft}
               onSubmit={onSubmitDraft}
+            />
+          )}
+
+          {/* ---- My Map draft modal (saved_places) ---- */}
+          {myMapDraft && (
+            <MyMapDraftModal
+              draft={myMapDraft}
+              isMobile={isMobile}
+              setDraft={setMyMapDraft}
+              onSubmit={onSubmitMyMapDraft}
             />
           )}
 
@@ -820,6 +854,94 @@ function TipsViewer({
             </li>
           ))}
         </ul>
+      </div>
+    </div>
+  );
+}
+
+function MyMapDraftModal({
+  draft,
+  isMobile,
+  setDraft,
+  onSubmit,
+}: {
+  draft: MyMapDraft;
+  isMobile: boolean;
+  setDraft: (d: MyMapDraft | null) => void;
+  onSubmit: () => void | Promise<void>;
+}) {
+  const titleRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => { titleRef.current?.focus(); }, []);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Save to My Map"
+      onClick={() => setDraft(null)}
+      onKeyDown={(e) => { if (e.key === "Escape") setDraft(null); }}
+      tabIndex={-1}
+      className={`fixed inset-0 bg-black/25 flex justify-center z-[1000] ${isMobile ? "items-end p-0" : "items-center p-4"}`}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`bg-white shadow-[0_18px_48px_rgba(0,0,0,0.22)] ${
+          isMobile
+            ? "w-full rounded-t-2xl px-4 pt-4 pb-20 max-h-[80vh] overflow-auto"
+            : "w-[min(420px,100%)] rounded-2xl p-4"
+        }`}
+      >
+        <div className="flex justify-between gap-3 mb-3">
+          <div className="font-bold text-base">⭐ Save to My Map</div>
+          <button
+            onClick={() => setDraft(null)}
+            aria-label="Close"
+            className={`border-none bg-transparent text-lg cursor-pointer flex items-center justify-center ${
+              isMobile ? "p-2 w-11 h-11" : "p-1 w-8 h-8"
+            }`}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="grid gap-2.5">
+          <input
+            ref={titleRef}
+            value={draft.title}
+            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+            placeholder="Place name (required)"
+            className={draftInputClass}
+          />
+
+          <textarea
+            value={draft.note}
+            onChange={(e) => setDraft({ ...draft, note: e.target.value })}
+            placeholder="Note (optional)"
+            rows={2}
+            className={`${draftInputClass} resize-none font-[inherit] min-h-[80px]`}
+          />
+
+          <select
+            value={draft.category}
+            onChange={(e) => setDraft({ ...draft, category: e.target.value })}
+            className={draftInputClass}
+          >
+            {CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {categoryEmoji(c.value)} {c.label}
+              </option>
+            ))}
+            <option value="other">📍 Other</option>
+          </select>
+
+          <button
+            onClick={onSubmit}
+            disabled={!draft.title.trim()}
+            className="mt-1 w-full py-3 rounded-xl border-none bg-[#45B4B9] text-white font-bold text-base cursor-pointer disabled:opacity-50 disabled:cursor-default"
+          >
+            Save place
+          </button>
+        </div>
       </div>
     </div>
   );
