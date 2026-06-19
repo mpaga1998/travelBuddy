@@ -153,7 +153,7 @@ export function PinLayer({
       if (destroyed || map.getSource(SRC_CLUSTERS)) return;
 
       // Load all current pins into the index before adding sources.
-      scRef.current.load(pinsToInput(pinsRef.current));
+      scRef.current.load(pinsToInput(pinsRef.current, isMyMapModeRef.current, visitedSavedIdsRef.current));
 
       map.addSource(SRC_CLUSTERS, {
         type: "geojson",
