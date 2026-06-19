@@ -27,7 +27,13 @@ export const PIN_INTERACTIVE_LAYERS = [
 ];
 
 /** Properties stored on each input point feature for the Supercluster index. */
-type PinProps = { pinId: string; category: string; createdByType: string };
+type PinProps = {
+  pinId: string;
+  category: string;
+  createdByType: string;
+  isMyMap: boolean;
+  isMyMapVisited: boolean;
+};
 
 export type PinLayerProps = {
   map: MapboxMap | null;
@@ -43,6 +49,15 @@ export type PinLayerProps = {
   onShowTips: (tips: string[]) => void;
   onShowImages: (urls: string[]) => void;
   onRequestDelete: (pin: Pin) => void;
+
+  /** When true, all pins are My Map saved places — suppresses community UI. */
+  isMyMapMode?: boolean;
+  /** IDs of saved places that are marked visited (for distinct marker color). */
+  visitedSavedIds?: Set<string>;
+  /** Community pin IDs the user has already saved to My Map (drives ★ state). */
+  savedPinIds?: Set<string>;
+  /** Fires when user saves a community pin to My Map. */
+  onSaveToMyMap?: (pin: Pin) => void | Promise<void>;
 };
 
 /**
@@ -69,12 +84,21 @@ export function PinLayer({
   onShowTips,
   onShowImages,
   onRequestDelete,
+  isMyMapMode = false,
+  visitedSavedIds,
+  savedPinIds,
+  onSaveToMyMap,
 }: PinLayerProps) {
   // Refs kept fresh so the once-registered map listeners resolve latest values.
   const pinsRef = useRef<Pin[]>(pins);
   const onSelectRef = useRef(onSelect);
   useEffect(() => { pinsRef.current = pins; }, [pins]);
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
+
+  const isMyMapModeRef = useRef(isMyMapMode);
+  const visitedSavedIdsRef = useRef(visitedSavedIds ?? new Set<string>());
+  useEffect(() => { isMyMapModeRef.current = isMyMapMode; }, [isMyMapMode]);
+  useEffect(() => { visitedSavedIdsRef.current = visitedSavedIds ?? new Set(); }, [visitedSavedIds]);
 
   // Supercluster index — rebuilt whenever pins change.
   const scRef = useRef<Supercluster<PinProps>>(
@@ -187,6 +211,7 @@ export function PinLayer({
         ["pin-shop",      "🛍️"],
         ["pin-beach",     "🏖️"],
         ["pin-default",   "📍"],
+        ["pin-saved",     "⭐"],
       ];
       for (const [id, emoji] of EMOJI_MAP) {
         if (map.hasImage(id)) continue;
@@ -203,7 +228,8 @@ export function PinLayer({
         }
       }
 
-      // Circle background — black for hostels, blue for travelers.
+      // Circle background — teal for My Map pins, gray for visited My Map pins,
+      // black for hostels, blue for travelers (default).
       map.addLayer({
         id: L_UNCLUSTERED,
         type: "circle",
@@ -211,6 +237,10 @@ export function PinLayer({
         paint: {
           "circle-color": [
             "case",
+            ["all", ["==", ["get", "isMyMap"], true], ["==", ["get", "isMyMapVisited"], true]],
+            "#9ca3af",
+            ["==", ["get", "isMyMap"], true],
+            "#45B4B9",
             ["==", ["get", "createdByType"], "hostel"],
             "#111111",
             "#2563eb",
@@ -229,13 +259,18 @@ export function PinLayer({
         source: SRC_POINTS,
         layout: {
           "icon-image": [
-            "match", ["get", "category"],
-            "food",      "pin-food",
-            "nightlife", "pin-nightlife",
-            "sight",     "pin-sight",
-            "shop",      "pin-shop",
-            "beach",     "pin-beach",
-            "pin-default",
+            "case",
+            ["==", ["get", "isMyMap"], true],
+            "pin-saved",
+            [
+              "match", ["get", "category"],
+              "food",      "pin-food",
+              "nightlife", "pin-nightlife",
+              "sight",     "pin-sight",
+              "shop",      "pin-shop",
+              "beach",     "pin-beach",
+              "pin-default",
+            ],
           ],
           "icon-size": 0.5,
           "icon-allow-overlap": true,
@@ -324,10 +359,10 @@ export function PinLayer({
   // new data into the Supercluster index but never push it to the GL sources.
   useEffect(() => {
     if (!map) return;
-    scRef.current.load(pinsToInput(pins));
+    scRef.current.load(pinsToInput(pins, isMyMapModeRef.current, visitedSavedIdsRef.current));
     lastZoomRef.current = -1; // force render-loop to call updateClusters()
     updateClustersRef.current?.();
-  }, [map, pins]);
+  }, [map, pins, isMyMapMode, visitedSavedIds]);
 
   // --- Popup ref cleanup on unmount. --------------------------------------
   useEffect(() => {
@@ -415,6 +450,9 @@ export function PinLayer({
           onShowTips={onShowTips}
           onShowImages={onShowImages}
           onRequestDelete={() => onRequestDelete(pin)}
+          isMyMapPin={isMyMapModeRef.current}
+          isSavedOnMyMap={savedPinIds?.has(pin.id)}
+          onSaveToMyMap={onSaveToMyMap ? () => onSaveToMyMap(pin) : undefined}
         />
       );
     }, 400);
@@ -441,6 +479,9 @@ export function PinLayer({
         onShowTips={onShowTips}
         onShowImages={onShowImages}
         onRequestDelete={() => onRequestDelete(selectedPin)}
+        isMyMapPin={isMyMapMode}
+        isSavedOnMyMap={savedPinIds?.has(selectedPin.id)}
+        onSaveToMyMap={onSaveToMyMap ? () => onSaveToMyMap(selectedPin) : undefined}
       />
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -450,7 +491,11 @@ export function PinLayer({
 }
 
 /** Build the input feature array for Supercluster.load(). */
-function pinsToInput(pins: Pin[]): GeoJSON.Feature<GeoJSON.Point, PinProps>[] {
+function pinsToInput(
+  pins: Pin[],
+  isMyMapMode: boolean,
+  visitedSavedIds: Set<string>
+): GeoJSON.Feature<GeoJSON.Point, PinProps>[] {
   return pins.map((p) => ({
     type: "Feature",
     geometry: { type: "Point", coordinates: [p.lng, p.lat] },
@@ -458,6 +503,8 @@ function pinsToInput(pins: Pin[]): GeoJSON.Feature<GeoJSON.Point, PinProps>[] {
       pinId: p.id,
       category: p.category,
       createdByType: p.createdByType,
+      isMyMap: isMyMapMode,
+      isMyMapVisited: isMyMapMode && visitedSavedIds.has(p.id),
     },
   }));
 }

@@ -123,6 +123,13 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
   // changes; by the time reload() executes, activeCategoryRef has been synced
   // (React runs effects in declaration order within the same render).
   useEffect(() => {
+    // My Map mode: data comes from useSavedPlaces in MapView, not from pins.
+    if (mapType === "my_map") {
+      setPins([]);
+      setLimitReached(false);
+      setLoading(false);
+      return;
+    }
     // Bookmarked mode: fetch without bounds so off-screen bookmarks appear.
     // For traveler/hostel modes, wait for the map to mount before fetching —
     // otherwise we kick off an unbounded query that races the bounded one
@@ -148,6 +155,7 @@ export function useMapPins(bookmarkedPinIds: Set<string>, map: MapboxMap | null)
     // into view, and a refetch there just churns the marker layer + popup.
     const onMoveEnd = (e: { originalEvent?: Event }) => {
       if (mapTypeRef.current === "bookmarked") return;
+      if (mapTypeRef.current === "my_map") return;
       if (!e.originalEvent) return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {

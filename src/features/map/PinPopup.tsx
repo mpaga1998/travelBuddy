@@ -28,6 +28,15 @@ export type PinPopupProps = {
    * actions. The pin is ephemeral — no server round-trips are needed.
    */
   isItineraryPin?: boolean;
+  /**
+   * When true, the pin is a saved place (My Map mode) — hides community actions
+   * and shows My Map-specific UI instead.
+   */
+  isMyMapPin?: boolean;
+  /** True when this community pin is already saved to My Map. */
+  isSavedOnMyMap?: boolean;
+  /** Fired when user saves a community pin to My Map. */
+  onSaveToMyMap?: () => void | Promise<void>;
 };
 
 // Shared pill-button class. Accepts an extra string to compose variants
@@ -55,6 +64,9 @@ export function PinPopup({
   onShowImages,
   onRequestDelete,
   isItineraryPin = false,
+  isMyMapPin = false,
+  isSavedOnMyMap = false,
+  onSaveToMyMap,
 }: PinPopupProps) {
   const isMobile = typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT;
 
@@ -63,6 +75,7 @@ export function PinPopup({
   // another tab), we want the button to reflect truth.
   const [bookmarkedConfirmed, setBookmarkedConfirmed] = useState<boolean | null>(null);
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
+  const [saveToMyMapBusy, setSaveToMyMapBusy] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
 
@@ -140,7 +153,11 @@ export function PinPopup({
         </div>
 
         <div className="flex gap-2 flex-wrap mb-2.5">
-          {isItineraryPin ? (
+          {isMyMapPin ? (
+            <span className="px-2 py-1 rounded-full bg-[#45B4B9]/15 text-[#45B4B9] text-xs font-semibold">
+              ⭐ My Map
+            </span>
+          ) : isItineraryPin ? (
             <span className="px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-800 text-xs font-semibold">
               📋 From your itinerary
             </span>
@@ -175,7 +192,7 @@ export function PinPopup({
         </div>
 
         <div className="flex gap-1.5 flex-wrap mt-2">
-          {!isItineraryPin && (
+          {!isItineraryPin && !isMyMapPin && (
             <button
               onClick={(e) => { e.stopPropagation(); onReact?.("like"); }}
               className={pillBtnClass()}
@@ -184,7 +201,7 @@ export function PinPopup({
             </button>
           )}
 
-          {!isItineraryPin && (
+          {!isItineraryPin && !isMyMapPin && (
             <button
               onClick={(e) => { e.stopPropagation(); onReact?.("dislike"); }}
               className={pillBtnClass()}
@@ -202,7 +219,7 @@ export function PinPopup({
             </button>
           )}
 
-          {!isItineraryPin && (
+          {!isItineraryPin && !isMyMapPin && (
             <button
               onClick={async (e) => {
                 e.stopPropagation();
@@ -228,6 +245,29 @@ export function PinPopup({
             </button>
           )}
 
+          {/* ★ Save to My Map — shown for community pins when not already saved */}
+          {!isItineraryPin && !isMyMapPin && onSaveToMyMap && (
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (saveToMyMapBusy || isSavedOnMyMap) return;
+                setSaveToMyMapBusy(true);
+                try {
+                  await onSaveToMyMap();
+                } finally {
+                  setSaveToMyMapBusy(false);
+                }
+              }}
+              disabled={saveToMyMapBusy}
+              aria-label={isSavedOnMyMap ? "Saved to My Map" : "Save to My Map"}
+              className={`flex-[1_1_100px] px-2.5 py-2 rounded-[10px] border-2 font-extrabold text-[13px] outline-none transition-all ${
+                saveToMyMapBusy ? "cursor-wait" : isSavedOnMyMap ? "cursor-default" : "cursor-pointer"
+              } ${isSavedOnMyMap ? "border-[#45B4B9] bg-[#45B4B9] text-white" : "border-[#45B4B9] bg-white text-[#111]"}`}
+            >
+              {saveToMyMapBusy ? "⏳" : isSavedOnMyMap ? "⭐ Saved" : "⭐ My Map"}
+            </button>
+          )}
+
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -238,7 +278,7 @@ export function PinPopup({
             📍 Maps
           </button>
 
-          {!isItineraryPin && isOwnPin && (
+          {!isItineraryPin && !isMyMapPin && isOwnPin && (
             <button
               onClick={(e) => { e.stopPropagation(); onRequestDelete?.(); }}
               className="px-2.5 py-2 rounded-[10px] border-none bg-red-600 text-white cursor-pointer font-extrabold outline-none"
@@ -247,8 +287,8 @@ export function PinPopup({
             </button>
           )}
 
-          {/* Report — only shown to other users, not to the pin's author */}
-          {!isItineraryPin && !isOwnPin && (
+          {/* Report — only shown to other users, not to the pin's author or My Map pins */}
+          {!isItineraryPin && !isMyMapPin && !isOwnPin && (
             <button
               onClick={(e) => { e.stopPropagation(); setReportDialogOpen(true); }}
               disabled={reportBusy}
@@ -265,7 +305,7 @@ export function PinPopup({
             section manages its own load + state — opening a different pin
             recreates the popup root, which remounts PinComments with the
             new pinId, so we don't need an explicit refresh hook here. */}
-        {!isItineraryPin && (
+        {!isItineraryPin && !isMyMapPin && (
           <PinComments pinId={pin.id} currentUserId={currentUserId} />
         )}
       </div>

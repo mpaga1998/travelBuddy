@@ -236,7 +236,7 @@ hold **private/external places** (imports, manual drops) that aren't in the publ
 
 ### C3. Frontend — the map + list
 
-- [ ] **C3.1 "My Map" mode.** Add a toggle on the map (Community ⇄ My Map) in
+- [x] **C3.1 "My Map" mode.** Add a toggle on the map (Community ⇄ My Map) in
   `FilterBar`. In My-Map mode, `MapView` renders `saved_places` through the
   existing `PinLayer`/clustering with a **distinct marker style** (e.g. ★/heart,
   greyed when `visited`). Reuse everything — `PinLayer` already takes a pin list.
@@ -246,7 +246,7 @@ hold **private/external places** (imports, manual drops) that aren't in the publ
   `saved_places` instead of public `pins`. Add a place search box (Mapbox
   geocoder) so users can add by name, not just by dropping. **Done when** a user
   can add a place by dropping a pin *and* by searching a name.
-- [ ] **C3.3 Save from community.** Add a "Save to my map" (★) button in
+- [x] **C3.3 Save from community.** Add a "Save to my map" (★) button in
   `PinPopup` next to the existing bookmark/report actions → `saveCommunityPin`.
   **Done when** a public pin appears on My Map with a back-reference.
 - [ ] **C3.4 List view + travel log.** New profile tab "My Places" (clone
@@ -259,7 +259,7 @@ hold **private/external places** (imports, manual drops) that aren't in the publ
 
 ### C4. Cross-feature glue
 
-- [ ] **C4.1** Feature 1's confirm step (B2.2) calls `addSavedPlace` — the import
+- [x] **C4.1** Feature 1's confirm step (B2.2) calls `addSavedPlace` — the import
   *is* a write into this table. The two features share one destination.
 - [ ] **C4.2** Optional nicety: surface a small count badge ("12 places saved")
   and a "plan a trip around my saved places" button that pre-fills the itinerary

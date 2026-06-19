@@ -29,8 +29,34 @@ import { CATEGORIES, categoryEmoji } from "./mapConstants";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useBookmarks } from "./hooks/useBookmarks";
 import { useMapPins } from "./hooks/useMapPins";
+import { useSavedPlaces } from "../savedPlaces/useSavedPlaces";
+import type { SavedPlace } from "../savedPlaces/savedPlacesApi";
 
 const ITINERARY_FEATURE_ENABLED = true;
+
+function savedPlaceToPin(sp: SavedPlace): Pin {
+  return {
+    id: sp.id,
+    title: sp.title,
+    description: sp.note ?? '',
+    category: (sp.category as PinCategory) ?? 'other',
+    lat: sp.lat,
+    lng: sp.lng,
+    createdByLabel: sp.visited ? '✓ Visited' : 'Want to visit',
+    createdByType: 'traveler',
+    createdById: sp.userId,
+    createdByAge: null,
+    createdByHandle: null,
+    likesCount: 0,
+    dislikesCount: 0,
+    bookmarkCount: 0,
+    reportCount: 0,
+    commentCount: 0,
+    tips: [],
+    imageUrls: [],
+    createdAt: sp.createdAt,
+  };
+}
 
 // Shared input class for text/textarea/select in the draft modal.
 const draftInputClass =
@@ -101,6 +127,23 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     setSelectedAgeRanges,
   } = useMapPins(bookmarkedPinIds, mapInstance);
 
+  const savedPlacesHook = useSavedPlaces(currentUserId);
+
+  // Pins to render — community pins when in a public mode, saved places in My Map mode.
+  const displayPins = useMemo(
+    () =>
+      mapType === 'my_map'
+        ? savedPlacesHook.places.map(savedPlaceToPin)
+        : filteredPins,
+    [mapType, savedPlacesHook.places, filteredPins]
+  );
+
+  // IDs of saved places that are already visited (drives gray marker).
+  const visitedSavedIds = useMemo(
+    () => new Set(savedPlacesHook.places.filter((p) => p.visited).map((p) => p.id)),
+    [savedPlacesHook.places]
+  );
+
   // --- Selection + draft + modals ----------------------------------------
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftPin | null>(null);
@@ -117,10 +160,12 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   useEffect(() => { draftRef.current = draft; }, [draft]);
   const selectedPinIdRef = useRef<string | null>(null);
   useEffect(() => { selectedPinIdRef.current = selectedPinId; }, [selectedPinId]);
+  const mapTypeRef = useRef(mapType);
+  useEffect(() => { mapTypeRef.current = mapType; }, [mapType]);
 
   const selectedPin: Pin | null = useMemo(
-    () => filteredPins.find((p) => p.id === selectedPinId) ?? null,
-    [filteredPins, selectedPinId]
+    () => displayPins.find((p) => p.id === selectedPinId) ?? null,
+    [displayPins, selectedPinId]
   );
 
   // Close popup when switching map types.
@@ -142,6 +187,8 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       return;
     }
     if (draftRef.current) return;
+    // My Map mode: draft flow writes to saved_places (C3.2 — not yet implemented).
+    if (mapTypeRef.current === 'my_map') return;
 
     const locationName = await getLocationNameFromCoordinates(lngLat.lng, lngLat.lat);
     setDraft({
@@ -191,20 +238,51 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
     }
   }, [toggleBookmarkHook]);
 
-  // --- Social import -------------------------------------------------------
+  // --- Social import (C4.1 — persist confirmed places to saved_places) -----
   const handlePlaceSelected = useCallback(
-    (candidate: SocialCandidate, _attribution: SocialAttribution) => {
+    async (candidate: SocialCandidate, attribution: SocialAttribution) => {
       setImportModalOpen(false);
-      // Fly the map to the confirmed place so the user sees it immediately.
-      // Part C will also persist it to saved_places once that table exists.
       mapRef.current?.flyTo({
         center: [candidate.lng, candidate.lat],
         zoom: 15,
         duration: 900,
       });
-      toast.success(`📍 Showing ${candidate.name} on the map`);
+      try {
+        const src = attribution.sourceUrl.includes('tiktok')
+          ? 'tiktok'
+          : attribution.sourceUrl.includes('pinterest')
+          ? 'pinterest'
+          : 'manual';
+        await savedPlacesHook.add({
+          title: candidate.name,
+          lat: candidate.lat,
+          lng: candidate.lng,
+          category: candidate.type,
+          city: candidate.city,
+          source: src,
+          sourceUrl: attribution.sourceUrl,
+          sourceAuthor: attribution.author,
+        });
+        toast.success(`⭐ ${candidate.name} saved to My Map!`);
+      } catch {
+        toast.success(`📍 Showing ${candidate.name} on the map`);
+      }
     },
-    []
+    [savedPlacesHook]
+  );
+
+  // --- Save community pin to My Map (C3.3) ---------------------------------
+  const handleSaveToMyMap = useCallback(
+    async (pin: Pin) => {
+      try {
+        await savedPlacesHook.savePin(pin);
+        toast.success(`⭐ Saved to My Map!`);
+      } catch (e) {
+        toast.error('Failed to save to My Map.');
+        console.error(e);
+      }
+    },
+    [savedPlacesHook]
   );
 
   // --- Draft submit -------------------------------------------------------
@@ -367,7 +445,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
 
           <PinLayer
             map={mapRef.current}
-            pins={filteredPins}
+            pins={displayPins}
             selectedPin={selectedPin}
             onSelect={(p) => { setDraft(null); setSelectedPinId(p.id); }}
             onCloseSelection={() => { setSelectedPinId(null); setTipsViewerOpen(false); }}
@@ -378,11 +456,15 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
             onShowTips={(tips) => { setViewerTips(tips); setTipsViewerOpen(true); }}
             onShowImages={(urls) => showImageLightbox(urls)}
             onRequestDelete={handleRequestDelete}
+            isMyMapMode={mapType === 'my_map'}
+            visitedSavedIds={visitedSavedIds}
+            savedPinIds={savedPlacesHook.savedPinIds}
+            onSaveToMyMap={handleSaveToMyMap}
           />
 
           <CompassButton map={mapInstance} />
 
-          {!loading && mapRef.current && filteredPins.length === 0 && !emptyStateDismissed && (
+          {!loading && !savedPlacesHook.loading && mapRef.current && displayPins.length === 0 && !emptyStateDismissed && (
             <MapEmptyState
               onPlanTrip={() => setItineraryModalOpen(true)}
               onDropPin={() => setEmptyStateDismissed(true)}

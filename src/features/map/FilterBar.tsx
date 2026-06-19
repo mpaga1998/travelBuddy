@@ -92,7 +92,7 @@ export function FilterBar({
           <div className="flex gap-2 items-center">
             <MapTypeToggle mapType={mapType} setMapType={setMapType} />
 
-            {mapType !== "bookmarked" && (
+            {mapType !== "bookmarked" && mapType !== "my_map" && (
               <select
                 value={activeCategory}
                 onChange={(e) => setActiveCategory(e.target.value as PinCategory | "all")}
@@ -204,7 +204,8 @@ function MapTypeToggle({
     <div className="flex rounded-[10px] border border-black/[0.18] bg-white p-0.5">
       {pill("travelers", "#2563eb", "👥 Travelers", "Show pins from travelers")}
       {pill("hostels", "#111", "🏫 Hostels", "Show pins from hostels")}
-      {pill("bookmarked", "#16a34a", "🔖 Your Map", "Show your bookmarked pins")}
+      {pill("bookmarked", "#16a34a", "🔖 Bookmarked", "Show your bookmarked pins")}
+      {pill("my_map", "#45B4B9", "⭐ My Map", "Show your personal saved places")}
     </div>
   );
 }
