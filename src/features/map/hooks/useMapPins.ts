@@ -81,15 +81,13 @@ export function useMapPins(map: MapboxMap | null) {
       const cat = activeCategoryRef.current;
 
       const filters: PinFilters = { bounds };
-      if (mt !== "bookmarked") {
-        // Push category and creatorType to the SQL query to reduce data transfer.
-        // Age ranges are intentionally excluded here — there is no created_by_age
-        // column in the database; age is derived from profiles.dob in the mapping
-        // layer. Age filtering remains in the client-side useMemo below.
-        if (cat !== "all") filters.category = cat;
-        if (mt === "travelers") filters.creatorType = "traveler";
-        else if (mt === "hostels") filters.creatorType = "hostel";
-      }
+      // Push category and creatorType to the SQL query to reduce data transfer.
+      // Age ranges are intentionally excluded here — there is no created_by_age
+      // column in the database; age is derived from profiles.dob in the mapping
+      // layer. Age filtering remains in the client-side useMemo below.
+      if (cat !== "all") filters.category = cat;
+      if (mt === "travelers") filters.creatorType = "traveler";
+      else if (mt === "hostels") filters.creatorType = "hostel";
 
       const { pins: data, limitReached: lr } = await listPins(filters);
       // Stale response — a newer reload() has been dispatched. Drop silently

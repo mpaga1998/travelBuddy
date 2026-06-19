@@ -467,9 +467,7 @@ export function PinLayer({
       <PinPopup
         pin={selectedPin}
         currentUserId={currentUserId}
-        isBookmarkedByUser={bookmarkedPinIds.has(selectedPin.id)}
         onReact={(kind) => onReact(selectedPin, kind)}
-        onToggleBookmark={() => onToggleBookmark(selectedPin)}
         onShowTips={onShowTips}
         onShowImages={onShowImages}
         onRequestDelete={() => onRequestDelete(selectedPin)}
@@ -479,7 +477,7 @@ export function PinLayer({
       />
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPin, bookmarkedPinIds, currentUserId]);
+  }, [selectedPin, currentUserId]);
 
   return null;
 }

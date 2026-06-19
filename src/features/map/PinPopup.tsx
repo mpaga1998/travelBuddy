@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import type { Pin } from "../pins/pinTypes";
 import { reportPin } from "../pins/pinApi";
