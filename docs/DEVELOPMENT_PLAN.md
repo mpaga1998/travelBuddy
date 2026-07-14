@@ -55,7 +55,7 @@ Every item has a **Done when** — if it can't be checked, it isn't done.
 
 | ID | Status | Item | Effort | Depends on | Done when |
 |---|---|---|---|---|---|
-| A1 **M1** | 🟡 | Publish import as public pin: on import confirm, offer "also share as a public pin" → existing `createPin` with attribution (source URL + author) | 1 day | — | An imported place can become a public pin in one tap, with attribution rendered in the popup |
+| A1 **M1** | ✅ 2026-07-14 | Publish import as public pin: on import confirm, offer "also share as a public pin" → existing `createPin` with attribution (source URL + author) | 1 day | — | An imported place can become a public pin in one tap, with attribution rendered in the popup |
 | A2 **M1** | ⬜ | Seed 100–300 pins across launch cities (Lisbon, Porto, Barcelona, Berlin, Prague, Split, Kraków, Naples — trim to 5 if needed) | 1–2 weeks, not code | A1 | Every launch city shows ≥ 20 quality pins in its default viewport |
 
 > A1 is unblocked **today** and starts the seeding clock — the project's longest pole.
@@ -65,7 +65,7 @@ Every item has a **Done when** — if it can't be checked, it isn't done.
 
 | ID | Status | Item | Effort | Depends on | Done when |
 |---|---|---|---|---|---|
-| B1 **M1** | ⬜ | Design tokens: fill `tailwind.config.cjs` theme (brand/dusk/peach/lace scales, semantic surface/ink/muted, radii, shadows, font) + CI grep banning raw hex outside the config and `PinLayer.tsx` GL expressions | 1 day | — | Config populated; CI fails on new raw hex; existing violations inventoried |
+| B1 **M1** | ✅ 2026-07-14 | Design tokens: fill `tailwind.config.cjs` theme (brand/dusk/peach/lace scales, semantic surface/ink/muted, radii, shadows, font) + CI grep banning raw hex outside the config and `PinLayer.tsx` GL expressions | 1 day | — | Config populated; CI fails on new raw hex; existing violations inventoried |
 | B2 **M1** | ⬜ | Component library `src/components/ui/`: Button, Card, Modal, Input/Textarea/Select, Pill, EmptyState, Avatar (hand-rolled, ~40 lines each — **not** shadcn) | 3 days | B1 | All 7 exist with variants; Modal consolidates the 6 hand-rolled dialogs' Escape/backdrop/focus handling |
 | B3 **M1** | ⬜ | Surface migration in first-impression order: map (MapView/PinPopup/FilterBar) → itinerary → profile → feed/notifications | 4 days | B2 | Zero legacy-palette classes (`#0066cc`, `#2563eb`, `#ff8c00`) remain in migrated surfaces |
 | B4 **M1** | ⬜ | Visual identity: custom Mapbox Studio style in nook palette · custom pin mark from `NOOK-03.svg` · typeface + type scale · pin-drop/popup/fly-to motion | 2 days | B1 | Map renders the custom style; new pin mark in place; font loaded with fallback |
@@ -74,7 +74,7 @@ Every item has a **Done when** — if it can't be checked, it isn't done.
 
 | ID | Status | Item | Effort | Depends on | Done when |
 |---|---|---|---|---|---|
-| P1 **M1** | ⬜ | Token-usage logging: log `usage` from every LLM response in `api/lib/llm.ts` (3-line change) + cache hit/miss counter | ½ day | — | Every generation logs tokens in/out + cache status, queryable in Vercel logs |
+| P1 **M1** | 🟡 | Token-usage logging: log `usage` from every LLM response in `api/lib/llm.ts` (3-line change) + cache hit/miss counter | ½ day | — | Every generation logs tokens in/out + cache status, queryable in Vercel logs |
 | P2 **M1** | ⬜ | PWA shell: manifest, icons from `NOOK-03.svg`, service worker (offline shell + map-tile cache), iOS meta tags, install prompt | 1½ days | B4 | Lighthouse PWA installable pass; add-to-home-screen works on iOS + Android |
 | P3 **M1** | ⬜ | Custom domain + HTTPS on Vercel | ½ day | — | App serves on the real domain; `ALLOWED_ORIGINS` updated |
 | P4 **M1** | ⬜ | Cookie consent banner + privacy-policy update adding `saved_places` (location-intent data) to the GDPR data inventory | ½ day | — | Consent gate live defaulting to decline-non-essential; policy names saved_places |

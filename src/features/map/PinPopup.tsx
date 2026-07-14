@@ -171,11 +171,11 @@ export function PinPopup({
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="px-2 py-1 rounded-full bg-black/[0.05] text-xs text-slate-600 no-underline hover:bg-black/[0.1] transition-colors"
+              className="inline-block max-w-full truncate px-2 py-1 rounded-full bg-black/[0.05] text-xs text-slate-600 no-underline hover:bg-black/[0.1] transition-colors"
               title="View the original post"
             >
               via {SOCIAL_PLATFORM_LABEL[pin.sourcePlatform ?? ''] ?? 'social'}
-              {pin.sourceAuthor ? ` · @${pin.sourceAuthor}` : ''} ↗
+              {pin.sourceAuthor ? ` · @${pin.sourceAuthor}` : ''}{' ↗'}
             </a>
           )}
         </div>

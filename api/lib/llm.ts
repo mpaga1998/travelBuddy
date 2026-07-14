@@ -102,16 +102,31 @@ async function initiateOpenAI(
   const stream = await client.chat.completions.create({
     model,
     stream: true,
+    // P1: the final chunk carries token usage when include_usage is set.
+    stream_options: { include_usage: true },
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
     max_completion_tokens: options.maxTokens,
     ...(options.temperature !== undefined && { temperature: options.temperature }),
   });
 
   return (async function* () {
+    let usage: OpenAI.CompletionUsage | undefined;
     for await (const chunk of stream) {
+      if (chunk.usage) usage = chunk.usage;
       const delta = chunk.choices[0]?.delta?.content;
       if (delta) yield delta;
     }
+    // P1: unit-economics source of truth — € per itinerary derives from this line.
+    logger.info(
+      {
+        provider: 'openai',
+        model,
+        promptTokens: usage?.prompt_tokens ?? null,
+        completionTokens: usage?.completion_tokens ?? null,
+        totalTokens: usage?.total_tokens ?? null,
+      },
+      'LLM: usage',
+    );
   })();
 }
 
@@ -145,7 +160,15 @@ async function initiateAnthropic(
   });
 
   return (async function* () {
+    let inputTokens: number | null = null;
+    let outputTokens: number | null = null;
     for await (const event of stream) {
+      if (event.type === 'message_start') {
+        inputTokens = event.message.usage.input_tokens;
+      }
+      if (event.type === 'message_delta' && event.usage) {
+        outputTokens = event.usage.output_tokens; // cumulative — last one wins
+      }
       if (
         event.type === 'content_block_delta' &&
         event.delta.type === 'text_delta'
@@ -153,6 +176,17 @@ async function initiateAnthropic(
         yield event.delta.text;
       }
     }
+    // P1: unit-economics source of truth — € per itinerary derives from this line.
+    logger.info(
+      {
+        provider: 'anthropic',
+        model,
+        promptTokens: inputTokens,
+        completionTokens: outputTokens,
+        totalTokens: inputTokens !== null && outputTokens !== null ? inputTokens + outputTokens : null,
+      },
+      'LLM: usage',
+    );
   })();
 }
 

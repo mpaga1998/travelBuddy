@@ -87,11 +87,19 @@ export async function getCachedItinerary(
       .eq('trip_key', tripKey)
       .single();
 
-    if (error || !data) return null;
+    if (error || !data) {
+      // P1: log misses too — hit-rate (hits / hits+misses) is a margin lever
+      // for the unit-economics table; every hit is a free itinerary.
+      logger.info({ userId, tripKey: tripKey.slice(0, 8) }, 'ITINERARY_CACHE: miss');
+      return null;
+    }
 
     // 24-hour TTL check
     const age = Date.now() - new Date(data.created_at as string).getTime();
-    if (age > TTL_MS) return null;
+    if (age > TTL_MS) {
+      logger.info({ userId, tripKey: tripKey.slice(0, 8) }, 'ITINERARY_CACHE: miss (expired)');
+      return null;
+    }
 
     logger.info({ userId, tripKey: tripKey.slice(0, 8) }, 'ITINERARY_CACHE: hit');
     return data.markdown as string;

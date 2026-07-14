@@ -18,7 +18,8 @@
     "test:e2e:install": "playwright install --with-deps chromium",
     "test:unit": "vitest run",
     "eval": "tsx tests/evals/runner.ts",
-    "plan": "node scripts/plan-status.mjs"
+    "plan": "node scripts/plan-status.mjs",
+    "check:hex": "node scripts/check-hex.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",

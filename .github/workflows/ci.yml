@@ -27,6 +27,11 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
+      - name: Design-token hex ratchet
+        # B1: fails when new raw hex literals appear in src/ — use the tokens
+        # in tailwind.config.cjs instead. See scripts/check-hex.mjs.
+        run: node scripts/check-hex.mjs
+
       - name: Lint
         # Shell guard so the step is skipped rather than failing when the
         # 'lint' script isn't present (e.g. in a fresh fork).
