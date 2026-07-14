@@ -85,9 +85,11 @@ export interface ItineraryFormProps {
    * yet (still loading), default to traveler in render-time fallback.
    */
   userRole?: 'traveler' | 'hostel' | null;
+  /** C4.2: pre-fills the "places to visit" textarea, e.g. from My Map saved places. */
+  initialAttractions?: string;
 }
 
-export function ItineraryForm({ onSubmit, error, isMobile, userRole }: ItineraryFormProps) {
+export function ItineraryForm({ onSubmit, error, isMobile, userRole, initialAttractions }: ItineraryFormProps) {
   // Treat unknown / loading role as traveler so we don't make travelers
   // wait an extra render to see the wedge picker.
   const showTripType = userRole !== 'hostel';
@@ -97,7 +99,7 @@ export function ItineraryForm({ onSubmit, error, isMobile, userRole }: Itinerary
   const [departureDate, setDepartureDate] = useState('');
   const [departureTime, setDepartureTime] = useState<'morning' | 'afternoon' | 'night' | ''>('');
   const [departureLocation, setDepartureLocation] = useState('');
-  const [attractions, setAttractions] = useState('');
+  const [attractions, setAttractions] = useState(initialAttractions ?? '');
   const [travelPace, setTravelPace] = useState<'relaxed' | 'moderate' | 'active'>('moderate');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [customInterestInput, setCustomInterestInput] = useState('');

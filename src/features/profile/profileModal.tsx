@@ -5,11 +5,14 @@ import { getMyProfile, type Profile } from './profileApi';
 import { ProfileInfoTab } from './tabs/ProfileInfoTab';
 import { MyPlacesTab } from './tabs/MyPlacesTab';
 import { SavedItinerariesTab } from './tabs/SavedItinerariesTab';
+import { countSavedPlaces } from '../savedPlaces/savedPlacesApi';
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onSignedOut: () => void;
+  /** C4.2: forwarded from MyPlacesTab — parent should close this modal and open the itinerary planner. */
+  onPlanTrip?: (titles: string[]) => void;
 };
 
 type Section = 'menu' | 'profile' | 'saved' | 'itineraries';
@@ -39,13 +42,14 @@ function normalizeDobForDateInput(raw: string | null | undefined): string {
  *
  * Each tab owns its own data-loading, error state, and detail-view state.
  */
-export function ProfileModal({ open, onClose, onSignedOut }: Props) {
+export function ProfileModal({ open, onClose, onSignedOut, onPlanTrip }: Props) {
   const [loading, setLoading] = useState(true);
   const [selectedSection, setSelectedSection] = useState<Section>('menu');
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState<string>('');
   const [err, setErr] = useState<string | null>(null);
+  const [savedPlacesCount, setSavedPlacesCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -55,11 +59,16 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
       setProfile(null);
       setEmail('');
       setErr(null);
+      setSavedPlacesCount(null);
       return;
     }
 
     setLoading(true);
     setErr(null);
+
+    // C4.2: badge count is best-effort and independent of the profile load —
+    // a failure here shouldn't block the menu from opening.
+    countSavedPlaces().then(setSavedPlacesCount).catch(() => setSavedPlacesCount(null));
 
     (async () => {
       try {
@@ -101,7 +110,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
         />
 
         {selectedSection === 'menu' ? (
-          <MenuScreen onPick={(s) => setSelectedSection(s)} />
+          <MenuScreen onPick={(s) => setSelectedSection(s)} savedPlacesCount={savedPlacesCount} />
         ) : loading ? (
           <LoadingScreen isMobile={isMobile} />
         ) : err ? (
@@ -122,7 +131,7 @@ export function ProfileModal({ open, onClose, onSignedOut }: Props) {
             onSignOut={onSignOut}
           />
         ) : selectedSection === 'saved' ? (
-          <MyPlacesTab isMobile={isMobile} />
+          <MyPlacesTab isMobile={isMobile} onPlanTrip={onPlanTrip} />
         ) : selectedSection === 'itineraries' ? (
           <SavedItinerariesTab />
         ) : null}
@@ -163,7 +172,13 @@ function ModalHeader({
   );
 }
 
-function MenuScreen({ onPick }: { onPick: (s: Section) => void }) {
+function MenuScreen({
+  onPick,
+  savedPlacesCount,
+}: {
+  onPick: (s: Section) => void;
+  savedPlacesCount: number | null;
+}) {
   const items: Array<{
     section: Exclude<Section, 'menu'>;
     emoji: string;
@@ -207,7 +222,7 @@ function MenuScreen({ onPick }: { onPick: (s: Section) => void }) {
             onClick={() => onPick(item.section)}
             onTouchStart={(e) => e.preventDefault()}
             type="button"
-            className="w-full max-w-[300px] px-6 py-5 rounded-2xl bg-white cursor-pointer text-base font-bold transition-all"
+            className="relative w-full max-w-[300px] px-6 py-5 rounded-2xl bg-white cursor-pointer text-base font-bold transition-all"
             style={{
               border: `2px solid ${item.color}`,
               color: item.color,
@@ -221,6 +236,14 @@ function MenuScreen({ onPick }: { onPick: (s: Section) => void }) {
             }}
           >
             {item.label}
+            {item.section === 'saved' && !!savedPlacesCount && (
+              <span
+                className="absolute -top-2 -right-2 min-w-[24px] h-6 px-1.5 rounded-full bg-[#45B4B9] text-white text-xs font-bold flex items-center justify-center"
+                aria-label={`${savedPlacesCount} places saved`}
+              >
+                {savedPlacesCount > 99 ? '99+' : savedPlacesCount}
+              </span>
+            )}
           </button>
         </div>
       ))}

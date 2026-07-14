@@ -253,7 +253,7 @@ hold **private/external places** (imports, manual drops) that aren't in the publ
   `BookmarkedPinsTab` layout): grid/list of saved places, filter by
   want-to-visit / visited / city, edit note, toggle visited, "View on map",
   delete. **Done when** the tab lists, filters, and edits saved places.
-- [ ] **C3.5 Feed itineraries.** "Add to my map" on extracted itinerary places
+- [x] **C3.5 Feed itineraries.** "Add to my map" on extracted itinerary places
   (`itinerary_places` already exist) → `saved_places` with `source:'itinerary'`.
   Closes the loop: planned trip → saved places → mark visited → pin it publicly.
 
@@ -261,7 +261,7 @@ hold **private/external places** (imports, manual drops) that aren't in the publ
 
 - [x] **C4.1** Feature 1's confirm step (B2.2) calls `addSavedPlace` — the import
   *is* a write into this table. The two features share one destination.
-- [ ] **C4.2** Optional nicety: surface a small count badge ("12 places saved")
+- [x] **C4.2** Optional nicety: surface a small count badge ("12 places saved")
   and a "plan a trip around my saved places" button that pre-fills the itinerary
   form with the user's saved places as `desiredAttractions`. Strong tie-in with
   the existing AI generator and a real retention hook.

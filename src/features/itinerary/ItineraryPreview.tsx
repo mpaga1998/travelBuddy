@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { openVenueInMapsSync } from '../../lib/venueGeocoding';
+import { toast } from 'sonner';
+import { openVenueInMapsSync, geocodeVenueDetailed } from '../../lib/venueGeocoding';
+import { addSavedPlace } from '../savedPlaces/savedPlacesApi';
 
 export interface ItineraryPreviewProps {
   markdown: string;
@@ -8,6 +11,43 @@ export interface ItineraryPreviewProps {
 }
 
 export function ItineraryPreview({ markdown, isStreaming }: ItineraryPreviewProps) {
+  // C3.5: tracks per-venue "added to My Map" state so the ⭐ button can flip
+  // to a checkmark and repeat clicks on the same venue are a no-op. Keyed by
+  // "venueName|city" since that's the unique identity a mapbox: link carries.
+  const [addedVenues, setAddedVenues] = useState<Set<string>>(new Set());
+  const [busyVenues, setBusyVenues] = useState<Set<string>>(new Set());
+
+  const handleAddToMyMap = async (venueName: string, city: string) => {
+    const key = `${venueName}|${city}`;
+    if (addedVenues.has(key) || busyVenues.has(key)) return;
+    setBusyVenues((prev) => new Set(prev).add(key));
+    try {
+      const geo = await geocodeVenueDetailed(venueName, city);
+      if (!geo) {
+        toast.error(`Couldn't locate "${venueName}" on the map.`);
+        return;
+      }
+      await addSavedPlace({
+        title: venueName,
+        lat: geo.lat,
+        lng: geo.lng,
+        city: city || undefined,
+        source: 'itinerary',
+      });
+      setAddedVenues((prev) => new Set(prev).add(key));
+      toast.success(`⭐ ${venueName} saved to My Map!`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save place.';
+      toast.error(message);
+    } finally {
+      setBusyVenues((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  };
+
   return (
     <div>
       {isStreaming && (
@@ -78,21 +118,41 @@ export function ItineraryPreview({ markdown, isStreaming }: ItineraryPreviewProp
                 const city = match ? match[2] : '';
                 const encodedQuery = encodeURIComponent(city ? `${decodedVenue} ${city}` : decodedVenue);
                 const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
+                const key = `${decodedVenue}|${city}`;
+                const added = addedVenues.has(key);
+                const busy = busyVenues.has(key);
                 return (
-                  <a
-                    href={fallbackUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      // openVenueInMapsSync calls window.open synchronously within
-                      // the user gesture, satisfying mobile popup blockers.
-                      openVenueInMapsSync(decodedVenue, city);
-                    }}
-                    className="text-sky-700 underline decoration-dotted underline-offset-2 cursor-pointer hover:decoration-solid"
-                  >
-                    📍 {children}
-                  </a>
+                  <span className="inline-flex items-center gap-1">
+                    <a
+                      href={fallbackUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // openVenueInMapsSync calls window.open synchronously within
+                        // the user gesture, satisfying mobile popup blockers.
+                        openVenueInMapsSync(decodedVenue, city);
+                      }}
+                      className="text-sky-700 underline decoration-dotted underline-offset-2 cursor-pointer hover:decoration-solid"
+                    >
+                      📍 {children}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleAddToMyMap(decodedVenue, city);
+                      }}
+                      disabled={busy || added}
+                      title={added ? 'Saved to My Map' : 'Add to My Map'}
+                      aria-label={added ? `${decodedVenue} saved to My Map` : `Add ${decodedVenue} to My Map`}
+                      className={`inline-flex items-center justify-center text-xs leading-none border-none bg-transparent p-0.5 ${
+                        added ? 'text-[#45B4B9] cursor-default' : busy ? 'text-gray-300 cursor-wait' : 'text-gray-400 hover:text-[#45B4B9] cursor-pointer'
+                      }`}
+                    >
+                      {busy ? '⏳' : added ? '⭐' : '☆'}
+                    </button>
+                  </span>
                 );
               }
               return (

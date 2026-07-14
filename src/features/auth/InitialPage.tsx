@@ -30,6 +30,10 @@ const topRoundBtnClass =
 export function InitialPage({ onGoToMap }: InitialPageProps) {
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [itineraryModalOpen, setItineraryModalOpen] = useState(false);
+  // C4.2: set when "Plan a trip around my saved places" is tapped in My Places;
+  // consumed once by ItineraryModal and cleared on close so a later manual
+  // open of the planner doesn't inherit a stale prefill.
+  const [itineraryPrefillAttractions, setItineraryPrefillAttractions] = useState<string[] | undefined>(undefined);
   const [showWelcome, setShowWelcome] = useState(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('nook_welcome_dismissed') !== '1';
@@ -400,7 +404,11 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
         <FeatureErrorBoundary featureName="Itinerary">
           <ItineraryModal
             open={itineraryModalOpen}
-            onClose={() => setItineraryModalOpen(false)}
+            onClose={() => {
+              setItineraryModalOpen(false);
+              setItineraryPrefillAttractions(undefined);
+            }}
+            initialAttractions={itineraryPrefillAttractions}
           />
         </FeatureErrorBoundary>
       )}
@@ -421,6 +429,11 @@ export function InitialPage({ onGoToMap }: InitialPageProps) {
             }}
             onSignedOut={() => {
               // App.tsx will switch to AuthPage automatically
+            }}
+            onPlanTrip={(titles) => {
+              setProfileOpen(false);
+              setItineraryPrefillAttractions(titles);
+              setItineraryModalOpen(true);
             }}
           />
         </FeatureErrorBoundary>

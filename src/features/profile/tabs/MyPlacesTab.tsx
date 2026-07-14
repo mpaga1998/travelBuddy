@@ -238,7 +238,13 @@ function PlaceDetail({
   );
 }
 
-export function MyPlacesTab({ isMobile }: { isMobile: boolean }) {
+export interface MyPlacesTabProps {
+  isMobile: boolean;
+  /** C4.2: fired with want-to-visit place titles when the user wants to plan a trip around them. */
+  onPlanTrip?: (titles: string[]) => void;
+}
+
+export function MyPlacesTab({ isMobile, onPlanTrip }: MyPlacesTabProps) {
   const [places, setPlaces] = useState<SavedPlace[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<SavedPlace | null>(null);
@@ -317,6 +323,17 @@ export function MyPlacesTab({ isMobile }: { isMobile: boolean }) {
           {places.length} place{places.length !== 1 ? 's' : ''}
         </span>
       </div>
+
+      {onPlanTrip && places.some((p) => !p.visited) && (
+        <div className="px-4 pb-2">
+          <button
+            onClick={() => onPlanTrip(places.filter((p) => !p.visited).map((p) => p.title))}
+            className="w-full px-4 py-2.5 rounded-[10px] border-none bg-[#45B4B9] text-white font-semibold text-sm cursor-pointer"
+          >
+            🧭 Plan a trip around my saved places
+          </button>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-400 p-8 text-center">

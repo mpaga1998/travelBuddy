@@ -100,6 +100,27 @@ export async function listSavedPlaces(opts?: { visited?: boolean }): Promise<Sav
   return (data as DbRow[]).map(toSavedPlace);
 }
 
+/**
+ * Returns the number of saved places for the current user. Returns 0 for
+ * unauthenticated callers and on any failure — defensive, same pattern as
+ * notificationsApi.countUnread (we'd rather hide a stale badge than show a
+ * wrong count).
+ */
+export async function countSavedPlaces(): Promise<number> {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return 0;
+
+  const { count, error } = await supabase
+    .from('saved_places')
+    .select('id', { count: 'exact', head: true });
+
+  if (error) {
+    console.warn('[savedPlaces] count failed:', error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
 export async function addSavedPlace(input: AddSavedPlaceInput): Promise<SavedPlace> {
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;

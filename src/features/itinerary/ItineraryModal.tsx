@@ -12,9 +12,11 @@ import type { ItineraryInput } from './types';
 interface ItineraryModalProps {
   open: boolean;
   onClose: () => void;
+  /** C4.2: pre-fills the "places to visit" field, e.g. from My Map saved places. */
+  initialAttractions?: string[];
 }
 
-export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
+export function ItineraryModal({ open, onClose, initialAttractions }: ItineraryModalProps) {
   const draft = useItineraryDraft();
   const prompt = usePrompt();
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -167,6 +169,7 @@ export function ItineraryModal({ open, onClose }: ItineraryModalProps) {
               error={error}
               isMobile={isMobile}
               userRole={userRole}
+              initialAttractions={initialAttractions?.join(', ')}
             />
           )}
 
