@@ -17,7 +17,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install --with-deps chromium",
     "test:unit": "vitest run",
-    "eval": "tsx tests/evals/runner.ts"
+    "eval": "tsx tests/evals/runner.ts",
+    "plan": "node scripts/plan-status.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",
