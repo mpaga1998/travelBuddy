@@ -34,22 +34,6 @@ export function categoryEmoji(cat: PinCategory) {
   }
 }
 
-/**
- * Per-category accent color. Used by the droplet marker + (future) legend
- * and filter chips. Picked for contrast on both outdoors-v12 (warm beige)
- * and light-v11 (near-white), and to stay distinct when clustered.
- */
-export function categoryColor(cat: PinCategory): string {
-  switch (cat) {
-    case "food":      return "#f59e0b"; // amber
-    case "nightlife": return "#8b5cf6"; // violet
-    case "sight":     return "#0ea5e9"; // sky
-    case "shop":      return "#ec4899"; // pink
-    case "beach":     return "#06b6d4"; // cyan
-    default:          return "#64748b"; // slate
-  }
-}
-
 export function isAgeInSelectedRanges(age: number | null, selectedRanges: string[]): boolean {
   if (!age || selectedRanges.length === 0) return true;
   return selectedRanges.some((rangeValue) => {

@@ -409,9 +409,6 @@ function PinCard({ pin }: { pin: PublicPin }) {
           <span className="mr-1">{emoji}</span>
           {pin.title}
         </h3>
-        {pin.bookmarkCount > 0 && (
-          <p className="text-xs text-gray-500 mt-0.5">🔖 {pin.bookmarkCount}</p>
-        )}
       </div>
     </article>
   );

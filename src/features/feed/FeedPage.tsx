@@ -221,13 +221,10 @@ function FeedCard({ pin, onOpenMap }: { pin: FeedPin; onOpenMap: () => void }) {
 
       {/* Footer actions */}
       <div className="flex items-center gap-2 px-4 py-3 border-t border-black/[0.06] bg-gray-50">
-        <span className="text-xs text-gray-500 mr-auto">
-          {pin.bookmarkCount > 0 && <>🔖 {pin.bookmarkCount}</>}
-        </span>
         <button
           type="button"
           onClick={onOpenMap}
-          className="px-3 py-1.5 rounded-md border border-black/15 bg-white text-xs font-semibold hover:bg-gray-100"
+          className="ml-auto px-3 py-1.5 rounded-md border border-black/15 bg-white text-xs font-semibold hover:bg-gray-100"
         >
           🗺️ View on map
         </button>

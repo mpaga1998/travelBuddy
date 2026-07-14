@@ -65,16 +65,27 @@ Everything else is finishing touches. **You are closer than the roadmap says.**
   `initialAttractions` prop). Menu also shows a live "N" badge on "⭐ My Places" via a new
   `countSavedPlaces()` head-count query, mirroring the notifications unread-badge pattern.
 
-### Phase F2 — Cleanup + debt (½ day)
+### Phase F2 — Cleanup + debt ✅ done
 
-- [ ] **F2.1** Delete the 4 zero-byte files. Verify `npx ts-prune` is clean.
-- [ ] **F2.2** Decide the fate of `pin_bookmarks`. Recommendation: **keep the table, drop the
-  UI dependency.** Write a migration that removes the `bookmark_count` trigger and column from
-  `pins`, but leaves `pin_bookmarks` in place (dormant). Reason: if a "saves" social-proof
-  counter ever returns, `saved_places.pin_id` can feed it — but a counter that nothing
-  increments is worse than no counter.
-- [ ] **F2.3** Re-split `MapView.tsx`. Extract `DraftModal`, `MyMapDraftModal`, `TipsViewer`,
-  `DeleteConfirm`, and the imperative lightbox into `src/features/map/modals/`. Target <400 lines.
+- [x] **F2.1** Deleted the 4 zero-byte files, plus a full dead-code sweep surfaced by
+  `ts-prune -p tsconfig.app.json` (the root `tsconfig.json` has no `include`, so plain
+  `ts-prune` silently finds nothing — must point at the app config). Removed:
+  `BookmarkedPinsTab.tsx`, `useBookmarks.ts` hook, `pinApiDemo.ts`, `seedPins.ts` (two whole
+  dead files from the pre-Supabase mock era), plus dead exports `toggleBookmark`/`isBookmarked`
+  (pinApi.ts), `getMyBookmarkedPins` (profileApi.ts), `categoryColor` (mapConstants.ts,
+  never-wired "future legend" export), `inputStyle` (profileStyles.ts, a migration-compat
+  alias). `imgDetail` in `imageTransforms.ts` is the one remaining ts-prune hit — left in place
+  as a symmetric, documented preset (avatar/thumbnail/detail/popup/lightbox), not debt.
+- [x] **F2.2** Decided the fate of `pin_bookmarks`: **kept the table, dropped the UI
+  dependency** (no migration — DB stays dormant, zero risk). Removed the now-frozen 🔖
+  `bookmarkCount` display from `FeedPage.tsx` and `PublicProfilePage.tsx` since nothing writes
+  to `pin_bookmarks` anymore and a stat that can only ever go stale is worse than no stat. If a
+  "saves" social-proof signal returns later, `saved_places.pin_id` is the right feed for it.
+- [x] **F2.3** Re-split `MapView.tsx`: **914 → 472 lines.** Extracted into
+  `src/features/map/modals/{DraftModal,MyMapDraftModal,TipsViewer,DeleteConfirm}.tsx` +
+  `modalShared.ts` (shared `draftInputClass`), plus `src/features/map/CompassButton.tsx` and
+  `src/features/map/lightbox.ts` (the imperative image lightbox). `MapView.tsx` now only owns
+  state + callback wiring; zero new lint/type errors.
 
 ### Phase F3 — The optional-but-valuable (1–2 days)
 

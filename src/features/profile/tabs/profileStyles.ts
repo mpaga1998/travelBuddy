@@ -2,7 +2,7 @@
  * Shared Tailwind class strings for the profile modal's tabbed subcomponents.
  *
  * Extracted in 2.4 when profileModal.tsx was split into ProfileInfoTab,
- * BookmarkedPinsTab, and SavedItinerariesTab. Migrated to Tailwind classes in
+ * MyPlacesTab, and SavedItinerariesTab. Migrated to Tailwind classes in
  * 2.5 — callsites use className={inputClass} / className={primaryBtn(saving)}.
  */
 
@@ -21,6 +21,3 @@ export function primaryBtn(disabled: boolean): string {
 
 export const dangerBtn =
   'px-4 py-3 rounded-lg border border-red-600/35 bg-red-600/10 text-red-900 cursor-pointer font-black min-h-[44px] w-full';
-
-/** Alias for migration compatibility; prefer `inputClass`. */
-export const inputStyle = inputClass;
