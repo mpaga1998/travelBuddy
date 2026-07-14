@@ -3,7 +3,7 @@
   "installCommand": "rm -f package-lock.json && npm install",
   "functions": {
     "api/itinerary.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/itinerary/save.ts": {
       "maxDuration": 30
