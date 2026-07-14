@@ -221,9 +221,10 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
   }, [reload]);
 
   // --- Social import (C4.1 — persist confirmed places to saved_places) -----
+  // A1: the modal stays OPEN after selection so it can offer "share as a
+  // public pin" — it closes itself via its Done button.
   const handlePlaceSelected = useCallback(
     async (candidate: SocialCandidate, attribution: SocialAttribution) => {
-      setImportModalOpen(false);
       mapRef.current?.flyTo({
         center: [candidate.lng, candidate.lat],
         zoom: 15,
@@ -251,6 +252,48 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
       }
     },
     [savedPlacesHook]
+  );
+
+  // --- A1: publish an imported place as a public community pin --------------
+  const handleShareAsPin = useCallback(
+    async (candidate: SocialCandidate, attribution: SocialAttribution, platform: string) => {
+      // Same moderation pre-flight as the draft-pin flow. The caption was
+      // already moderated server-side during extraction, but the pin title +
+      // context become standalone public content — check them as such.
+      const allowed = await checkContentAllowed(
+        [candidate.name, candidate.context].filter(Boolean).join('\n')
+      );
+      if (!allowed) {
+        toast.error(MODERATION_REJECTION_MESSAGE);
+        throw new Error('moderation rejected');
+      }
+
+      const CATEGORY_MAP: Record<string, PinCategory> = {
+        food: 'food',
+        sight: 'sight',
+        nightlife: 'nightlife',
+        shop: 'shop',
+      };
+      const category = CATEGORY_MAP[candidate.type] ?? 'other';
+      const sourcePlatform = (['tiktok', 'pinterest', 'instagram'] as const).find(
+        (p) => p === platform
+      );
+
+      await createPin({
+        title: candidate.name,
+        description: candidate.context,
+        category,
+        lat: candidate.lat,
+        lng: candidate.lng,
+        sourceUrl: attribution.sourceUrl,
+        sourceAuthor: attribution.author,
+        sourcePlatform,
+      });
+      track('pin_created', { category, via: 'social_import' });
+      toast.success('📌 Shared as a public pin!');
+      await reload();
+    },
+    [reload]
   );
 
   // --- Save community pin to My Map (C3.3) ---------------------------------
@@ -444,6 +487,7 @@ export function MapView({ onBack, initialCenter }: MapViewProps = {}) {
               <ImportFromLinkModal
                 onClose={() => setImportModalOpen(false)}
                 onPlaceSelected={handlePlaceSelected}
+                onShareAsPin={handleShareAsPin}
               />
             </FeatureErrorBoundary>
           )}

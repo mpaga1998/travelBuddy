@@ -30,4 +30,9 @@ export type Pin = {
   tips?: string[];
   imageUrls?: string[];
   createdAt: string;
+  // A1: attribution for pins created from social imports (B0.1 legal guardrail).
+  // Null/absent for organic pins.
+  sourceUrl?: string | null;
+  sourceAuthor?: string | null;
+  sourcePlatform?: string | null;
 };

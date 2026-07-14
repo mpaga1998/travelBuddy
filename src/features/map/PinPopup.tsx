@@ -35,6 +35,13 @@ export type PinPopupProps = {
   onSaveToMyMap?: () => void | Promise<void>;
 };
 
+// A1: display labels for social attribution platforms.
+const SOCIAL_PLATFORM_LABEL: Record<string, string> = {
+  tiktok: 'TikTok',
+  pinterest: 'Pinterest',
+  instagram: 'Instagram',
+};
+
 // Shared pill-button class. Accepts an extra string to compose variants
 // (e.g. tip button uses a yellow palette). Kept as a helper so the class
 // list doesn't need to be repeated on every button.
@@ -155,6 +162,21 @@ export function PinPopup({
                 ? `Recommended by ${pin.createdByLabel}`
                 : `Pinned by ${pin.createdByLabel}`}
             </span>
+          )}
+
+          {/* A1: attribution for social-imported pins (B0.1 legal guardrail) */}
+          {pin.sourceUrl && (
+            <a
+              href={pin.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="px-2 py-1 rounded-full bg-black/[0.05] text-xs text-slate-600 no-underline hover:bg-black/[0.1] transition-colors"
+              title="View the original post"
+            >
+              via {SOCIAL_PLATFORM_LABEL[pin.sourcePlatform ?? ''] ?? 'social'}
+              {pin.sourceAuthor ? ` · @${pin.sourceAuthor}` : ''} ↗
+            </a>
           )}
         </div>
 

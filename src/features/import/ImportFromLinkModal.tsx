@@ -1,16 +1,17 @@
 /**
- * B2.2: Import a place from a social link.
+ * B2.2 + A1: Import a place from a social link.
  *
- * Five states:
+ * Six states:
  *   input   — URL field + platform guidance
  *   loading — spinner while the API works
  *   results — card list of geocoded candidates
  *   empty   — extraction succeeded but found no named places
  *   error   — network / moderation / unsupported platform
+ *   saved   — place persisted to My Map; offers "share as public pin" (A1)
  *
- * On candidate selection the modal calls onPlaceSelected so the parent
- * (MapView) can pan to the coordinates. When Part C ships, the parent will
- * also persist the place to saved_places.
+ * On candidate selection the modal calls onPlaceSelected (parent pans the map
+ * and writes saved_places), then stays open on the saved step so the user can
+ * optionally publish the place as an attributed community pin via onShareAsPin.
  */
 
 import { useRef, useState } from 'react';
@@ -45,14 +46,33 @@ type ModalStep =
   | { step: 'loading' }
   | { step: 'results'; candidates: SocialCandidate[]; attribution: SocialAttribution; platform: string }
   | { step: 'empty';   attribution: SocialAttribution; platform: string }
-  | { step: 'error';   message: string; platformUnavailable?: boolean };
+  | { step: 'error';   message: string; platformUnavailable?: boolean }
+  // A1: post-save step — the place is on My Map; offer to also publish it
+  // as a public community pin (with attribution, per the B0.1 guardrail).
+  | {
+      step: 'saved';
+      candidate: SocialCandidate;
+      attribution: SocialAttribution;
+      platform: string;
+      shareState: 'offer' | 'sharing' | 'shared' | 'failed';
+    };
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface ImportFromLinkModalProps {
   onClose: () => void;
-  /** Called when the user confirms a candidate. Parent pans map + (later) saves. */
+  /** Called when the user confirms a candidate. Parent pans map + saves to My Map. */
   onPlaceSelected: (candidate: SocialCandidate, attribution: SocialAttribution) => void;
+  /**
+   * A1: called when the user opts to also publish the saved place as a public
+   * community pin. Parent handles moderation + createPin + reload. When
+   * omitted, the share offer is hidden.
+   */
+  onShareAsPin?: (
+    candidate: SocialCandidate,
+    attribution: SocialAttribution,
+    platform: string,
+  ) => Promise<void>;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -60,6 +80,7 @@ interface ImportFromLinkModalProps {
 export function ImportFromLinkModal({
   onClose,
   onPlaceSelected,
+  onShareAsPin,
 }: ImportFromLinkModalProps) {
   const [url, setUrl] = useState('');
   const [state, setState] = useState<ModalStep>({ step: 'input' });
@@ -114,6 +135,25 @@ export function ImportFromLinkModal({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
     if (e.key === 'Enter' && state.step === 'input') void handleExtract();
+  };
+
+  // A1: candidate tap — save to My Map (parent) and move to the share offer.
+  const handleSelect = (candidate: SocialCandidate, attribution: SocialAttribution, platform: string) => {
+    onPlaceSelected(candidate, attribution);
+    setState({ step: 'saved', candidate, attribution, platform, shareState: 'offer' });
+  };
+
+  const handleShare = async () => {
+    if (state.step !== 'saved' || !onShareAsPin) return;
+    const { candidate, attribution, platform } = state;
+    setState({ ...state, shareState: 'sharing' });
+    try {
+      await onShareAsPin(candidate, attribution, platform);
+      setState({ step: 'saved', candidate, attribution, platform, shareState: 'shared' });
+    } catch {
+      // Parent surfaces the specific error (e.g. moderation) via toast.
+      setState({ step: 'saved', candidate, attribution, platform, shareState: 'failed' });
+    }
   };
 
   // ── Platform label ───────────────────────────────────────────────────────────
@@ -270,7 +310,7 @@ export function ImportFromLinkModal({
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => onPlaceSelected(c, state.attribution)}
+                      onClick={() => handleSelect(c, state.attribution, state.platform)}
                       className="text-left px-4 py-3 rounded-xl border border-black/[0.12] bg-white hover:bg-slate-50 hover:border-blue-400 transition-colors cursor-pointer flex flex-col gap-1.5"
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -293,6 +333,43 @@ export function ImportFromLinkModal({
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* ── Saved step (A1: share offer) ──────────────────────────── */}
+          {state.step === 'saved' && (
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <div className="text-4xl">⭐</div>
+              <p className="text-sm font-bold text-slate-900 m-0">
+                {state.candidate.name} saved to My Map
+              </p>
+
+              {state.shareState === 'offer' && onShareAsPin && (
+                <p className="text-xs text-slate-500 m-0 max-w-[320px] leading-relaxed">
+                  Also share it as a <strong>public pin</strong> so other travelers can
+                  find it? The pin will credit the original post
+                  {state.attribution.author ? <> by <strong>@{state.attribution.author}</strong></> : null}.
+                </p>
+              )}
+
+              {state.shareState === 'sharing' && (
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+                  Publishing pin…
+                </div>
+              )}
+
+              {state.shareState === 'shared' && (
+                <p className="text-xs font-semibold text-emerald-700 m-0">
+                  📌 Shared! Other travelers can now find this place.
+                </p>
+              )}
+
+              {state.shareState === 'failed' && (
+                <p className="text-xs text-red-600 m-0 max-w-[320px]">
+                  Couldn't publish the pin — the place is still saved to My Map.
+                </p>
+              )}
             </div>
           )}
 
@@ -394,6 +471,31 @@ export function ImportFromLinkModal({
             >
               Cancel
             </button>
+          )}
+
+          {/* A1: saved-step footer */}
+          {state.step === 'saved' && (
+            <>
+              {(state.shareState === 'offer' || state.shareState === 'failed') && onShareAsPin && (
+                <button
+                  type="button"
+                  onClick={() => void handleShare()}
+                  className="flex-1 px-4 py-3 rounded-[10px] border-none bg-blue-600 hover:bg-blue-700 text-white cursor-pointer font-semibold text-sm min-h-[44px]"
+                >
+                  {state.shareState === 'failed' ? '🔁 Try sharing again' : '📌 Share publicly'}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={state.shareState === 'sharing'}
+                className={`flex-1 px-4 py-3 rounded-[10px] border-none bg-gray-100 text-slate-900 font-semibold text-sm min-h-[44px] ${
+                  state.shareState === 'sharing' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                }`}
+              >
+                Done
+              </button>
+            </>
           )}
         </div>
       </div>

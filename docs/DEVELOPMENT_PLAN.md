@@ -55,7 +55,7 @@ Every item has a **Done when** — if it can't be checked, it isn't done.
 
 | ID | Status | Item | Effort | Depends on | Done when |
 |---|---|---|---|---|---|
-| A1 **M1** | ⬜ | Publish import as public pin: on import confirm, offer "also share as a public pin" → existing `createPin` with attribution (source URL + author) | 1 day | — | An imported place can become a public pin in one tap, with attribution rendered in the popup |
+| A1 **M1** | 🟡 | Publish import as public pin: on import confirm, offer "also share as a public pin" → existing `createPin` with attribution (source URL + author) | 1 day | — | An imported place can become a public pin in one tap, with attribution rendered in the popup |
 | A2 **M1** | ⬜ | Seed 100–300 pins across launch cities (Lisbon, Porto, Barcelona, Berlin, Prague, Split, Kraków, Naples — trim to 5 if needed) | 1–2 weeks, not code | A1 | Every launch city shows ≥ 20 quality pins in its default viewport |
 
 > A1 is unblocked **today** and starts the seeding clock — the project's longest pole.

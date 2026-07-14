@@ -16,6 +16,9 @@ type DbPinRow = {
   comment_count: number;
   tips?: string[],
   image_urls?: string[],
+  source_url: string | null;
+  source_author: string | null;
+  source_platform: string | null;
   profiles: {
     id: string;
     username: string | null;
@@ -74,7 +77,7 @@ export type PinFilters = {
 // so pins with no profile are still returned — defensive).
 const SELECT_DEFAULT = `
   id, title, description, category, lat, lng, created_at, created_by, bookmark_count,
-  report_count, comment_count, tips, image_urls,
+  report_count, comment_count, tips, image_urls, source_url, source_author, source_platform,
   profiles:created_by (id, username, role, hostel_name, dob, handle),
   reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
 `;
@@ -83,7 +86,7 @@ const SELECT_DEFAULT = `
 // profiles.role filter to exclude parent rows, not just the embedded result.
 const SELECT_INNER = `
   id, title, description, category, lat, lng, created_at, created_by, bookmark_count,
-  report_count, comment_count, tips, image_urls,
+  report_count, comment_count, tips, image_urls, source_url, source_author, source_platform,
   profiles:created_by!inner (id, username, role, hostel_name, dob, handle),
   reaction_counts:pin_reaction_counts (likes_count, dislikes_count)
 `;
@@ -146,6 +149,9 @@ export async function listPins(opts: PinFilters = {}): Promise<{ pins: Pin[]; li
       createdById: row.created_by,
       tips: row.tips ?? [],
       imageUrls: row.image_urls ?? [],
+      sourceUrl: row.source_url ?? null,
+      sourceAuthor: row.source_author ?? null,
+      sourcePlatform: row.source_platform ?? null,
       createdByType: row.profiles?.role ?? "traveler",
       createdByLabel:
         row.profiles?.role === "hostel"
@@ -195,6 +201,10 @@ export async function createPin(input: {
   imageUrls?: string[];
   lat: number;
   lng: number;
+  /** A1: attribution when the pin comes from a social import (B0.1 guardrail). */
+  sourceUrl?: string;
+  sourceAuthor?: string;
+  sourcePlatform?: 'tiktok' | 'pinterest' | 'instagram';
 }): Promise<void> {
   const { data: userData, error: userErr } = await supabase.auth.getUser();
   if (userErr) throw userErr;
@@ -211,6 +221,9 @@ export async function createPin(input: {
     image_urls: input.imageUrls ?? [],
     lat: input.lat,
     lng: input.lng,
+    source_url: input.sourceUrl ?? null,
+    source_author: input.sourceAuthor ?? null,
+    source_platform: input.sourcePlatform ?? null,
   });
 
   if (error) {
