@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { CATEGORIES, categoryEmoji } from "../mapConstants";
+import { Modal, Button } from "../../../components/ui";
 import { draftInputClass } from "./modalShared";
 
 export type MyMapDraft = {
@@ -26,23 +27,13 @@ export function MyMapDraftModal({
   useEffect(() => { titleRef.current?.focus(); }, []);
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Save to My Map"
-      onClick={() => setDraft(null)}
-      onKeyDown={(e) => { if (e.key === "Escape") setDraft(null); }}
-      tabIndex={-1}
-      className={`fixed inset-0 bg-black/25 flex justify-center z-[1000] ${isMobile ? "items-end p-0" : "items-center p-4"}`}
+    <Modal
+      onClose={() => setDraft(null)}
+      label="Save to My Map"
+      sheet={isMobile}
+      backdropClassName="bg-black/25"
+      panelClassName={isMobile ? "px-4 pt-4 pb-20" : "w-[min(420px,100%)] p-4"}
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={`bg-white shadow-[0_18px_48px_rgba(0,0,0,0.22)] ${
-          isMobile
-            ? "w-full rounded-t-2xl px-4 pt-4 pb-20 max-h-[80vh] overflow-auto"
-            : "w-[min(420px,100%)] rounded-2xl p-4"
-        }`}
-      >
         <div className="flex justify-between gap-3 mb-3">
           <div className="font-bold text-base">⭐ Save to My Map</div>
           <button
@@ -86,15 +77,16 @@ export function MyMapDraftModal({
             <option value="other">📍 Other</option>
           </select>
 
-          <button
+          <Button
+            variant="primary"
+            size="lg"
             onClick={onSubmit}
             disabled={!draft.title.trim()}
-            className="mt-1 w-full py-3 rounded-xl border-none bg-[#45B4B9] text-white font-bold text-base cursor-pointer disabled:opacity-50 disabled:cursor-default"
+            className="mt-1 w-full font-bold"
           >
             Save place
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

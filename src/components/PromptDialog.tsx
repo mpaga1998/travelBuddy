@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Modal, Button, Input } from "./ui";
 
 /**
  * Reusable, promise-returning text-input dialog — the replacement for
@@ -127,49 +128,32 @@ function PromptDialog({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      onClick={onCancel}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") onCancel();
-      }}
-      tabIndex={-1}
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-[2000] p-4"
+    <Modal
+      onClose={onCancel}
+      labelledBy={titleId}
+      zClassName="z-[2000]"
+      as="form"
+      onSubmit={handleSubmit}
+      panelClassName="max-w-md w-full p-5 flex flex-col gap-3"
     >
-      <form
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={handleSubmit}
-        className="bg-white rounded-2xl shadow-[0_18px_48px_rgba(0,0,0,0.22)] max-w-md w-full p-5 flex flex-col gap-3"
-      >
-        <h3 id={titleId} className="text-lg font-bold text-slate-900 m-0">{title}</h3>
-        {message && <p className="text-sm text-slate-600 m-0">{message}</p>}
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder={placeholder}
-          maxLength={maxLength}
-          className="px-3 py-2 rounded-lg border border-black/[0.18] bg-white text-sm text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 min-h-[40px]"
-        />
-        <div className="flex gap-2 justify-end mt-1">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 rounded-lg border border-black/[0.18] bg-white hover:bg-gray-100 text-slate-900 font-semibold text-sm min-h-[40px] cursor-pointer"
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm min-h-[40px] cursor-pointer border-none"
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </form>
-    </div>
+      <h3 id={titleId} className="text-lg font-bold text-slate-900 m-0">{title}</h3>
+      {message && <p className="text-sm text-slate-600 m-0">{message}</p>}
+      <Input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={placeholder}
+        maxLength={maxLength}
+      />
+      <div className="flex gap-2 justify-end mt-1">
+        <Button variant="secondary" onClick={onCancel}>
+          {cancelLabel}
+        </Button>
+        <Button variant="primary" type="submit">
+          {confirmLabel}
+        </Button>
+      </div>
+    </Modal>
   );
 }

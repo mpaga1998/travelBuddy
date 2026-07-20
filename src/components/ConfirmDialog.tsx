@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Modal, Button } from "./ui";
 
 /**
  * Reusable, promise-returning confirm dialog — the replacement for
@@ -93,42 +94,25 @@ function ConfirmDialog({
   onCancel,
 }: ConfirmOptions & { onConfirm: () => void; onCancel: () => void }) {
   const titleId = useId();
-  const confirmBtnClass = destructive
-    ? "px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold text-sm min-h-[40px] cursor-pointer border-none"
-    : "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm min-h-[40px] cursor-pointer border-none";
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      onClick={onCancel}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") onCancel();
-        if (e.key === "Enter") onConfirm();
-      }}
-      tabIndex={-1}
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-[2000] p-4"
+    <Modal
+      onClose={onCancel}
+      labelledBy={titleId}
+      zClassName="z-[2000]"
+      onKeyDown={(e) => { if (e.key === "Enter") onConfirm(); }}
+      panelClassName="max-w-md w-full p-5 flex flex-col gap-3"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-[0_18px_48px_rgba(0,0,0,0.22)] max-w-md w-full p-5 flex flex-col gap-3"
-      >
-        <h3 id={titleId} className="text-lg font-bold text-slate-900 m-0">{title}</h3>
-        {message && <p className="text-sm text-slate-600 m-0">{message}</p>}
-        <div className="flex gap-2 justify-end mt-2">
-          <button
-            onClick={onCancel}
-            autoFocus
-            className="px-4 py-2 rounded-lg border border-black/[0.18] bg-white hover:bg-gray-100 text-slate-900 font-semibold text-sm min-h-[40px] cursor-pointer"
-          >
-            {cancelLabel}
-          </button>
-          <button onClick={onConfirm} className={confirmBtnClass}>
-            {confirmLabel}
-          </button>
-        </div>
+      <h3 id={titleId} className="text-lg font-bold text-slate-900 m-0">{title}</h3>
+      {message && <p className="text-sm text-slate-600 m-0">{message}</p>}
+      <div className="flex gap-2 justify-end mt-2">
+        <Button variant="secondary" onClick={onCancel} autoFocus>
+          {cancelLabel}
+        </Button>
+        <Button variant={destructive ? "danger" : "primary"} onClick={onConfirm}>
+          {confirmLabel}
+        </Button>
       </div>
-    </div>
+    </Modal>
   );
 }

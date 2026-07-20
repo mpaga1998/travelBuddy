@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import type { PinCategory } from "../../pins/pinTypes";
 import { validateImageFile } from "../../../lib/imageCompress";
 import { CATEGORIES, categoryEmoji } from "../mapConstants";
+import { Modal } from "../../../components/ui";
 import { draftInputClass } from "./modalShared";
 
 export type DraftPin = {
@@ -31,23 +32,13 @@ export function DraftModal({
   useEffect(() => { titleInputRef.current?.focus(); }, []);
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Add a pin"
-      onClick={() => setDraft(null)}
-      onKeyDown={(e) => { if (e.key === "Escape") setDraft(null); }}
-      tabIndex={-1}
-      className={`fixed inset-0 bg-black/25 flex justify-center z-[1000] ${isMobile ? "items-end p-0" : "items-center p-4"}`}
+    <Modal
+      onClose={() => setDraft(null)}
+      label="Add a pin"
+      sheet={isMobile}
+      backdropClassName="bg-black/25"
+      panelClassName={isMobile ? "px-4 pt-4 pb-20" : "w-[min(520px,100%)] p-4 overflow-visible"}
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={`bg-white shadow-[0_18px_48px_rgba(0,0,0,0.22)] ${
-          isMobile
-            ? "w-full rounded-t-2xl px-4 pt-4 pb-20 max-h-[90vh] overflow-auto"
-            : "w-[min(520px,100%)] rounded-2xl p-4 overflow-visible"
-        }`}
-      >
         <div className="flex justify-between gap-3">
           <div className="font-bold text-base">Add a pin</div>
           <button
@@ -199,7 +190,6 @@ export function DraftModal({
             Create pin
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
