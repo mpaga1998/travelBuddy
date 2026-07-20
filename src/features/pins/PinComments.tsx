@@ -111,11 +111,11 @@ export function PinComments({ pinId, currentUserId }: PinCommentsProps) {
             onClick={(e) => e.stopPropagation()}
             placeholder="Add a comment…"
             rows={2}
-            // bg-white + text-[#111] + [color-scheme:light] forces the
+            // bg-white + text-ink + [color-scheme:light] forces the
             // composer to stay readable on Android/iOS Chrome's dark mode,
             // which otherwise auto-darkens unstyled <textarea>s. Same trick
             // we already use on the date inputs in ItineraryForm.
-            className="w-full px-2.5 py-2 rounded-lg border border-black/[0.18] text-[13px] resize-y min-h-[48px] bg-white text-[#111] placeholder:text-gray-400 [color-scheme:light] focus:outline-none focus:border-blue-600"
+            className="w-full px-2.5 py-2 rounded-lg border border-black/[0.18] text-[13px] resize-y min-h-[48px] bg-white text-ink placeholder:text-gray-400 [color-scheme:light] focus:outline-none focus:border-brand"
           />
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-gray-400">
@@ -125,7 +125,7 @@ export function PinComments({ pinId, currentUserId }: PinCommentsProps) {
               type="button"
               onClick={(e) => { e.stopPropagation(); handleSubmit(); }}
               disabled={submitting || !draft.trim()}
-              className="px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-none"
+              className="px-3 py-1.5 rounded-md bg-brand text-white text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-none"
             >
               {submitting ? 'Posting…' : 'Post'}
             </button>
@@ -206,7 +206,7 @@ function CommentRow({
             disabled={!comment.authorHandle}
             className={`text-[12px] font-semibold ${
               comment.authorHandle ? 'cursor-pointer hover:underline' : 'cursor-default'
-            } bg-transparent border-none p-0 outline-none text-[#111]`}
+            } bg-transparent border-none p-0 outline-none text-ink`}
           >
             {displayName}
           </button>
@@ -222,7 +222,7 @@ function CommentRow({
             </button>
           )}
         </div>
-        <div className="text-[13px] text-[#111] whitespace-pre-wrap break-words">
+        <div className="text-[13px] text-ink whitespace-pre-wrap break-words">
           {comment.body}
         </div>
       </div>

@@ -67,7 +67,7 @@ Every item has a **Done when** — if it can't be checked, it isn't done.
 |---|---|---|---|---|---|
 | B1 **M1** | ✅ 2026-07-14 | Design tokens: fill `tailwind.config.cjs` theme (brand/dusk/peach/lace scales, semantic surface/ink/muted, radii, shadows, font) + CI grep banning raw hex outside the config and `PinLayer.tsx` GL expressions | 1 day | — | Config populated; CI fails on new raw hex; existing violations inventoried |
 | B2 **M1** | ✅ 2026-07-14 | Component library `src/components/ui/`: Button, Card, Modal, Input/Textarea/Select, Pill, EmptyState, Avatar (hand-rolled, ~40 lines each — **not** shadcn) | 3 days | B1 | All 7 exist with variants; Modal consolidates the 6 hand-rolled dialogs' Escape/backdrop/focus handling |
-| B3 **M1** | 🟡 | Surface migration in first-impression order: map (MapView/PinPopup/FilterBar) → itinerary → profile → feed/notifications | 4 days | B2 | Zero legacy-palette classes (`#0066cc`, `#2563eb`, `#ff8c00`) remain in migrated surfaces |
+| B3 **M1** | ✅ 2026-07-14 | Surface migration in first-impression order: map (MapView/PinPopup/FilterBar) → itinerary → profile → feed/notifications | 4 days | B2 | Zero legacy-palette classes (`#0066cc`, `#2563eb`, `#ff8c00`) remain in migrated surfaces |
 | B4 **M1** | ⬜ | Visual identity: custom Mapbox Studio style in nook palette · custom pin mark from `NOOK-03.svg` · typeface + type scale · pin-drop/popup/fly-to motion | 2 days | B1 | Map renders the custom style; new pin mark in place; font loaded with fallback |
 
 ### WS-P · Platform & launch — *after WS-B, before M1*

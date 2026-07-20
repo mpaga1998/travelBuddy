@@ -112,7 +112,7 @@ export function NotificationsPage({ onBack, onOpenMap }: NotificationsPageProps)
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 text-[#111]">
+    <div className="min-h-screen bg-gray-50 text-ink">
       <header className="sticky top-0 z-10 flex items-center gap-3 px-4 sm:px-6 py-3 bg-white border-b border-black/[0.08]">
         <button
           type="button"
@@ -195,7 +195,7 @@ function NotificationRow({
         type="button"
         onClick={() => onClick(notification)}
         className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors ${
-          isUnread ? 'bg-blue-50/60 hover:bg-blue-50' : 'bg-white hover:bg-gray-50'
+          isUnread ? 'bg-brand-50/60 hover:bg-brand-50' : 'bg-white hover:bg-gray-50'
         }`}
       >
         {notification.actorAvatarUrl ? (
@@ -213,7 +213,7 @@ function NotificationRow({
         )}
 
         <div className="flex-1 min-w-0">
-          <div className="text-sm text-[#111]">
+          <div className="text-sm text-ink">
             <span className="font-semibold">{actorDisplayName}</span>{' '}
             <span className="text-gray-700">{describeAction(notification)}</span>
           </div>
@@ -225,7 +225,7 @@ function NotificationRow({
         {isUnread && (
           <span
             aria-label="Unread"
-            className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0 mt-2"
+            className="w-2 h-2 rounded-full bg-brand flex-shrink-0 mt-2"
           />
         )}
       </button>

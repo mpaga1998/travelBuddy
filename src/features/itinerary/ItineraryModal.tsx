@@ -178,7 +178,7 @@ export function ItineraryModal({ open, onClose, initialAttractions }: ItineraryM
               <div className="text-base font-semibold text-center text-slate-900">
                 Creating the best itinerary for you...
               </div>
-              <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+              <div className="w-10 h-10 border-4 border-gray-200 border-t-brand rounded-full animate-spin" />
             </div>
           )}
 
@@ -202,7 +202,7 @@ export function ItineraryModal({ open, onClose, initialAttractions }: ItineraryM
               </button>
               <button
                 onClick={handleReset}
-                className="flex-1 px-4 py-3 rounded-[10px] border-none bg-blue-600 text-white cursor-pointer font-semibold text-sm min-h-[44px]"
+                className="flex-1 px-4 py-3 rounded-[10px] border-none bg-brand hover:bg-brand-600 text-white cursor-pointer font-semibold text-sm min-h-[44px]"
               >
                 Create Another
               </button>

@@ -24,7 +24,7 @@ const TRIP_TYPE_LABELS: Record<string, string> = {
 
 // Shared action-button classes. Copy = neutral, Delete = destructive red.
 const copyBtnClass =
-  'flex-1 px-3 py-2 rounded-lg border border-black/[0.18] bg-white hover:bg-gray-100 cursor-pointer text-[13px] font-semibold text-[#111] transition-colors';
+  'flex-1 px-3 py-2 rounded-lg border border-black/[0.18] bg-white hover:bg-gray-100 cursor-pointer text-[13px] font-semibold text-ink transition-colors';
 const deleteBtnClass =
   'flex-1 px-3 py-2 rounded-lg border border-red-100 bg-red-50 hover:bg-red-100 cursor-pointer text-[13px] font-semibold text-red-600 transition-colors';
 
@@ -122,10 +122,10 @@ export function SavedItinerariesTab() {
         </button>
 
         <div className="mb-4">
-          <h2 className="text-xl font-bold text-[#111] mb-2">
+          <h2 className="text-xl font-bold text-ink mb-2">
             {selectedItinerary.title}
           </h2>
-          <div className="text-[13px] text-[#666] flex flex-col gap-1">
+          <div className="text-[13px] text-muted flex flex-col gap-1">
             <div>
               📍 {selectedItinerary.arrival_location} → {selectedItinerary.departure_location}
             </div>
@@ -147,7 +147,7 @@ export function SavedItinerariesTab() {
           </div>
         </div>
 
-        <div className="text-sm leading-relaxed text-[#333] font-['Segoe_UI',system-ui,sans-serif] pb-5 flex-1">
+        <div className="text-sm leading-relaxed text-ink font-['Segoe_UI',system-ui,sans-serif] pb-5 flex-1">
           {renderSavedItineraryMarkdown(selectedItinerary.markdown_content)}
         </div>
 
@@ -163,7 +163,7 @@ export function SavedItinerariesTab() {
               onChange={(e) => onTogglePublic(selectedItinerary.id, e.target.checked)}
               className="mt-0.5 w-4 h-4 cursor-pointer"
             />
-            <span className="flex-1 text-[13px] text-[#111]">
+            <span className="flex-1 text-[13px] text-ink">
               <span className="font-semibold block">
                 {selectedItinerary.is_public ? '🌍 Public on your profile' : '🔒 Private'}
               </span>
@@ -202,7 +202,7 @@ export function SavedItinerariesTab() {
 
   return (
     <div className="flex-1 overflow-auto p-4 flex flex-col">
-      <h2 className="text-xl font-bold text-[#111] mb-4">
+      <h2 className="text-xl font-bold text-ink mb-4">
         🎒 My Saved Itineraries
       </h2>
 
@@ -231,10 +231,10 @@ export function SavedItinerariesTab() {
         </div>
       ) : savedItineraries.length === 0 ? (
         <div className="flex-1 flex items-center justify-center text-center">
-          <div className="text-[#999]">
+          <div className="text-muted">
             <div className="text-[32px] mb-2">📌</div>
             <div className="text-sm">No saved itineraries yet</div>
-            <div className="text-xs text-[#bbb] mt-1">
+            <div className="text-xs text-gray-400 mt-1">
               Generate and save your first itinerary!
             </div>
           </div>
@@ -248,9 +248,9 @@ export function SavedItinerariesTab() {
               onClick={() => setSelectedItinerary(itinerary)}
             >
               <div className="flex items-center gap-2 flex-wrap">
-                <div className="text-base font-bold text-[#111]">{itinerary.title}</div>
+                <div className="text-base font-bold text-ink">{itinerary.title}</div>
                 {itinerary.trip_type && TRIP_TYPE_LABELS[itinerary.trip_type] && (
-                  <span className="text-[11px] font-semibold text-blue-800 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded">
+                  <span className="text-[11px] font-semibold text-brand-800 bg-brand-50 border border-brand-100 px-1.5 py-0.5 rounded">
                     {TRIP_TYPE_LABELS[itinerary.trip_type]}
                   </span>
                 )}
@@ -261,7 +261,7 @@ export function SavedItinerariesTab() {
                 )}
               </div>
 
-              <div className="text-[13px] text-[#666] flex flex-col gap-1">
+              <div className="text-[13px] text-muted flex flex-col gap-1">
                 <div>
                   📍 {itinerary.arrival_location} → {itinerary.departure_location}
                 </div>
@@ -399,7 +399,7 @@ function renderInlineMarkdown(text: string): ReactNode[] {
               const { openVenueInMaps } = await import('../../../lib/venueGeocoding');
               await openVenueInMaps(decodedVenue, city || '');
             }}
-            className="text-sky-700 underline decoration-dotted underline-offset-2 cursor-pointer hover:decoration-solid"
+            className="text-brand-700 underline decoration-dotted underline-offset-2 cursor-pointer hover:decoration-solid"
           >
             📍 {linkText}
           </a>
@@ -412,7 +412,7 @@ function renderInlineMarkdown(text: string): ReactNode[] {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[#0066cc] no-underline hover:underline cursor-pointer"
+          className="text-brand-600 no-underline hover:underline cursor-pointer"
         >
           {linkText}
         </a>

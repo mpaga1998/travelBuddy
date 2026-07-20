@@ -51,12 +51,12 @@ export function ItineraryPreview({ markdown, isStreaming }: ItineraryPreviewProp
   return (
     <div>
       {isStreaming && (
-        <div className="flex items-center gap-2.5 px-3.5 py-2.5 mb-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-[13px] font-semibold">
-          <div className="w-3.5 h-3.5 border-2 border-blue-200 border-t-blue-700 rounded-full animate-spin shrink-0" />
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5 mb-3 bg-brand-50 border border-brand-200 rounded-lg text-brand-700 text-[13px] font-semibold">
+          <div className="w-3.5 h-3.5 border-2 border-brand-200 border-t-brand-700 rounded-full animate-spin shrink-0" />
           <span>Writing your itinerary…</span>
         </div>
       )}
-      <div className="itinerary-markdown text-sm leading-relaxed text-[#333] font-['Segoe_UI',system-ui,sans-serif] pb-5">
+      <div className="itinerary-markdown text-sm leading-relaxed text-ink font-['Segoe_UI',system-ui,sans-serif] pb-5">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           // react-markdown 9 sanitizes URLs by default and strips any scheme
@@ -90,7 +90,7 @@ export function ItineraryPreview({ markdown, isStreaming }: ItineraryPreviewProp
             ),
             blockquote: ({ node: _n, ...props }) => (
               <blockquote
-                className="border-l-4 border-blue-200 bg-blue-50 my-2.5 px-3 py-2 text-blue-900 rounded"
+                className="border-l-4 border-brand-200 bg-brand-50 my-2.5 px-3 py-2 text-dusk rounded"
                 {...props}
               />
             ),
@@ -133,7 +133,7 @@ export function ItineraryPreview({ markdown, isStreaming }: ItineraryPreviewProp
                         // the user gesture, satisfying mobile popup blockers.
                         openVenueInMapsSync(decodedVenue, city);
                       }}
-                      className="text-sky-700 underline decoration-dotted underline-offset-2 cursor-pointer hover:decoration-solid"
+                      className="text-brand-700 underline decoration-dotted underline-offset-2 cursor-pointer hover:decoration-solid"
                     >
                       📍 {children}
                     </a>
@@ -147,7 +147,7 @@ export function ItineraryPreview({ markdown, isStreaming }: ItineraryPreviewProp
                       title={added ? 'Saved to My Map' : 'Add to My Map'}
                       aria-label={added ? `${decodedVenue} saved to My Map` : `Add ${decodedVenue} to My Map`}
                       className={`inline-flex items-center justify-center text-xs leading-none border-none bg-transparent p-0.5 ${
-                        added ? 'text-[#45B4B9] cursor-default' : busy ? 'text-gray-300 cursor-wait' : 'text-gray-400 hover:text-[#45B4B9] cursor-pointer'
+                        added ? 'text-brand cursor-default' : busy ? 'text-gray-300 cursor-wait' : 'text-gray-400 hover:text-brand cursor-pointer'
                       }`}
                     >
                       {busy ? '⏳' : added ? '⭐' : '☆'}
@@ -160,7 +160,7 @@ export function ItineraryPreview({ markdown, isStreaming }: ItineraryPreviewProp
                   href={hrefStr}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-700 no-underline"
+                  className="text-brand-700 no-underline"
                   {...props}
                 >
                   {children}

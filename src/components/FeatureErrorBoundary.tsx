@@ -84,7 +84,7 @@ export class FeatureErrorBoundary extends Component<Props, State> {
         <button
           type="button"
           onClick={this.reset}
-          className="mt-2 rounded-lg border-none bg-sky-600 text-white px-4 py-2 text-sm font-semibold cursor-pointer"
+          className="mt-2 rounded-lg border-none bg-brand text-white px-4 py-2 text-sm font-semibold cursor-pointer"
         >
           Try again
         </button>

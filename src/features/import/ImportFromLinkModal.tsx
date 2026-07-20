@@ -236,7 +236,7 @@ export function ImportFromLinkModal({
                   }}
                   placeholder="https://www.tiktok.com/..."
                   autoFocus
-                  className="flex-1 px-3 py-2.5 rounded-xl border border-black/[0.18] text-sm text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 min-h-[44px]"
+                  className="flex-1 px-3 py-2.5 rounded-xl border border-black/[0.18] text-sm text-slate-900 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 min-h-[44px]"
                 />
                 <button
                   type="button"
@@ -257,7 +257,7 @@ export function ImportFromLinkModal({
           {/* ── Loading step ───────────────────────────────────────────── */}
           {state.step === 'loading' && (
             <div className="flex flex-col items-center gap-4 py-10">
-              <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+              <div className="w-10 h-10 border-4 border-gray-200 border-t-brand rounded-full animate-spin" />
               <p className="text-sm font-semibold text-slate-600 text-center">
                 Scanning link for places…
               </p>
@@ -288,7 +288,7 @@ export function ImportFromLinkModal({
                     href={state.attribution.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 underline-offset-2 hover:underline"
+                    className="text-brand-600 underline-offset-2 hover:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
                     View original post ↗
@@ -311,7 +311,7 @@ export function ImportFromLinkModal({
                       key={idx}
                       type="button"
                       onClick={() => handleSelect(c, state.attribution, state.platform)}
-                      className="text-left px-4 py-3 rounded-xl border border-black/[0.12] bg-white hover:bg-slate-50 hover:border-blue-400 transition-colors cursor-pointer flex flex-col gap-1.5"
+                      className="text-left px-4 py-3 rounded-xl border border-black/[0.12] bg-white hover:bg-brand-50 hover:border-brand-300 transition-colors cursor-pointer flex flex-col gap-1.5"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="font-bold text-slate-900 text-sm leading-snug">
@@ -354,7 +354,7 @@ export function ImportFromLinkModal({
 
               {state.shareState === 'sharing' && (
                 <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-gray-200 border-t-brand rounded-full animate-spin" />
                   Publishing pin…
                 </div>
               )}
@@ -389,7 +389,7 @@ export function ImportFromLinkModal({
                   href={state.attribution.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-blue-600 hover:underline"
+                  className="text-xs text-brand-600 hover:underline"
                   onClick={(e) => e.stopPropagation()}
                 >
                   View original post ↗
@@ -435,8 +435,8 @@ export function ImportFromLinkModal({
                 disabled={!url.trim()}
                 className={`flex-1 px-4 py-3 rounded-[10px] border-none text-white font-semibold text-sm min-h-[44px] ${
                   url.trim()
-                    ? 'bg-blue-600 cursor-pointer hover:bg-blue-700'
-                    : 'bg-blue-300 cursor-not-allowed'
+                    ? 'bg-brand cursor-pointer hover:bg-brand-600'
+                    : 'bg-brand-300 cursor-not-allowed'
                 }`}
               >
                 Find places →
@@ -480,7 +480,7 @@ export function ImportFromLinkModal({
                 <button
                   type="button"
                   onClick={() => void handleShare()}
-                  className="flex-1 px-4 py-3 rounded-[10px] border-none bg-blue-600 hover:bg-blue-700 text-white cursor-pointer font-semibold text-sm min-h-[44px]"
+                  className="flex-1 px-4 py-3 rounded-[10px] border-none bg-brand hover:bg-brand-600 text-white cursor-pointer font-semibold text-sm min-h-[44px]"
                 >
                   {state.shareState === 'failed' ? '🔁 Try sharing again' : '📌 Share publicly'}
                 </button>

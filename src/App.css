@@ -48,7 +48,7 @@ input:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: theme('colors.brand.600');
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   transition: box-shadow 0.2s;
 }

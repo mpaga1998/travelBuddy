@@ -380,7 +380,7 @@ export default function App() {
               window.history.pushState({}, '', '/');
               setPathname('/');
             }}
-            className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold"
+            className="px-4 py-2 rounded-md bg-brand hover:bg-brand-600 text-white text-sm font-semibold"
           >
             Go home
           </button>

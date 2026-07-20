@@ -321,7 +321,7 @@ export function ProfileInfoTab({
             {handle && profile.handle === handle.trim().toLowerCase() && (
               <a
                 href={`/u/${profile.handle}`}
-                className="mt-1.5 inline-block text-xs text-blue-600 hover:underline"
+                className="mt-1.5 inline-block text-xs text-brand-600 hover:underline"
               >
                 View public profile →
               </a>
@@ -396,7 +396,7 @@ export function ProfileInfoTab({
               </button>
               <button
                 onClick={handleConfirmSignOut}
-                className="px-5 py-2.5 rounded-lg border-none bg-[#ff4444] cursor-pointer text-sm font-semibold text-white"
+                className="px-5 py-2.5 rounded-lg border-none bg-red-500 hover:bg-red-600 cursor-pointer text-sm font-semibold text-white"
               >
                 Sign out
               </button>

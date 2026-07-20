@@ -134,7 +134,7 @@ export function PublicProfilePage({ handle, onBack }: PublicProfilePageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-[#111]">
+    <div className="min-h-screen bg-gray-50 text-ink">
       <Header onBack={onBack} />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -353,7 +353,7 @@ function FollowButton({
       className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
         following
           ? 'border border-black/15 bg-white text-gray-700 hover:bg-red-50 hover:text-red-700 hover:border-red-200'
-          : 'border-none bg-blue-600 text-white hover:bg-blue-700'
+          : 'border-none bg-brand text-white hover:bg-brand-600'
       } ${busy ? 'opacity-60 cursor-wait' : 'cursor-pointer'}`}
     >
       {following ? '✓ Following' : '+ Follow'}
@@ -427,8 +427,8 @@ function ItineraryCard({
       onClick={() => onOpen(itinerary)}
       className="bg-white rounded-xl border border-black/[0.08] hover:border-purple-600 hover:bg-purple-600/[0.02] p-4 text-left flex flex-col gap-1.5 transition-colors shadow-sm"
     >
-      <div className="text-base font-bold text-[#111]">{itinerary.title}</div>
-      <div className="text-[13px] text-[#666] flex flex-col gap-1">
+      <div className="text-base font-bold text-ink">{itinerary.title}</div>
+      <div className="text-[13px] text-muted flex flex-col gap-1">
         {(itinerary.arrivalLocation || itinerary.departureLocation) && (
           <div>
             📍 {itinerary.arrivalLocation ?? '?'} → {itinerary.departureLocation ?? '?'}
@@ -468,7 +468,7 @@ function ItineraryDetailModal({
         className="bg-white rounded-2xl shadow-[0_18px_48px_rgba(0,0,0,0.22)] w-[min(720px,100%)] max-h-[90vh] overflow-auto"
       >
         <div className="flex justify-between items-start p-5 border-b border-black/[0.08] sticky top-0 bg-white">
-          <h3 className="text-lg font-bold text-[#111] m-0">{itinerary.title}</h3>
+          <h3 className="text-lg font-bold text-ink m-0">{itinerary.title}</h3>
           <button
             onClick={onClose}
             className="border-none bg-transparent text-2xl cursor-pointer px-2 py-1 text-gray-400"
@@ -479,7 +479,7 @@ function ItineraryDetailModal({
         </div>
         <div className="p-5">
           {itinerary.markdownContent ? (
-            <pre className="whitespace-pre-wrap text-sm leading-relaxed text-[#333] font-sans">
+            <pre className="whitespace-pre-wrap text-sm leading-relaxed text-ink font-sans">
               {itinerary.markdownContent}
             </pre>
           ) : (
@@ -524,7 +524,7 @@ function NotFound({ onBack }: { onBack: () => void }) {
       <button
         type="button"
         onClick={onBack}
-        className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold"
+        className="px-4 py-2 rounded-md bg-brand hover:bg-brand-600 text-white text-sm font-semibold"
       >
         Go home
       </button>

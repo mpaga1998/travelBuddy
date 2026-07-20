@@ -68,7 +68,7 @@ export function FeedPage({ onBack, onOpenMap }: FeedPageProps) {
   }, [loadInitial]);
 
   return (
-    <div className="min-h-screen bg-gray-50 text-[#111]">
+    <div className="min-h-screen bg-gray-50 text-ink">
       <header className="sticky top-0 z-10 flex items-center gap-3 px-4 sm:px-6 py-3 bg-white border-b border-black/[0.08]">
         <button
           type="button"
@@ -201,7 +201,7 @@ function FeedCard({ pin, onOpenMap }: { pin: FeedPin; onOpenMap: () => void }) {
 
       {/* Body */}
       <div className="px-4 py-3">
-        <h2 className="text-base font-bold text-[#111] mb-1.5">
+        <h2 className="text-base font-bold text-ink mb-1.5">
           <span className="mr-1.5">{categoryEmoji(pin.category as PinCategory)}</span>
           {pin.title}
         </h2>
@@ -269,7 +269,7 @@ function NoFollowsEmpty({ onOpenMap }: { onOpenMap: () => void }) {
       <button
         type="button"
         onClick={onOpenMap}
-        className="px-5 py-2 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+        className="px-5 py-2 rounded-full bg-brand text-white text-sm font-semibold hover:bg-brand-600"
       >
         Explore the map
       </button>

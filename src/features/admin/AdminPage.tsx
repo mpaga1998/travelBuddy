@@ -94,7 +94,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 text-[#111]">
+    <div className="min-h-screen bg-gray-50 text-ink">
       <header className="sticky top-0 z-10 flex items-center gap-3 px-5 py-3 bg-white border-b border-black/[0.08]">
         <button
           type="button"

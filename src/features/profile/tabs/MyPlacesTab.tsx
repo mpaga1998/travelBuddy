@@ -37,7 +37,7 @@ function PlaceCard({
       tabIndex={0}
     >
       <div
-        className={`flex-1 bg-[#45B4B9]/10 flex items-center justify-center ${isMobile ? 'text-[28px]' : 'text-[32px]'} ${place.visited ? 'opacity-50' : ''}`}
+        className={`flex-1 bg-brand/10 flex items-center justify-center ${isMobile ? 'text-[28px]' : 'text-[32px]'} ${place.visited ? 'opacity-50' : ''}`}
       >
         {categoryEmoji((place.category as PinCategory) ?? 'other')}
       </div>
@@ -128,7 +128,7 @@ function PlaceDetail({
     <div className="flex-1 overflow-auto p-4 flex flex-col gap-3">
       <button
         onClick={onBack}
-        className="bg-transparent border-none cursor-pointer text-base text-blue-600 font-semibold p-0 text-left"
+        className="bg-transparent border-none cursor-pointer text-base text-brand-600 font-semibold p-0 text-left"
       >
         ← Back
       </button>
@@ -177,7 +177,7 @@ function PlaceDetail({
               <button
                 onClick={saveNote}
                 disabled={busy}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold cursor-pointer border-none"
+                className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-semibold cursor-pointer border-none"
               >
                 Save
               </button>
@@ -211,7 +211,7 @@ function PlaceDetail({
             href={place.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-blue-600 underline break-all"
+            className="text-xs text-brand-600 underline break-all"
           >
             View original
           </a>
@@ -222,7 +222,7 @@ function PlaceDetail({
       <div className="flex flex-col gap-2 mt-auto pt-3 border-t border-black/[0.08]">
         <button
           onClick={() => window.open(getMapsUrl(place.lat, place.lng, place.title), '_blank')}
-          className="w-full px-4 py-2.5 rounded-[10px] border-2 border-blue-600 bg-white text-blue-600 font-semibold text-sm cursor-pointer"
+          className="w-full px-4 py-2.5 rounded-[10px] border-2 border-brand bg-white text-brand-700 font-semibold text-sm cursor-pointer"
         >
           📍 Open in Maps
         </button>
@@ -312,7 +312,7 @@ export function MyPlacesTab({ isMobile, onPlanTrip }: MyPlacesTabProps) {
             onClick={() => setFilter(f)}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold border cursor-pointer transition-colors ${
               filter === f
-                ? 'bg-[#45B4B9] border-[#45B4B9] text-white'
+                ? 'bg-brand border-brand text-white'
                 : 'bg-white border-black/[0.18] text-slate-600'
             }`}
           >
@@ -328,7 +328,7 @@ export function MyPlacesTab({ isMobile, onPlanTrip }: MyPlacesTabProps) {
         <div className="px-4 pb-2">
           <button
             onClick={() => onPlanTrip(places.filter((p) => !p.visited).map((p) => p.title))}
-            className="w-full px-4 py-2.5 rounded-[10px] border-none bg-[#45B4B9] text-white font-semibold text-sm cursor-pointer"
+            className="w-full px-4 py-2.5 rounded-[10px] border-none bg-brand text-white font-semibold text-sm cursor-pointer"
           >
             🧭 Plan a trip around my saved places
           </button>

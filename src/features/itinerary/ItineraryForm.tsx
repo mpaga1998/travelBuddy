@@ -43,34 +43,34 @@ const INTEREST_OPTIONS = [
 
 // Shared input styles — same visual treatment across every text field in the form.
 const inputClass =
-  'w-full px-3 py-2.5 rounded-[10px] border-2 border-black/25 text-sm box-border min-h-[44px] bg-white text-[#111]';
+  'w-full px-3 py-2.5 rounded-[10px] border-2 border-black/25 text-sm box-border min-h-[44px] bg-white text-ink';
 // Subtle-bordered input variant used by attractions textarea + notes textarea + custom-interest input.
 const subtleInputClass =
   'w-full px-3 py-2.5 rounded-[10px] border border-black/[0.18] text-sm font-[inherit] box-border';
 // Section heading label (emoji + category title).
-const sectionLabelClass = 'text-[13px] font-bold block mb-3 text-[#111]';
+const sectionLabelClass = 'text-[13px] font-bold block mb-3 text-ink';
 // Inline "sub-label" above a field (e.g. Arrival Date).
-const subLabelClass = 'text-[11px] font-semibold block mb-1.5 text-[#111]';
+const subLabelClass = 'text-[11px] font-semibold block mb-1.5 text-ink';
 // Time-of-day pill button (morning/afternoon/night).
 function timePillClass(active: boolean) {
   return `flex-1 px-1 py-2 rounded-md border-2 border-black/20 text-xs font-semibold cursor-pointer transition-colors ${
-    active ? 'bg-[#0066cc] text-white' : 'bg-gray-100 text-[#111]'
+    active ? 'bg-brand text-white' : 'bg-gray-100 text-ink'
   }`;
 }
 // Selectable-option pill (travel pace, budget).
 function optionPillClass(active: boolean) {
   return `px-3 py-2.5 rounded-[10px] cursor-pointer text-[13px] min-h-[44px] ${
     active
-      ? 'border-2 border-blue-600 bg-blue-50 font-semibold text-blue-600'
-      : 'border border-black/[0.18] bg-white font-medium text-[#111]'
+      ? 'border-2 border-brand bg-brand-50 font-semibold text-brand-700'
+      : 'border border-black/[0.18] bg-white font-medium text-ink'
   }`;
 }
 // Interest-chip pill (rounded-full). Shared between preset + custom chips.
 function chipClass(active: boolean, extra = '') {
   return `px-3 py-2 rounded-full cursor-pointer text-xs whitespace-nowrap ${
     active
-      ? 'border-2 border-blue-600 bg-blue-100 font-semibold text-blue-600'
-      : 'border border-black/[0.18] bg-white font-medium text-[#111]'
+      ? 'border-2 border-brand bg-brand-100 font-semibold text-brand-700'
+      : 'border border-black/[0.18] bg-white font-medium text-ink'
   } ${extra}`;
 }
 
@@ -286,7 +286,7 @@ export function ItineraryForm({ onSubmit, error, isMobile, userRole, initialAttr
           onMouseDown={(e) => e.preventDefault()}
           onTouchStart={(e) => e.preventDefault()}
           onClick={() => onSelect(s.place_name)}
-          className="block w-full p-3 border-none bg-transparent hover:bg-gray-100 text-left cursor-pointer text-[13px] text-[#111] border-b border-black/[0.08] last:border-b-0 outline-none"
+          className="block w-full p-3 border-none bg-transparent hover:bg-gray-100 text-left cursor-pointer text-[13px] text-ink border-b border-black/[0.08] last:border-b-0 outline-none"
         >
           🌍 {s.place_name}
         </button>
@@ -453,7 +453,7 @@ export function ItineraryForm({ onSubmit, error, isMobile, userRole, initialAttr
                     setShowStopSuggestions(false);
                   }
                 }}
-                className="px-3 py-2.5 rounded-[10px] border-none bg-blue-600 text-white cursor-pointer text-[13px] font-semibold min-h-[44px] min-w-[44px] shrink-0"
+                className="px-3 py-2.5 rounded-[10px] border-none bg-brand text-white cursor-pointer text-[13px] font-semibold min-h-[44px] min-w-[44px] shrink-0"
               >
                 +
               </button>
@@ -473,8 +473,8 @@ export function ItineraryForm({ onSubmit, error, isMobile, userRole, initialAttr
                   className="flex items-center justify-between px-3 py-2.5 bg-gray-100 rounded-lg border border-black/10"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-[#666]">#{index + 1}</span>
-                    <span className="text-[13px] text-[#111]">🌍 {stop}</span>
+                    <span className="text-xs font-semibold text-muted">#{index + 1}</span>
+                    <span className="text-[13px] text-ink">🌍 {stop}</span>
                   </div>
                   <button
                     type="button"
@@ -498,7 +498,7 @@ export function ItineraryForm({ onSubmit, error, isMobile, userRole, initialAttr
           onChange={(e) => setAttractions(e.target.value)}
           placeholder="e.g., Sagrada Familia, Park Güell, Gothic Quarter (separate by comma)"
           rows={3}
-          className={`${subtleInputClass} resize-y min-h-[80px] bg-white text-[#111]`}
+          className={`${subtleInputClass} resize-y min-h-[80px] bg-white text-ink`}
         />
       </div>
 
@@ -580,7 +580,7 @@ export function ItineraryForm({ onSubmit, error, isMobile, userRole, initialAttr
           <button
             type="button"
             onClick={handleAddCustomInterest}
-            className="px-4 py-2.5 rounded-[10px] border border-black/[0.18] bg-gray-100 cursor-pointer text-[13px] font-medium text-[#111]"
+            className="px-4 py-2.5 rounded-[10px] border border-black/[0.18] bg-gray-100 cursor-pointer text-[13px] font-medium text-ink"
           >
             Add
           </button>
@@ -595,14 +595,14 @@ export function ItineraryForm({ onSubmit, error, isMobile, userRole, initialAttr
           onChange={(e) => setNotes(e.target.value)}
           placeholder="e.g., traveling with family, prefer walkable areas, budget constraints..."
           rows={2}
-          className={`${subtleInputClass} resize-y min-h-[60px] bg-white text-[#111]`}
+          className={`${subtleInputClass} resize-y min-h-[60px] bg-white text-ink`}
         />
       </div>
 
       {/* Submit */}
       <button
         type="submit"
-        className="px-4 py-3 rounded-xl border-none bg-blue-600 text-white cursor-pointer font-bold text-base mt-2 min-h-[48px]"
+        className="px-4 py-3 rounded-xl border-none bg-brand hover:bg-brand-600 text-white cursor-pointer font-bold text-base mt-2 min-h-[48px]"
       >
         Generate Itinerary ✨
       </button>

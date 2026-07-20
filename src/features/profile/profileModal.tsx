@@ -156,7 +156,7 @@ function ModalHeader({
       ) : (
         <button
           onClick={onBackToMenu}
-          className="border-none bg-transparent cursor-pointer text-base font-semibold text-blue-600 px-2 py-1 flex items-center gap-1"
+          className="border-none bg-transparent cursor-pointer text-base font-semibold text-brand-600 px-2 py-1 flex items-center gap-1"
         >
           ← Back
         </button>
@@ -191,9 +191,9 @@ function MenuScreen({
       section: 'profile',
       emoji: '👤',
       label: '👤 Profile Info',
-      color: '#2563eb',
-      shadow: '0 4px 12px rgba(37, 99, 235, 0.12)',
-      hoverBg: 'rgba(37, 99, 235, 0.05)',
+      color: '#304D6D',
+      shadow: '0 4px 12px rgba(48, 77, 109, 0.12)',
+      hoverBg: 'rgba(48, 77, 109, 0.05)',
     },
     {
       section: 'saved',
@@ -238,7 +238,7 @@ function MenuScreen({
             {item.label}
             {item.section === 'saved' && !!savedPlacesCount && (
               <span
-                className="absolute -top-2 -right-2 min-w-[24px] h-6 px-1.5 rounded-full bg-[#45B4B9] text-white text-xs font-bold flex items-center justify-center"
+                className="absolute -top-2 -right-2 min-w-[24px] h-6 px-1.5 rounded-full bg-brand text-white text-xs font-bold flex items-center justify-center"
                 aria-label={`${savedPlacesCount} places saved`}
               >
                 {savedPlacesCount > 99 ? '99+' : savedPlacesCount}

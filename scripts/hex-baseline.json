@@ -1,21 +1,10 @@
 {
-  "src/App.css": 1,
-  "src/features/admin/AdminPage.tsx": 1,
   "src/features/auth/InitialPage.tsx": 35,
   "src/features/auth/LoadingPage.tsx": 2,
-  "src/features/feed/FeedPage.tsx": 2,
-  "src/features/itinerary/ItineraryForm.tsx": 13,
-  "src/features/itinerary/ItineraryPreview.tsx": 3,
   "src/features/map/CompassButton.tsx": 3,
   "src/features/map/MapCanvas.tsx": 2,
   "src/features/map/modals/TipsViewer.tsx": 5,
   "src/features/map/PinLayer.tsx": 10,
-  "src/features/notifications/NotificationsPage.tsx": 2,
-  "src/features/pins/PinComments.tsx": 4,
-  "src/features/profile/profileModal.tsx": 4,
-  "src/features/profile/PublicProfilePage.tsx": 5,
-  "src/features/profile/tabs/MyPlacesTab.tsx": 4,
-  "src/features/profile/tabs/ProfileInfoTab.tsx": 1,
-  "src/features/profile/tabs/SavedItinerariesTab.tsx": 11,
+  "src/features/profile/profileModal.tsx": 3,
   "src/index.css": 8
 }
