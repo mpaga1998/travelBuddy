@@ -22,18 +22,23 @@ export interface GenerationResult {
 
 /**
  * Pick a max_tokens budget sized to the trip length.
- * Each day needs ~700 tokens to cover: activity blocks, 2-3 restaurant
- * suggestions per meal, a cost table, and smart tips. Add 800 tokens of
- * fixed overhead for the intro, outro, and before-you-go section.
- * Floor at 1500 (covers the fixed overhead for any 1-day trip).
- * Cap at 8000 — well inside gpt-4o-mini's 16k output limit while keeping
- * the worst-case cost reasonable.
+ *
+ * Measured reality (P1 usage logs, 2026-07-14): the nook prompt style writes
+ * ~2,000–3,000 tokens per day — per-meal restaurant options, cost lines,
+ * venue links, and tips add up fast. The old 1,100/day estimate truncated a
+ * multi-day Mumbai itinerary at Day 2 morning. Budget generously: the cost
+ * delta is ~1 cent at gpt-4o-mini output pricing, and undersizing burns the
+ * FULL cost anyway while delivering a broken result.
+ *
+ * Cap at 16000 (gpt-4o-mini's output ceiling is 16,384). Note the Anthropic
+ * fallback clamps to its own 8,192 limit inside llm.ts — fallback runs may
+ * still truncate very long trips, which the finishReason log makes visible.
  */
 function computeMaxTokens(input: TripInput): number {
   const nights = calculateNights(input);
   const days = Math.max(1, nights + 1);
-  const estimated = 1200 + days * 1100;
-  return Math.min(8000, Math.max(3000, estimated));
+  const estimated = 1500 + days * 2500;
+  return Math.min(16000, Math.max(4000, estimated));
 }
 
 /**

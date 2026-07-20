@@ -74,7 +74,7 @@ Every item has a **Done when** — if it can't be checked, it isn't done.
 
 | ID | Status | Item | Effort | Depends on | Done when |
 |---|---|---|---|---|---|
-| P1 **M1** | 🟡 | Token-usage logging: log `usage` from every LLM response in `api/lib/llm.ts` (3-line change) + cache hit/miss counter | ½ day | — | Every generation logs tokens in/out + cache status, queryable in Vercel logs |
+| P1 **M1** | ✅ 2026-07-14 | Token-usage logging: log `usage` from every LLM response in `api/lib/llm.ts` (3-line change) + cache hit/miss counter | ½ day | — | Every generation logs tokens in/out + cache status, queryable in Vercel logs |
 | P2 **M1** | ⬜ | PWA shell: manifest, icons from `NOOK-03.svg`, service worker (offline shell + map-tile cache), iOS meta tags, install prompt | 1½ days | B4 | Lighthouse PWA installable pass; add-to-home-screen works on iOS + Android |
 | P3 **M1** | ⬜ | Custom domain + HTTPS on Vercel | ½ day | — | App serves on the real domain; `ALLOWED_ORIGINS` updated |
 | P4 **M1** | ⬜ | Cookie consent banner + privacy-policy update adding `saved_places` (location-intent data) to the GDPR data inventory | ½ day | — | Consent gate live defaulting to decline-non-essential; policy names saved_places |

@@ -111,12 +111,15 @@ async function initiateOpenAI(
 
   return (async function* () {
     let usage: OpenAI.CompletionUsage | undefined;
+    let finishReason: string | null = null;
     for await (const chunk of stream) {
       if (chunk.usage) usage = chunk.usage;
+      if (chunk.choices[0]?.finish_reason) finishReason = chunk.choices[0].finish_reason;
       const delta = chunk.choices[0]?.delta?.content;
       if (delta) yield delta;
     }
     // P1: unit-economics source of truth — € per itinerary derives from this line.
+    // finishReason 'length' = output truncated at max_tokens: full cost, broken result.
     logger.info(
       {
         provider: 'openai',
@@ -124,6 +127,7 @@ async function initiateOpenAI(
         promptTokens: usage?.prompt_tokens ?? null,
         completionTokens: usage?.completion_tokens ?? null,
         totalTokens: usage?.total_tokens ?? null,
+        finishReason,
       },
       'LLM: usage',
     );
@@ -143,7 +147,11 @@ async function initiateAnthropic(
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const model = process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-20241022';
 
-  logger.info({ provider: 'anthropic', model, maxTokens: options.maxTokens }, 'LLM: initiating stream');
+  // Clamp to haiku's output ceiling — callers may budget up to 16k for the
+  // OpenAI path, which this API would reject outright.
+  const maxTokens = Math.min(options.maxTokens, 8192);
+
+  logger.info({ provider: 'anthropic', model, maxTokens }, 'LLM: initiating stream');
 
   const systemContent = messages.find((m) => m.role === 'system')?.content;
   const userMessages = messages
@@ -152,7 +160,7 @@ async function initiateAnthropic(
 
   const stream = await client.messages.create({
     model,
-    max_tokens: options.maxTokens,
+    max_tokens: maxTokens,
     ...(systemContent && { system: systemContent }),
     messages: userMessages,
     ...(options.temperature !== undefined && { temperature: options.temperature }),
@@ -162,12 +170,14 @@ async function initiateAnthropic(
   return (async function* () {
     let inputTokens: number | null = null;
     let outputTokens: number | null = null;
+    let stopReason: string | null = null;
     for await (const event of stream) {
       if (event.type === 'message_start') {
         inputTokens = event.message.usage.input_tokens;
       }
-      if (event.type === 'message_delta' && event.usage) {
-        outputTokens = event.usage.output_tokens; // cumulative — last one wins
+      if (event.type === 'message_delta') {
+        if (event.usage) outputTokens = event.usage.output_tokens; // cumulative — last one wins
+        if (event.delta.stop_reason) stopReason = event.delta.stop_reason;
       }
       if (
         event.type === 'content_block_delta' &&
@@ -177,6 +187,7 @@ async function initiateAnthropic(
       }
     }
     // P1: unit-economics source of truth — € per itinerary derives from this line.
+    // finishReason 'max_tokens' = output truncated: full cost, broken result.
     logger.info(
       {
         provider: 'anthropic',
@@ -184,6 +195,7 @@ async function initiateAnthropic(
         promptTokens: inputTokens,
         completionTokens: outputTokens,
         totalTokens: inputTokens !== null && outputTokens !== null ? inputTokens + outputTokens : null,
+        finishReason: stopReason,
       },
       'LLM: usage',
     );
