@@ -46,7 +46,7 @@ const SOCIAL_PLATFORM_LABEL: Record<string, string> = {
 // (e.g. tip button uses a yellow palette). Kept as a helper so the class
 // list doesn't need to be repeated on every button.
 function pillBtnClass(extra = "") {
-  return `flex-[1_1_100px] px-2.5 py-2 rounded-[10px] border border-black/[0.18] bg-white cursor-pointer font-extrabold text-[#111] text-[13px] outline-none ${extra}`;
+  return `flex-[1_1_100px] px-2.5 py-2 rounded-[10px] border border-black/[0.18] bg-white cursor-pointer font-extrabold text-ink text-[13px] outline-none ${extra}`;
 }
 
 /**
@@ -92,7 +92,7 @@ export function PinPopup({
       // (hero image + bio + actions + comments) can never extend above
       // the visible map. Inner body is `flex-1 overflow-y-auto` so the
       // cap forces internal scroll, never viewport clipping.
-      className={`w-full max-w-full max-h-[75dvh] text-[#111] font-sans flex flex-col overflow-hidden ${isMobile ? "min-w-0 text-[13px]" : "min-w-[360px] text-sm"}`}
+      className={`w-full max-w-full max-h-[75dvh] text-ink font-sans flex flex-col overflow-hidden ${isMobile ? "min-w-0 text-[13px]" : "min-w-[360px] text-sm"}`}
     >
       {pin.imageUrls && pin.imageUrls.length > 0 && (
         <div
@@ -128,7 +128,7 @@ export function PinPopup({
 
         <div className="flex gap-2 flex-wrap mb-2.5">
           {isMyMapPin ? (
-            <span className="px-2 py-1 rounded-full bg-[#45B4B9]/15 text-[#45B4B9] text-xs font-semibold">
+            <span className="px-2 py-1 rounded-full bg-brand/15 text-brand-600 text-xs font-semibold">
               ⭐ My Map
             </span>
           ) : isItineraryPin ? (
@@ -150,14 +150,14 @@ export function PinPopup({
                 window.history.pushState({}, '', url);
                 window.dispatchEvent(new PopStateEvent('popstate'));
               }}
-              className="px-2 py-1 rounded-full bg-blue-600/[0.12] text-xs cursor-pointer border-none hover:bg-blue-600/[0.2] transition-colors"
+              className="px-2 py-1 rounded-full bg-brand/10 text-xs cursor-pointer border-none hover:bg-brand/20 transition-colors"
             >
               {pin.createdByType === "hostel"
                 ? `Recommended by ${pin.createdByLabel}`
                 : `Pinned by ${pin.createdByLabel}`}
             </button>
           ) : (
-            <span className="px-2 py-1 rounded-full bg-blue-600/[0.12] text-xs">
+            <span className="px-2 py-1 rounded-full bg-brand/10 text-xs">
               {pin.createdByType === "hostel"
                 ? `Recommended by ${pin.createdByLabel}`
                 : `Pinned by ${pin.createdByLabel}`}
@@ -202,7 +202,7 @@ export function PinPopup({
           {pin.tips && pin.tips.length > 0 && (
             <button
               onClick={(e) => { e.stopPropagation(); onShowTips(pin.tips ?? []); }}
-              className={pillBtnClass("!bg-[#fffaeb] !text-[#b8860b] flex-[1_1_140px]")}
+              className={pillBtnClass("!bg-amber-50 !text-amber-700 flex-[1_1_140px]")}
             >
               💡 Tips ({pin.tips.length})
             </button>
@@ -225,7 +225,7 @@ export function PinPopup({
               aria-label={isSavedOnMyMap ? "Saved to My Map" : "Save to My Map"}
               className={`flex-[1_1_100px] px-2.5 py-2 rounded-[10px] border-2 font-extrabold text-[13px] outline-none transition-all ${
                 saveToMyMapBusy ? "cursor-wait" : isSavedOnMyMap ? "cursor-default" : "cursor-pointer"
-              } ${isSavedOnMyMap ? "border-[#45B4B9] bg-[#45B4B9] text-white" : "border-[#45B4B9] bg-white text-[#111]"}`}
+              } ${isSavedOnMyMap ? "border-brand bg-brand text-white" : "border-brand bg-white text-ink"}`}
             >
               {saveToMyMapBusy ? "⏳" : isSavedOnMyMap ? "⭐ Saved" : "⭐ My Map"}
             </button>
@@ -344,7 +344,7 @@ function ReportDialog({
           placeholder="e.g. Spam, inaccurate location, inappropriate content…"
           maxLength={500}
           rows={3}
-          className="px-3 py-2 rounded-lg border border-black/[0.18] text-sm text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 resize-none"
+          className="px-3 py-2 rounded-lg border border-black/[0.18] text-sm text-slate-900 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 resize-none"
         />
         <div className="flex gap-2 justify-end mt-1">
           <button
@@ -356,7 +356,7 @@ function ReportDialog({
           </button>
           <button
             type="submit"
-            className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm min-h-[40px] cursor-pointer border-none"
+            className="px-4 py-2 rounded-lg bg-peach hover:bg-peach-600 text-white font-semibold text-sm min-h-[40px] cursor-pointer border-none"
           >
             Submit report
           </button>

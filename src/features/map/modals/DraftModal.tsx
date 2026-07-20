@@ -106,7 +106,7 @@ export function DraftModal({
             {draft.tips.length < 5 && (
               <button
                 onClick={() => setDraft({ ...draft, tips: [...draft.tips, ""] })}
-                className="p-3 rounded-xl border border-black/[0.18] bg-gray-100 text-[#111] cursor-pointer font-semibold w-full text-sm min-h-[44px]"
+                className="p-3 rounded-xl border border-black/[0.18] bg-gray-100 text-ink cursor-pointer font-semibold w-full text-sm min-h-[44px]"
               >
                 + Add another tip
               </button>
@@ -114,7 +114,7 @@ export function DraftModal({
           </div>
 
           <div>
-            <label className="flex items-center justify-center px-3.5 py-3 rounded-xl border border-black/[0.18] bg-[#e8e8e8] cursor-pointer font-semibold select-none text-[#111] text-sm w-full box-border min-h-[44px]">
+            <label className="flex items-center justify-center px-3.5 py-3 rounded-xl border border-black/[0.18] bg-gray-200 cursor-pointer font-semibold select-none text-ink text-sm w-full box-border min-h-[44px]">
               📷 Add pictures ({draft.images.length}/5)
               <input
                 type="file"
@@ -183,7 +183,7 @@ export function DraftModal({
             disabled={!draft.title.trim()}
             className={`mt-1.5 px-4 py-3 rounded-xl border-none text-white font-bold min-h-[44px] text-base ${
               draft.title.trim()
-                ? "cursor-pointer bg-[#111]"
+                ? "cursor-pointer bg-ink"
                 : "cursor-not-allowed bg-black/25"
             }`}
           >

@@ -23,8 +23,8 @@ export type FilterBarProps = {
 function ageRangeBtnClass(active: boolean, extra = "") {
   return `px-3 py-2 rounded-[10px] cursor-pointer text-[13px] min-h-[44px] whitespace-nowrap outline-none ${
     active
-      ? "border-2 border-blue-600 bg-blue-50 font-semibold text-blue-600"
-      : "border border-black/[0.18] bg-white font-medium text-[#111]"
+      ? "border-2 border-brand bg-brand-50 font-semibold text-brand-700"
+      : "border border-black/[0.18] bg-white font-medium text-ink"
   } ${extra}`;
 }
 
@@ -58,7 +58,7 @@ export function FilterBar({
   };
 
   return (
-    <div className="border-b border-black/[0.08] bg-white text-[#111]">
+    <div className="border-b border-black/[0.08] bg-white text-ink">
       <div
         className={`flex items-center flex-nowrap mx-auto ${
           isMobile
@@ -68,7 +68,7 @@ export function FilterBar({
       >
         <button
           onClick={onBack}
-          className={`border-none bg-transparent px-2.5 py-2 flex items-center gap-1.5 font-semibold text-sm text-[#111] outline-none ${onBack ? "cursor-pointer" : "cursor-default"}`}
+          className={`border-none bg-transparent px-2.5 py-2 flex items-center gap-1.5 font-semibold text-sm text-ink outline-none ${onBack ? "cursor-pointer" : "cursor-default"}`}
           aria-label="Back"
         >
           ↩️ Back
@@ -77,7 +77,7 @@ export function FilterBar({
         <button
           onClick={onLogoClick}
           title="Click to recenter on north"
-          className={`font-bold whitespace-nowrap border-none bg-transparent cursor-pointer px-2 py-1 outline-none text-[#111] ${
+          className={`font-bold whitespace-nowrap border-none bg-transparent cursor-pointer px-2 py-1 outline-none text-ink ${
             isMobile
               ? "absolute left-1/2 -translate-x-1/2 text-sm"
               : "relative text-base"
@@ -133,7 +133,7 @@ export function FilterBar({
           <button
             onClick={onImportLink}
             aria-label="Import place from link"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.18] bg-white text-[#111] text-sm font-semibold cursor-pointer hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.18] bg-white text-ink text-sm font-semibold cursor-pointer hover:bg-gray-50 transition-colors"
           >
             🔗 Import
           </button>
@@ -146,9 +146,9 @@ export function FilterBar({
             title="Filters"
             className="w-11 h-11 rounded-lg border border-black/[0.18] bg-white cursor-pointer flex flex-col items-center justify-center gap-1 p-1.5 relative"
           >
-            <div className="w-5 h-0.5 bg-[#111] rounded-[1px]" />
-            <div className="w-5 h-0.5 bg-[#111] rounded-[1px]" />
-            <div className="w-5 h-0.5 bg-[#111] rounded-[1px]" />
+            <div className="w-5 h-0.5 bg-ink rounded-[1px]" />
+            <div className="w-5 h-0.5 bg-ink rounded-[1px]" />
+            <div className="w-5 h-0.5 bg-ink rounded-[1px]" />
           </button>
         )}
       </div>
@@ -183,8 +183,8 @@ function MapTypeToggle({
   setMapType: (t: MapType) => void;
   full?: boolean;
 }) {
-  // The active background color is per-tab, so we keep it as inline style.
-  const pill = (t: MapType, activeBg: string, label: string, title: string) => {
+  // B3: per-tab active background as token classes — no inline hex.
+  const pill = (t: MapType, activeBgClass: string, label: string, title: string) => {
     const isActive = mapType === t;
     return (
       <button
@@ -192,8 +192,9 @@ function MapTypeToggle({
         title={title}
         className={`border-none cursor-pointer rounded-lg outline-none transition-all ${
           full ? "px-3 py-2 text-[13px]" : "px-3 py-1.5 text-sm"
-        } ${full ? "flex-1" : ""} ${isActive ? "text-white font-semibold" : "bg-transparent text-[#111] font-medium"}`}
-        style={isActive ? { background: activeBg } : undefined}
+        } ${full ? "flex-1" : ""} ${
+          isActive ? `${activeBgClass} text-white font-semibold` : "bg-transparent text-ink font-medium"
+        }`}
       >
         {label}
       </button>
@@ -202,9 +203,9 @@ function MapTypeToggle({
 
   return (
     <div className="flex rounded-[10px] border border-black/[0.18] bg-white p-0.5">
-      {pill("travelers", "#2563eb", "👥 Travelers", "Show pins from travelers")}
-      {pill("hostels", "#111", "🏫 Hostels", "Show pins from hostels")}
-      {pill("my_map", "#45B4B9", "⭐ My Map", "Show your personal saved places")}
+      {pill("travelers", "bg-dusk", "👥 Travelers", "Show pins from travelers")}
+      {pill("hostels", "bg-slate-900", "🏫 Hostels", "Show pins from hostels")}
+      {pill("my_map", "bg-brand", "⭐ My Map", "Show your personal saved places")}
     </div>
   );
 }
@@ -246,7 +247,7 @@ function MobileFilterDrawer({
         className="bg-white rounded-b-xl flex flex-col gap-2.5"
       >
         <div className="flex justify-between items-center px-3 pt-3">
-          <span className="text-sm font-semibold text-[#111]">Filters</span>
+          <span className="text-sm font-semibold text-ink">Filters</span>
           <button
             ref={closeBtnRef}
             onClick={onClose}
@@ -300,7 +301,7 @@ function MobileFilterDrawer({
           <div className="px-3 pb-4">
             <button
               onClick={onImportLink}
-              className="w-full px-4 py-3 rounded-[10px] border border-black/[0.18] bg-white text-[#111] text-sm font-semibold cursor-pointer text-left min-h-[44px]"
+              className="w-full px-4 py-3 rounded-[10px] border border-black/[0.18] bg-white text-ink text-sm font-semibold cursor-pointer text-left min-h-[44px]"
             >
               🔗 Import place from link
             </button>

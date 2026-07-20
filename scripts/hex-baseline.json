@@ -7,13 +7,9 @@
   "src/features/itinerary/ItineraryForm.tsx": 13,
   "src/features/itinerary/ItineraryPreview.tsx": 3,
   "src/features/map/CompassButton.tsx": 3,
-  "src/features/map/FilterBar.tsx": 14,
   "src/features/map/MapCanvas.tsx": 2,
-  "src/features/map/MapEmptyState.tsx": 2,
-  "src/features/map/modals/DraftModal.tsx": 4,
   "src/features/map/modals/TipsViewer.tsx": 5,
   "src/features/map/PinLayer.tsx": 10,
-  "src/features/map/PinPopup.tsx": 10,
   "src/features/notifications/NotificationsPage.tsx": 2,
   "src/features/pins/PinComments.tsx": 4,
   "src/features/profile/profileModal.tsx": 4,
@@ -21,5 +17,5 @@
   "src/features/profile/tabs/MyPlacesTab.tsx": 4,
   "src/features/profile/tabs/ProfileInfoTab.tsx": 1,
   "src/features/profile/tabs/SavedItinerariesTab.tsx": 11,
-  "src/index.css": 10
+  "src/index.css": 8
 }
